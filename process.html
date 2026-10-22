@@ -25,58 +25,68 @@
     <p>根據 ISO 7637-2 規範，汽車 12V 電氣系統的拋負載（Pulse 5b）電壓可飆升至 40V ~ 42V，持續時間長達 400 毫秒。如果依賴外部傳統 TVS 二極體，由於其箝位電壓散差較大（可能在 32V 至 45V 之間波動），極易導致晶片內部較薄的閘極氧化層先於外部 TVS 擊穿損毀。PSoC™ 4 HVPA 在晶粒邊緣直接集成了大面積<b>主動動態 LDMOS 雪崩箝位電路</b>。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="晶片內 42V 主動動態箝位電路原理圖">
+      <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="晶片內 42V 主動動態箝位電路原理圖">
         <!-- Power Rail VBAT -->
-        <line x1="50" y1="60" x2="680" y2="60" stroke="#c0392b" stroke-width="4"/>
-        <text class="ts" x="60" y="45" font-weight="700" fill="#c0392b">VBAT Rail (Normal: 12V, Surge up to 42V)</text>
+        <line x1="30" y1="60" x2="800" y2="60" stroke="#c0392b" stroke-width="4"/>
+        <text class="ts t-mono" x="35" y="45" font-weight="700" font-size="12" fill="#c0392b">VBAT 供電母線 (正常 12V，ISO 7637-2 拋負載浪湧高達 42V)</text>
 
-        <!-- Zener Diode Stack (35V Breakdown) -->
-        <line x1="200" y1="60" x2="200" y2="90" stroke="var(--ink)" stroke-width="2"/>
-        <rect x="160" y="90" width="80" height="70" rx="4" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="200" y="115" text-anchor="middle" font-weight="700" fill="var(--bad)">Zener Stack</text>
-        <text class="ts t-mono" x="200" y="135" text-anchor="middle" font-size="11">V_Z = 36.5 V</text>
-        <text class="ts t-mut" x="200" y="150" text-anchor="middle" font-size="9">Temp-Compensated</text>
+        <!-- Zener Diode Stack (36.5V Breakdown) -->
+        <line x1="190" y1="60" x2="190" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="135" y="90" width="110" height="75" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="190" y="115" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">齊納二極體堆疊</text>
+        <rect x="145" y="125" width="90" height="22" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="190" y="140" text-anchor="middle" font-size="11">V_Z = 36.5 V</text>
+        <text class="ts t-mut" x="190" y="157" text-anchor="middle" font-size="9">溫度補償微調</text>
 
         <!-- dV/dt Transient Trigger Network -->
-        <line x1="320" y1="60" x2="320" y2="90" stroke="var(--ink)" stroke-width="2"/>
-        <rect x="290" y="90" width="60" height="30" fill="var(--surface)" stroke="var(--core)"/>
-        <text class="ts t-mono" x="320" y="110" text-anchor="middle" font-size="10">C_trig</text>
-        <line x1="320" y1="120" x2="320" y2="160" stroke="var(--core)" stroke-width="2"/>
+        <line x1="320" y1="60" x2="320" y2="95" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="285" y="95" width="70" height="34" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="320" y="116" text-anchor="middle" font-size="11" font-weight="600">C_trig</text>
+        <line x1="320" y1="129" x2="320" y2="185" stroke="var(--core)" stroke-width="2"/>
 
         <!-- Trigger Resistor R_trig to GND -->
-        <line x1="200" y1="160" x2="200" y2="240" stroke="var(--ink)" stroke-width="2"/>
-        <rect x="190" y="180" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
-        <text class="ts t-mono" x="175" y="200" text-anchor="end">R_trig</text>
-        <line x1="320" y1="160" x2="200" y2="160" stroke="var(--core)" stroke-width="2"/>
+        <line x1="190" y1="165" x2="190" y2="185" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="190" y1="185" x2="190" y2="210" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="178" y="210" width="24" height="36" rx="3" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="165" y="232" text-anchor="end" font-size="10">R_trig</text>
+        <line x1="190" y1="246" x2="190" y2="300" stroke="var(--ink)" stroke-width="2"/>
 
-        <!-- Trigger Node -->
-        <circle cx="200" cy="160" r="4" fill="var(--warn)"/>
-        <line x1="200" y1="160" x2="380" y2="160" stroke="var(--warn)" stroke-width="2.5"/>
-        <text class="ts" x="290" y="150" font-weight="600" fill="var(--warn)">V_trig (Turn-on &gt; 0.7V)</text>
+        <!-- Tie C_trig to Trigger Node -->
+        <line x1="320" y1="185" x2="190" y2="185" stroke="var(--core)" stroke-width="2"/>
+
+        <!-- Trigger Node and line to Pre-Driver -->
+        <circle cx="190" cy="185" r="4" fill="var(--warn)"/>
+        <line x1="190" y1="185" x2="400" y2="185" stroke="var(--warn)" stroke-width="2.5"/>
+        <rect x="235" y="168" width="130" height="22" rx="3" fill="var(--surface)" stroke="var(--line)"/>
+        <text class="ts" x="300" y="183" text-anchor="middle" font-weight="700" font-size="10" fill="var(--warn)">V_trig (導通 &gt; 0.7V)</text>
 
         <!-- Pre-Driver Inverter / Level Buffer -->
-        <rect x="380" y="130" width="100" height="60" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="430" y="155" text-anchor="middle" font-weight="700" fill="var(--core)">Fast Pre-Driver</text>
-        <text class="ts t-mono" x="430" y="175" text-anchor="middle" font-size="10">Push-Pull Stage</text>
+        <rect x="400" y="145" width="140" height="80" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="470" y="172" text-anchor="middle" font-weight="700" font-size="12" fill="var(--core)">高速推挽前置驅動</text>
+        <rect x="415" y="182" width="110" height="22" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="470" y="197" text-anchor="middle" font-size="10">Push-Pull Stage</text>
 
         <!-- Giant Gate Drive to Main LDMOS -->
-        <line x1="480" y1="160" x2="540" y2="160" stroke="var(--core)" stroke-width="3"/>
-        <text class="ts" x="510" y="150" font-size="10">V_gate</text>
+        <line x1="540" y1="185" x2="600" y2="185" stroke="var(--core)" stroke-width="3"/>
+        <rect x="548" y="168" width="46" height="18" fill="var(--surface)" rx="3"/>
+        <text class="ts t-mono" x="571" y="181" text-anchor="middle" font-size="9" font-weight="700">V_gate</text>
 
         <!-- Main Giant LDMOS Clamp Transistor -->
-        <rect x="540" y="100" width="150" height="120" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.5"/>
-        <text class="ts" x="615" y="130" text-anchor="middle" font-weight="700" fill="var(--safety)">Main Power LDMOS</text>
-        <text class="ts t-mono" x="615" y="155" text-anchor="middle" font-size="11">Width W = 15,000 µm</text>
-        <text class="ts t-mono" x="615" y="175" text-anchor="middle" font-size="10" fill="#c0392b">Sinks I_clamp &gt; 3.5 A</text>
-        <text class="ts t-mut" x="615" y="195" text-anchor="middle" font-size="9">V_BR = 45V Avalanche</text>
+        <rect x="600" y="105" width="200" height="150" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.5"/>
+        <text class="ts" x="700" y="135" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">主功率 LDMOS 箝位管</text>
+        <rect x="615" y="148" width="170" height="24" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="700" y="164" text-anchor="middle" font-size="11">溝道寬度 W = 15,000 &mu;m</text>
+        <rect x="615" y="178" width="170" height="24" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="700" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#c0392b">洩放電流 I_clamp &gt; 3.5 A</text>
+        <text class="ts t-mut" x="700" y="222" text-anchor="middle" font-size="10">V_BR = 45V 雪崩耐受</text>
 
-        <line x1="615" y1="60" x2="615" y2="100" stroke="#c0392b" stroke-width="4"/>
-        <line x1="615" y1="220" x2="615" y2="280" stroke="var(--ink)" stroke-width="4"/>
+        <line x1="700" y1="60" x2="700" y2="105" stroke="#c0392b" stroke-width="4"/>
+        <line x1="700" y1="255" x2="700" y2="300" stroke="var(--ink)" stroke-width="4"/>
 
         <!-- Ground Rail -->
-        <line x1="50" y1="280" x2="680" y2="280" stroke="var(--ink)" stroke-width="3"/>
-        <path d="M610 280h16M614 284h8M617 288h2" stroke="var(--ink)" stroke-width="2"/>
-        <text class="ts" x="60" y="300" font-weight="700">GND (Common Substrate)</text>
+        <line x1="30" y1="300" x2="800" y2="300" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M692 300h16M696 304h8M699 308h2" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="35" y="322" font-weight="700" font-size="12">GND (晶圓公共矽襯底 P-Substrate)</text>
       </svg>
       <figcaption>圖 4.1：晶片內 42V 拋負載主動動態 LDMOS 雪崩箝位電路架構原理圖</figcaption>
     </div>

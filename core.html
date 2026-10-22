@@ -25,49 +25,72 @@
     <p>傳統微控制器由 CPU 操作 GPIO 引腳時，指令必須經過標準系統匯流排（AHB/APB）與外設橋接仲裁器，引發 2 到 4 個時脈週期的延遲。在電池短路事故中，Pyro-fuse（火工熔斷器）的引爆必須在數十微秒內完成。Cortex-M0+ 建立了獨立的<b>專屬單週期 I/O 匯流排（Single-Cycle Fast I/O Port）</b>，將核心暫存器直連至 I/O 輸出鎖存器，並配合 1.8V 至 12V 的高壓電平轉換前置驅動電路。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 760 320" role="img" aria-label="單週期 Fast I/O 與電平轉換點火電路圖">
+      <svg class="viz" viewBox="0 0 820 340" role="img" aria-label="單週期 Fast I/O 與電平轉換點火電路圖">
         <!-- CPU Core Block -->
-        <rect x="30" y="40" width="180" height="230" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="120" y="65" text-anchor="middle" font-weight="700" fill="var(--core)">Arm Cortex-M0+ Core</text>
-        <text class="ts t-mut" x="120" y="85" text-anchor="middle">1.8V Core Logic Domain</text>
+        <rect x="25" y="35" width="200" height="260" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="125" y="65" text-anchor="middle" font-weight="700" font-size="14" fill="var(--core)">Arm Cortex-M0+ Core</text>
+        <rect x="50" y="78" width="150" height="22" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mut" x="125" y="93" text-anchor="middle" font-size="11">1.8V Core Logic Domain</text>
 
         <!-- Fast I/O Register inside CPU -->
-        <rect x="50" y="110" width="140" height="50" rx="4" fill="var(--sunk)" stroke="var(--core)"/>
-        <text class="ts" x="120" y="132" text-anchor="middle" font-weight="600">Fast I/O Port Reg</text>
-        <text class="ts t-mono" x="120" y="148" text-anchor="middle" font-size="10">Address: 0xF0000000</text>
+        <rect x="40" y="125" width="170" height="65" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts" x="125" y="150" text-anchor="middle" font-weight="600" font-size="12">Fast I/O Port Reg</text>
+        <text class="ts t-mono" x="125" y="172" text-anchor="middle" font-size="11" fill="var(--core)">Addr: 0xF0000000</text>
+
+        <text class="ts t-mut" x="125" y="240" text-anchor="middle" font-size="11">Zero Bus Latency</text>
+        <text class="ts t-mut" x="125" y="260" text-anchor="middle" font-size="11">Direct Core Bus Coupling</text>
 
         <!-- Fast 1-cycle bus path -->
-        <line x1="190" y1="135" x2="280" y2="135" stroke="var(--core)" stroke-width="3"/>
-        <text class="ts" x="235" y="125" text-anchor="middle" font-size="10" fill="var(--core)">1-Cycle Direct</text>
+        <line x1="210" y1="157" x2="285" y2="157" stroke="var(--core)" stroke-width="3"/>
+        <rect x="218" y="138" width="60" height="18" fill="var(--surface)" stroke="var(--line)" rx="3"/>
+        <text class="ts t-mono" x="248" y="151" text-anchor="middle" font-size="10" font-weight="700" fill="var(--core)">1 Cycle</text>
 
         <!-- Level Shifter Block (1.8V to 12V) -->
-        <rect x="280" y="90" width="160" height="150" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="360" y="115" text-anchor="middle" font-weight="700" fill="var(--warn)">Level Shifter &amp; Pre-Driver</text>
-        <text class="ts t-mono" x="360" y="135" text-anchor="middle" font-size="10">1.8V Logic &rarr; 12V Gate</text>
+        <rect x="285" y="65" width="195" height="200" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="382" y="95" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">Level Shifter &amp; Pre-Driver</text>
+        <rect x="305" y="108" width="155" height="22" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="382" y="123" text-anchor="middle" font-size="11">1.8V Logic &rarr; 12V Gate</text>
 
         <!-- Cross-coupled PMOS level shifter schematic representation inside -->
-        <path d="M310 160h20v20h-20zM390 160h20v20h-20z" fill="none" stroke="var(--ink)"/>
-        <text class="ts t-mono" x="360" y="180" text-anchor="middle" font-size="9">Cross-Coupled Pair</text>
+        <rect x="325" y="145" width="115" height="48" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+        <path d="M345 160h25v18h-25zM390 160h25v18h-25z" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="382" y="215" text-anchor="middle" font-size="10" fill="var(--muted)">Cross-Coupled PMOS</text>
+        <text class="ts t-mut" x="382" y="235" text-anchor="middle" font-size="10">Nanosecond Propagation</text>
 
         <!-- Output Gate signals -->
-        <line x1="440" y1="130" x2="520" y2="130" stroke="#c0392b" stroke-width="2.5"/>
-        <text class="ts" x="480" y="120" font-size="10" fill="#c0392b">V_gate (12V)</text>
+        <line x1="480" y1="165" x2="540" y2="165" stroke="#c0392b" stroke-width="2.5"/>
+        <rect x="485" y="146" width="50" height="18" fill="var(--surface)" stroke="var(--line)" rx="3"/>
+        <text class="ts t-mono" x="510" y="159" text-anchor="middle" font-size="9" font-weight="700" fill="#c0392b">12V Gate</text>
 
         <!-- Detonator Output Stage -->
-        <rect x="520" y="70" width="200" height="190" rx="6" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
-        <text class="ts" x="620" y="95" text-anchor="middle" font-weight="700" fill="#d35400">High-Reliability Firing Loop</text>
+        <rect x="540" y="45" width="255" height="240" rx="8" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
+        <text class="ts" x="667" y="75" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">High-Reliability Firing Loop</text>
+
+        <!-- 12V Supply Rail -->
+        <line x1="565" y1="98" x2="770" y2="98" stroke="#c0392b" stroke-width="2"/>
+        <text class="ts t-mono" x="565" y="92" font-size="10" font-weight="700" fill="#c0392b">+12V KL30</text>
 
         <!-- Dual MOSFET safety switches (High-Side & Low-Side) -->
-        <rect x="540" y="115" width="70" height="35" rx="3" fill="var(--sunk)" stroke="var(--ink)"/>
-        <text class="ts t-mono" x="575" y="137" text-anchor="middle" font-size="10">HS Switch</text>
-
-        <rect x="540" y="175" width="70" height="35" rx="3" fill="var(--sunk)" stroke="var(--ink)"/>
-        <text class="ts t-mono" x="575" y="197" text-anchor="middle" font-size="10">LS Switch</text>
+        <rect x="565" y="115" width="90" height="42" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="610" y="135" text-anchor="middle" font-size="11" font-weight="600">HS PMOS</text>
+        <text class="ts t-mut" x="610" y="150" text-anchor="middle" font-size="9">Safe Armed</text>
 
         <!-- Igniter Load -->
-        <rect x="635" y="140" width="70" height="40" rx="3" fill="#e67e22" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="670" y="162" text-anchor="middle" font-weight="700">Pyro-fuse</text>
-        <text class="ts" x="670" y="175" text-anchor="middle" font-size="9">2.0 Ω Bridgewire</text>
+        <line x1="655" y1="136" x2="685" y2="136" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="685" y="130" width="95" height="65" rx="5" fill="#fef5e7" stroke="#d35400" stroke-width="2"/>
+        <text class="ts t-mono" x="732" y="153" text-anchor="middle" font-weight="700" font-size="12" fill="#d35400">Pyro-fuse</text>
+        <text class="ts t-mono" x="732" y="172" text-anchor="middle" font-size="10" fill="var(--ink)">2.0 &Omega; Bridge</text>
+        <text class="ts" x="732" y="187" text-anchor="middle" font-size="9" fill="var(--muted)">Firing &gt; 1.75A</text>
+
+        <line x1="732" y1="195" x2="732" y2="235" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="732" y1="235" x2="655" y2="235" stroke="var(--ink)" stroke-width="2"/>
+
+        <rect x="565" y="215" width="90" height="42" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="610" y="235" text-anchor="middle" font-size="11" font-weight="600">LS NMOS</text>
+        <text class="ts t-mut" x="610" y="250" text-anchor="middle" font-size="9">Fire Trigger</text>
+
+        <line x1="565" y1="236" x2="550" y2="236" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M545 236h10M547 240h6M549 244h2" stroke="var(--ink)" stroke-width="1.5"/>
       </svg>
       <figcaption>圖 1.1：單週期 Fast I/O 匯流排與 1.8V 至 12V 電平轉換火工切斷驅動電路</figcaption>
     </div>
@@ -77,54 +100,73 @@
     <p>車載環境中高能宇宙射線中子引發的單粒子翻轉（SEU）可能在任意時間將 SRAM 的位元從 0 變為 1。PSoC™ 4 HVPA 採用全硬體組合邏輯<b>單錯修正、雙錯檢測（Single Error Correction, Double Error Detection, SECDED）</b>電路，其解碼與校正完全在單個時脈週期內透明完成，不佔用任何 CPU 執行週期。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 760 340" role="img" aria-label="SECDED 漢明碼 XOR 邏輯電路架構圖">
+      <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="SECDED 漢明碼 XOR 邏輯電路架構圖">
         <!-- 32-bit Data bus -->
-        <line x1="30" y1="80" x2="160" y2="80" stroke="var(--core)" stroke-width="4"/>
-        <text class="ts" x="90" y="70" text-anchor="middle" font-weight="700" fill="var(--core)">32-bit Read Data (D0~D31)</text>
+        <line x1="20" y1="70" x2="155" y2="70" stroke="var(--core)" stroke-width="3"/>
+        <rect x="25" y="48" width="125" height="18" fill="var(--surface)" rx="3"/>
+        <text class="ts t-mono" x="87" y="62" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">Data D0~D31 (32b)</text>
 
         <!-- 7-bit Parity bits -->
-        <line x1="30" y1="180" x2="160" y2="180" stroke="var(--analog)" stroke-width="3"/>
-        <text class="ts" x="90" y="170" text-anchor="middle" font-weight="700" fill="var(--analog)">7-bit Stored Parity (P0~P6)</text>
+        <line x1="20" y1="160" x2="155" y2="160" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="25" y="138" width="125" height="18" fill="var(--surface)" rx="3"/>
+        <text class="ts t-mono" x="87" y="152" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">Parity P0~P6 (7b)</text>
 
         <!-- XOR Parity Generator Tree -->
-        <rect x="160" y="50" width="150" height="90" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="235" y="75" text-anchor="middle" font-weight="700" fill="var(--core)">XOR Tree Generator</text>
-        <text class="ts t-mut" x="235" y="95" text-anchor="middle">5-level Multi-input XORs</text>
-        <text class="ts t-mono" x="235" y="115" text-anchor="middle" font-size="10">Recalculates P'_0 ~ P'_6</text>
+        <rect x="155" y="40" width="180" height="95" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="245" y="68" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">XOR Tree Generator</text>
+        <text class="ts t-mut" x="245" y="90" text-anchor="middle" font-size="11">5-Stage Multi-Input XOR</text>
+        <rect x="175" y="98" width="140" height="22" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="245" y="113" text-anchor="middle" font-size="10" fill="var(--ink)">Calculates P'_0 ~ P'_6</text>
 
-        <line x1="310" y1="95" x2="380" y2="95" stroke="var(--core)" stroke-width="2"/>
-        <line x1="160" y1="180" x2="380" y2="180" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="335" y1="88" x2="400" y2="88" stroke="var(--core)" stroke-width="2"/>
+        <line x1="155" y1="160" x2="400" y2="160" stroke="var(--analog)" stroke-width="2"/>
 
         <!-- Syndrome Comparator Matrix -->
-        <rect x="380" y="70" width="140" height="140" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="450" y="100" text-anchor="middle" font-weight="700" fill="var(--warn)">Syndrome Logic</text>
-        <text class="ts t-mono" x="450" y="125" text-anchor="middle" font-size="11">S = P_stored ⊕ P'_recalc</text>
-        <text class="ts t-mono" x="450" y="150" text-anchor="middle" font-size="11">Overall Parity: P_all</text>
+        <rect x="400" y="55" width="180" height="135" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="490" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">Syndrome Logic</text>
+        <rect x="415" y="95" width="150" height="25" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="490" y="112" text-anchor="middle" font-size="11">S = P_stored &oplus; P'_calc</text>
+        <rect x="415" y="128" width="150" height="25" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="490" y="145" text-anchor="middle" font-size="11">Overall Parity: P_all</text>
+        <text class="ts t-mut" x="490" y="174" text-anchor="middle" font-size="10">Combinational Decoder</text>
 
         <!-- Branch 1: Single bit error -> Corrector MUX -->
-        <line x1="520" y1="100" x2="600" y2="100" stroke="var(--ok)" stroke-width="2.5"/>
-        <text class="ts" x="560" y="90" text-anchor="middle" font-size="10" fill="var(--ok)">Single Bit Flip</text>
+        <line x1="580" y1="88" x2="650" y2="88" stroke="var(--ok)" stroke-width="2.5"/>
+        <rect x="585" y="70" width="60" height="16" fill="var(--surface)" rx="3"/>
+        <text class="ts" x="615" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ok)">Single Bit</text>
 
-        <rect x="600" y="65" width="130" height="80" rx="4" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
-        <text class="ts" x="665" y="90" text-anchor="middle" font-weight="700" fill="var(--ok)">1-of-32 Bit Inverter</text>
-        <text class="ts t-mut" x="665" y="110" text-anchor="middle" font-size="10">XOR Dynamic Fix</text>
-        <line x1="730" y1="105" x2="755" y2="105" stroke="var(--ok)" stroke-width="3"/>
-        <text class="ts" x="745" y="95" font-weight="700" fill="var(--ok)">D_corrected</text>
+        <rect x="650" y="50" width="170" height="75" rx="6" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="735" y="75" text-anchor="middle" font-weight="700" font-size="12" fill="var(--ok)">1-of-32 Bit Inverter</text>
+        <text class="ts t-mono" x="735" y="95" text-anchor="middle" font-size="10">XOR Dynamic Flip</text>
+        <text class="ts t-mono" x="735" y="112" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ok)">Output D_corrected</text>
 
         <!-- Branch 2: Double bit error -> NMI interrupt -->
-        <line x1="520" y1="170" x2="600" y2="170" stroke="var(--bad)" stroke-width="2.5"/>
-        <text class="ts" x="560" y="160" text-anchor="middle" font-size="10" fill="var(--bad)">Double Bit (Fatal)</text>
+        <line x1="580" y1="160" x2="650" y2="160" stroke="var(--bad)" stroke-width="2.5"/>
+        <rect x="585" y="142" width="60" height="16" fill="var(--surface)" rx="3"/>
+        <text class="ts" x="615" y="154" text-anchor="middle" font-size="10" font-weight="700" fill="var(--bad)">Double Bit</text>
 
-        <rect x="600" y="155" width="130" height="60" rx="4" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="665" y="180" text-anchor="middle" font-weight="700" fill="var(--bad)">Safety Trigger</text>
-        <text class="ts t-mono" x="665" y="200" text-anchor="middle" font-size="10" fill="var(--bad)">Assert NMI / HardFault</text>
+        <rect x="650" y="135" width="170" height="75" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="735" y="160" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">Safety Core Trip</text>
+        <text class="ts t-mono" x="735" y="180" text-anchor="middle" font-size="10" fill="var(--bad)">Assert HardFault / NMI</text>
+        <text class="ts" x="735" y="198" text-anchor="middle" font-size="9" fill="var(--muted)">Lockdown to Safe State</text>
 
-        <!-- Truth Table below -->
-        <rect x="80" y="240" width="600" height="80" fill="var(--sunk)" stroke="var(--line)" rx="6"/>
-        <text class="ts" x="380" y="260" text-anchor="middle" font-weight="700">硬體症狀碼 (Syndrome) 判定真值表</text>
-        <text class="ts t-mono" x="120" y="285" font-size="11">S == 0 且 P_all 正確 &rarr; 資料無誤 (No Error)</text>
-        <text class="ts t-mono" x="120" y="305" font-size="11" fill="var(--ok)">S != 0 且 P_all 錯誤 &rarr; 單一位元翻轉已自動修復 (Single-Bit Corrected)</text>
-        <text class="ts t-mono" x="480" y="285" font-size="11" fill="var(--bad)">S != 0 且 P_all 正確 &rarr; 雙位元不可修正錯誤 (Fatal Double-Bit Error &rarr; NMI)</text>
+        <!-- Truth Table below (Clean 3 stacked rows with plenty of room) -->
+        <rect x="30" y="240" width="780" height="115" fill="var(--sunk)" stroke="var(--line)" rx="8"/>
+        <text class="ts" x="420" y="262" text-anchor="middle" font-weight="700" font-size="12" fill="var(--ink)">硬體症狀碼 (Syndrome Matrix) 判定真值表與系統動作</text>
+
+        <line x1="45" y1="272" x2="795" y2="272" stroke="var(--line)"/>
+
+        <circle cx="55" cy="287" r="4" fill="var(--muted)"/>
+        <text class="ts t-mono" x="70" y="291" font-size="11">S == 0 且 P_all 正確</text>
+        <text class="ts" x="250" y="291" font-size="11" fill="var(--muted)">&rarr; 資料完整無誤 (No Error)，直接傳遞至 CPU 核心，零時脈週期延遲</text>
+
+        <circle cx="55" cy="312" r="4" fill="var(--ok)"/>
+        <text class="ts t-mono" x="70" y="316" font-size="11" fill="var(--ok)">S != 0 且 P_all 錯誤</text>
+        <text class="ts" x="250" y="316" font-size="11" fill="var(--ok)">&rarr; 單一位元翻轉已自動硬體修復 (Single-Bit Corrected)，計數器記錄累計 SEU 事件</text>
+
+        <circle cx="55" cy="337" r="4" fill="var(--bad)"/>
+        <text class="ts t-mono" x="70" y="341" font-size="11" fill="var(--bad)">S != 0 且 P_all 正確</text>
+        <text class="ts" x="250" y="341" font-size="11" fill="var(--bad)">&rarr; 雙位元不可修正錯誤 (Fatal Double-Bit Error &rarr; NMI)，立即進入安全受控狀態</text>
       </svg>
       <figcaption>圖 1.2：SRAM 全硬體 SECDED 漢明碼 XOR 生成樹、症狀碼矩陣與自動動態位元反轉電路</figcaption>
     </div>
