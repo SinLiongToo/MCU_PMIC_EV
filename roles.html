@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>職務地圖與求職指南 · MCU Notes</title>
+<meta name="description" content="車用微控制器與半導體產業求職全攻略：車規 MCU 系統架構師、嵌入式韌體工程師、類比 IC 設計師、ISO 26262 功能安全專員、測試產品工程師：職責劃分、核心工具、必修章節與高頻面試題解析。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="roles" data-ch="app">
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article>
+    <div class="eyebrow">Career Map · 職務地圖與求職指南</div>
+    <h1>車用 MCU 職涯地圖：各崗位技能樹與面試高頻題</h1>
+    <p class="lead">車載微控制器（MCU）領域橫跨半導體晶圓、類比混合訊號電路、底層嵌入式韌體、車載網路通訊與車規功能安全（ISO 26262）。不同的工程崗位對專業技能的要求有何側重？本章梳理了六大核心研發職位、推薦閱讀章節、必備工具鏈與量產級面試真題。</p>
+
+    <h2 id="roles-matrix">1. 六大研發職位與技能對照表</h2>
+    <div class="tblwrap"><table>
+      <tr><th>工程職位</th><th>核心職責焦點</th><th>日常關鍵工具鏈</th><th>推薦優先研讀章節</th></tr>
+      <tr><td><b>MCU 系統架構師</b><br>(System Architect)</td><td>定義晶片規格、CPU 核心選擇、匯流排拓撲、高壓與低壓分區、功率預算</td><td>Enterprise Architect, MATLAB/Simulink, PSpice</td><td><a href="core.html">01 核心</a>、<a href="analog.html">02 類比</a>、<a href="process.html">04 製程</a></td></tr>
+      <tr><td><b>嵌入式車載韌體工程師</b><br>(Firmware / AUTOSAR)</td><td>開發 MCAL 驅動、SafeTlib 安全庫整合、LIN/CAN 協議棧、庫倫計與卡爾曼濾波</td><td>IAR Embedded Workbench, Keil, Lauterbach TRACE32, Git</td><td><a href="core.html">01 核心</a>、<a href="application.html">03 BMS</a>、<a href="safety.html">06 安全</a></td></tr>
+      <tr><td><b>類比混合訊號 IC 設計師</b><br>(Mixed-Signal Designer)</td><td>設計高精度 $\Delta\Sigma$ ADC、PGA 放大器、Bandgap 基準源、42V 內部 LDO</td><td>Cadence Virtuoso, Spectre, Synopsys CustomSim</td><td><a href="analog.html">02 類比</a>、<a href="process.html">04 製程</a>、<a href="test.html">05 測試</a></td></tr>
+      <tr><td><b>ISO 26262 功能安全專員</b><br>(FuSa Engineer)</td><td>執行 HARA 危險分析、建構安全機制、編寫安全手冊（Safety Manual）、FMEDA</td><td>Ansys Medini Analyze, Polarion, JIRA</td><td><a href="safety.html">06 安全</a>、<a href="lessons.html">案例</a></td></tr>
+      <tr><td><b>BMS 系統應用工程師</b><br>(Application Engineer - AE)</td><td>客戶現場技術支援、分流器選型、車載電磁相容（EMC）調優、疑難雜症排查</td><td>Vector CANoe/CANalyzer, 示波器, 功率分析儀</td><td><a href="application.html">03 BMS</a>、<a href="designer.html">設計器</a>、<a href="lessons.html">案例</a></td></tr>
+      <tr><td><b>晶圓測試與產品工程師</b><br>(TE / PE)</td><td>設計 ATE 測試程式、類比電阻 eFuse 修調演算法、全溫區良率提升與分析</td><td>Teradyne / Advantest ATE, Python, JMP, YieldHub</td><td><a href="test.html">05 測試</a>、<a href="process.html">04 製程</a></td></tr>
+    </table></div>
+
+    <h2 id="interview-prep">2. 車規 MCU 高頻面試題與解答技巧</h2>
+
+    <div class="callout" style="--c:var(--core)">
+      <b>Q1: 為什麼車用 BMS 電流量測偏好 $\Delta\Sigma$ ADC 而非 SAR ADC？</b><br>
+      <b>參考解答要點：</b> 
+      1. <b>動態範圍與解析度：</b> 分流器阻值極小（$100\,\mu\Omega$），待機暗電流只有數微伏，而啟動電流高達上百毫伏，動態範圍超過 100 dB。$\Delta\Sigma$ 透過超採樣與雜訊整形，能輕鬆達成 16-bit 以上有效位元數（ENOB）。<br>
+      2. <b>本質抗干擾能力：</b> 車載環境存在發電機與逆變器強烈 PWM 高頻噪聲。$\Delta\Sigma$ 自帶積分特性與 Sinc 數位降採樣濾波，可在 50Hz/60Hz 工頻及高頻開關雜訊點產生傳輸零點（Notch），提供高達 80 dB 的共模與工頻抑制比，而 SAR ADC 則對採樣瞬間的瞬態雜訊極度敏感。
+    </div>
+
+    <div class="callout" style="--c:var(--safety)">
+      <b>Q2: 傳統窗口看門狗與挑戰-應答（Challenge-Response）看門狗有何關鍵差異？</b><br>
+      <b>參考解答要點：</b> 
+      傳統窗口看門狗僅約束餵狗的「時間點」（太早或太晚皆報錯），但若 CPU 陷入局部死循環（例如 while(1) 內包含餵狗代碼），傳統看門狗無法察覺。挑戰-應答看門狗在時間窗口的基礎上引入了「邏輯與算法檢驗」：看門狗硬體隨機產生偽隨機問卷（Seed），MCU 必須在關鍵任務（ADC 採樣、RAM ECC 檢查、堆疊指針檢驗）執行完畢後將各狀態代入多項式，計算出唯一正確的金鑰寫入。若程序未完整走過所有安全任務，即使時間精確也會被看門狗判定為失效而復位。
+    </div>
+
+    <div class="callout" style="--c:var(--analog)">
+      <b>Q3: 車用微控制器如何抵禦 ISO 7637-2 Pulse 5b（拋負載 Load Dump）？</b><br>
+      <b>參考解答要點：</b> 
+      發電機在全負荷下電瓶突然斷開會引發長達 400ms、電壓高達 40V 以上的脈衝。防禦層面分為：<br>
+      1. <b>製程支撐：</b> 採用 BCD 製程，功率 LDMOS 元件崩潰電壓設計在 45V 以上；<br>
+      2. <b>晶片內主動箝位：</b> 當感測到 VBAT 超過 38V 時，晶片內主動 ESD 箝位電路導通，將瞬態能量引流至地；<br>
+      3. <b>高 PSRR 線性穩壓：</b> 內部高壓 LDO 在輸入劇烈暴漲時，具備足夠的頻寬與瞬態響應速度，確保內部 3.3V 與 1.8V 核心邏輯電源軌不產生過沖或塌陷。
+    </div>
+
+    <div class="callout" style="--c:var(--test)">
+      <b>Q4: 什麼是 Wettable Flank QFN？為什麼車廠強烈要求這項封裝特性？</b><br>
+      <b>參考解答要點：</b> 
+      標準 QFN 引腳切面在晶片分片切割時裸露且無電鍍，在 SMT 回流焊時焊錫無法爬附在側面，僅能焊接底面。這導致車廠 SMT 產線的自動光學檢測機（AOI）無法透過俯視鏡頭辨識焊點飽滿度，無法確認是否有虛焊。Wettable Flank 封裝在引腳邊緣預製了階梯凹槽並進行化學鍍錫，焊接時焊錫會自動爬升形成明顯的側向焊角（Solder Fillet），使 AOI 能 100% 精確識別焊接缺陷，滿足車規零缺陷（Zero PPM）產線要求。
+    </div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

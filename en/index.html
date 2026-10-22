@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU Notes · Automotive &amp; Precision Analog MCU Knowledge Map</title>
+<meta name="description" content="Automotive microcontroller & precision analog PMIC knowledge platform: From Arm Cortex-M core architecture, dual Sigma-Delta ADC, Battery Management Systems (BMS), high-voltage BCD semiconductor processes, AEC-Q100 qualification to ISO 26262 ASIL-C functional safety, accompanied by interactive simulations and spec designer. Based on Infineon PSoC™ 4 HVPA-144K.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="index">
+<main class="hub">
+  <div class="eyebrow">MCU Notes · Automotive MCU Knowledge Map</div>
+  <h1>Automotive &amp; Precision Analog MCUs: From Microarchitecture to BMS</h1>
+  <p class="lead">Modern automotive microcontrollers (MCUs) are no longer simple code executors; they are fully integrated Systems-on-Chip (SoC) combining a direct 42V battery PMIC regulator, dual 16-bit differential $\Delta\Sigma$ analog front-ends (AFE), in-vehicle LIN/CAN transceivers, and ISO 26262 ASIL-C functional safety. Grounded on the <b>Infineon PSoC™ 4 HVPA-144K</b> architecture, this knowledge map demystifies every critical layer of automotive MCU engineering.</p>
+
+  <div class="badge-row">
+    <span class="badge">Reference SoC <b>Infineon PSoC™ 4 HVPA-144K</b></span>
+    <span class="badge">Core <b>Arm® Cortex®-M0+ @ 48 MHz</b></span>
+    <span class="badge">Analog Front-End <b>Dual 16-bit $\Delta\Sigma$ ADC + AGC</b></span>
+    <span class="badge">HV Power <b>3.6V ~ 28V Direct (Survives 42V)</b></span>
+    <span class="badge">AEC Grade <b>AEC-Q100 Grade 1 (-40°C~+125°C)</b></span>
+    <span class="badge">Safety <b>ISO 26262 ASIL-C Ready</b></span>
+  </div>
+
+  <button class="hero-find" type="button" data-open-find>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <span>Search MCU topics, registers, analog specs: Delta-Sigma, AGC, Coulomb Counting, Load Dump, WDT…</span><kbd>Ctrl K</kbd>
+  </button>
+
+  <nav class="flow" aria-label="MCU Knowledge Pathway">
+    <a href="core.html" style="--c:var(--core)"><span class="st">01 · CORE</span><b>Architecture</b><small>Cortex-M0+, AHB/APB bus matrix, DMA, Flash/SRAM ECC</small></a>
+    <a href="analog.html" style="--c:var(--analog)"><span class="st">02 · ANALOG &amp; PMIC</span><b>Precision Analog</b><small>Dual $\Delta\Sigma$ ADCs, fast AGC, 42V PMIC regulator, shunt</small></a>
+    <a href="application.html" style="--c:var(--app)"><span class="st">03 · BMS APP</span><b>Automotive BMS</b><small>Intelligent Battery Sensor (IBS), Coulomb count, SoC/SoH, LIN</small></a>
+    <a href="process.html" style="--c:var(--fab)"><span class="st">04 · PROCESS</span><b>HV Silicon Process</b><small>BCD smart power process, DTI trench isolation, load dump</small></a>
+    <a href="test.html" style="--c:var(--test)"><span class="st">05 · TEST &amp; AEC</span><b>Test &amp; Qualification</b><small>Wafer trimming, drift calibration, AEC-Q100, wettable QFN</small></a>
+    <a href="safety.html" style="--c:var(--safety)"><span class="st">06 · SAFETY</span><b>Functional Safety</b><small>ISO 26262 ASIL-C, Window Watchdog, BIST, FMEDA &amp; FIT</small></a>
+  </nav>
+
+  <h2 class="grp-h">Knowledge Chapters</h2>
+  <div class="cards">
+    <a class="card" href="core.html" style="--c:var(--core)"><span class="k">Chapter 1 · Core Architecture</span><h3>Core &amp; System Microarchitecture</h3>
+      <p>Arm Cortex-M0+ 2-stage pipeline, fast single-cycle I/O ports, Nested Vectored Interrupt Controller (NVIC), AHB-Lite bus matrix, 8-channel DMA, and SECDED ECC protected Flash and SRAM.</p>
+      <ul><li>ARM Cortex-M0+</li><li>AHB-Lite / APB</li><li>DMA 8-ch</li><li>SECDED ECC</li><li>Deep Sleep</li></ul></a>
+
+    <a class="card" href="analog.html" style="--c:var(--analog)"><span class="k">Chapter 2 · Precision Analog &amp; PMIC</span><h3>Precision Analog &amp; High-Voltage Power</h3>
+      <p>Precision Analog Subsystem (PACSS) designed for microvolt-level shunt current sensing: dual 16-bit differential $\Delta\Sigma$ ADCs, fast automatic gain control (AGC), Sinc³ digital decimation filters, and direct 42V-tolerant battery PMIC regulators.</p>
+      <ul><li>Dual $\Delta\Sigma$ ADC</li><li>PGA Gains 1x-64x</li><li>Fast AGC LUT</li><li>42V PMIC</li><li>Sinc³ Filter</li></ul></a>
+
+    <a class="card" href="application.html" style="--c:var(--app)"><span class="k">Chapter 3 · Automotive BMS</span><h3>Automotive Battery Management Systems</h3>
+      <p>Intelligent Battery Sensor (IBS) and Battery Disconnect Unit (BDU) algorithms: Coulomb counting for State-of-Charge (SoC), Kalman filter fusion, OCV recalibration, cold-cranking dynamic impedance for State-of-Health (SoH), and LIN 2.2A bus.</p>
+      <ul><li>IBS Sensor</li><li>Coulomb Counting</li><li>Extended Kalman</li><li>SoH Impedance</li><li>LIN 2.2A</li></ul></a>
+
+    <a class="card" href="process.html" style="--c:var(--fab)"><span class="k">Chapter 4 · High-Voltage Process</span><h3>High-Voltage Semiconductor Integration</h3>
+      <p>BCD (Bipolar-CMOS-DMOS) smart power fabrication technology: integrating 1.8V dense digital logic, microvolt precision analog bipolar references, and 42V DMOS power switches on a single silicon die with Deep Trench Isolation (DTI).</p>
+      <ul><li>BCD Smart Power</li><li>Deep Trench DTI</li><li>Noise Immunity</li><li>ISO 7637-2</li><li>Thermal Packaging</li></ul></a>
+
+    <a class="card" href="test.html" style="--c:var(--test)"><span class="k">Chapter 5 · Test, Calibration &amp; AEC</span><h3>Testing, Trimming &amp; AEC-Q100 Qualification</h3>
+      <p>From wafer probe (CP) to zero-defect automotive production: on-chip eFuse/laser trimming of analog offset, full-temperature range drift calibration (-40°C to +125°C), AEC-Q100 stress reliability tests, and wettable-flank QFN packaging for 100% AOI optical inspection.</p>
+      <ul><li>Wafer Probe CP/FT</li><li>eFuse Analog Trim</li><li>Thermal Drift</li><li>AEC-Q100 Grade 1</li><li>Wettable QFN</li></ul></a>
+
+    <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Chapter 6 · Functional Safety</span><h3>ISO 26262 ASIL-C Functional Safety</h3>
+      <p>Architecting fail-safe automotive electronics: Challenge-Response Window Watchdog Timer, memory ECC fault injection diagnostics, analog loopback and wire-break self-test, FMEDA analysis, and random hardware failure metrics (FIT, SPFM > 97%, LFM > 80%).</p>
+      <ul><li>ISO 26262 ASIL-C</li><li>Window WDT</li><li>Loopback BIST</li><li>ECC Fault Inject</li><li>FMEDA &amp; FIT</li></ul></a>
+  </div>
+
+  <h2 class="grp-h">Interactive Tools</h2>
+  <div class="cards">
+    <a class="card tool wide" href="lab.html" style="--c:var(--accent)">
+      <svg class="ic" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="10" y="10" width="44" height="44" rx="8"/><circle cx="32" cy="32" r="12"/><path d="M32 8v8M32 48v8M8 32h8M48 32h8M23 23l6 6M35 35l6 6" opacity=".5"/></svg>
+      <div><span class="k">MCU Lab · Interactive Simulation Benches</span><h3>Tweak MCU parameters in real-time and observe analog &amp; system waveforms</h3>
+      <p>8 mathematical simulators: Shunt sensing &amp; AGC dynamic range, Coulomb counting SoC drift, ISO 7637-2 42V load dump transient response, Window Watchdog timing, Sinc³ filter Bode response, SECDED ECC bit injection, LIN bus bitstream, and analog wafer trimming yield upgrade.</p>
+      <ul><li>Shunt AGC</li><li>SoC Coulomb Drift</li><li>42V Load Dump</li><li>Window WDT</li><li>Sinc³ Filter</li><li>ECC Injection</li><li>LIN Transceiver</li><li>Analog Trimming</li></ul></div></a>
+
+    <a class="card tool wide" href="designer.html" style="--c:var(--analog)">
+      <svg class="ic" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="8" y="8" width="48" height="48" rx="6"/><path d="M8 24h48M24 24v32M40 8v16" opacity=".4"/><path d="M14 16h6M30 40l6 6 10-10" stroke-width="3"/></svg>
+      <div><span class="k">Spec Designer · Specification &amp; Dimensioning</span><h3>Derive shunt resistors, ADC margins, standby power, and memory layout</h3>
+      <p>Input battery parameters and firmware specs to compute thermal power dissipation, LSB microvolt resolution, battery parking drain days, linker script memory maps, and copy-ready C header configuration files.</p>
+      <ul><li>BMS Shunt Frontend</li><li>Standby Sleep Budget</li><li>Firmware Memory Map</li></ul></div></a>
+  </div>
+
+  <h2 class="grp-h">Architectural Comparison</h2>
+  <div class="tblwrap"><table>
+    <tr><th>Feature</th><th>Standard General MCU</th><th>Discrete Architecture (MCU + External AFE)</th><th>Integrated HV Precision MCU (PSoC™ 4 HVPA)</th></tr>
+    <tr><td><b>Form Factor</b></td><td>Single-chip digital processor</td><td>2 or 3 ICs (MCU + PMIC + AFE)</td><td><b>Monolithic high-voltage mixed-signal SoC</b></td></tr>
+    <tr><td><b>Power Supply</b></td><td>3.3V / 5.0V only (needs buck regulator)</td><td>External dedicated automotive PMIC</td><td><b>Direct connection to 12V/24V battery</b> (42V dump tolerant)</td></tr>
+    <tr><td><b>Current Accuracy</b></td><td>12-bit SAR ADC (cannot resolve µV)</td><td>Dedicated external 16-bit / 24-bit AFE</td><td><b>Integrated dual 16-bit $\Delta\Sigma$ ADC + fast AGC</b></td></tr>
+    <tr><td><b>PCB Footprint</b></td><td>Many external passives, complex wiring</td><td>Large (needs SPI/I2C isolated bus routing)</td><td><b>Ultra-compact (fits directly on battery terminal clamp)</b></td></tr>
+    <tr><td><b>Quiescent Current</b></td><td>Higher sleep current, external wake logic</td><td>Must coordinate sleep across multiple ICs</td><td><b>Deep Sleep mode with dark current &lt; 15 µA</b></td></tr>
+    <tr><td><b>Functional Safety</b></td><td>QM or ASIL-A typically</td><td>Complex safety diagnosis across chip interfaces</td><td><b>Native ASIL-C certified architecture with hardware BIST</b></td></tr>
+    <tr><td><b>Target Applications</b></td><td>Body controllers, lighting, door units</td><td>High-voltage EV traction battery pack BCU</td><td><b>Intelligent Battery Sensor (IBS), Battery Disconnect (BDU)</b></td></tr>
+  </table></div>
+</main>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

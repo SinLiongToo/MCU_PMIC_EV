@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>業界案例與排查手冊 · MCU Notes</title>
+<meta name="description" content="車用微控制器量產現場真實重大失效事故全剖析：接觸器吸合地彈、嚴寒冷啟動電壓塌陷、分流電阻塞貝克熱電效應、LIN 總線短路與窗口看門狗溫漂重置，附工程排查決策樹與對策。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="lessons" data-ch="safety">
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article>
+    <div class="eyebrow">Lessons Learned · 業界案例與踩坑手冊</div>
+    <h1>車用 MCU 踩坑手冊：五大真實故障案例與排查矩陣</h1>
+    <p class="lead">車規半導體工程師常說：「每一個設計準則與車規標準背後，都是一次昂貴的召回事件。」本章記錄了車載微控制器在實車環境中踩過的典型致命大坑，深入剖析<b>現象 → 根因 → 對策 → 教訓</b>，並提供系統化的現場排查矩陣。</p>
+
+    <h2 id="case1-groundbounce">1. 案例一：高壓接觸器吸合瞬間引發地彈 (Ground Bounce) 與 ADC 飽和死鎖</h2>
+    <div class="callout" style="--c:var(--bad)">
+      <b>事故現象：</b> 某電動車在踩下剎車進行大功率能量回收或快充繼電器吸合瞬間，BMS 採樣晶片連續 500 ms 讀取到全 0xFFFF 的飽和電流值，隨後觸發硬體 BOD 重置，導致儀表跳出電池系統故障報警。
+    </div>
+    <h3>根因分析 (Root Cause)</h3>
+    <p>高壓接觸器在接通瞬間，強大的電容預充電流脈衝（高達數百安培，$dI/dt &gt; 10^7\text{ A/s}$）流經車身搭鐵點。由於搭鐵銅排與底盤螺栓存在數十毫微亨利（$\text{nH}$）的寄生電感，產生了強烈地彈電壓：</p>
+    <div class="math-block">
+      \[V_{\text{bounce}} = L_{\text{parasitic}} \cdot \frac{dI}{dt} \approx 25\text{ nH} \times 10^7\text{ A/s} = 250\text{ mV}\]
+      分離式架構中，AFE 晶片的模擬地（AGND）與 MCU 數位地（DGND）因佈線回路過長形成電位差，導致差分輸入引腳的共模電壓瞬間被拉出晶片允許範圍（Below Ground），觸發晶片內部 ESD 保護二極體導通，寄生 NPN 晶體管進入微閂鎖狀態。
+    </div>
+    <h3>解決對策與工程防範 (Countermeasure)</h3>
+    <ul>
+      <li><b>單晶片高壓整合（如 PSoC™ 4 HVPA）：</b> 將 AFE 與 MCU 整合於單一封裝內，利用底部大面積接地裸露焊盤（EPAD）實現星型單點接地，內部 AGND 與 DGND 接地阻抗壓低至毫歐姆以下。</li>
+      <li><b>差分輸入端加入 RC 濾波與雙向鉗位：</b> 在分流器採樣引腳加入 $10\,\Omega + 10\,\text{nF}$ 差分與共模 RC 濾波器，濾除高頻 $dI/dt$ 毛刺。</li>
+    </ul>
+
+    <h2 id="case2-coldcrank">2. 案例二：嚴寒極端冷啟動 (Cold Crank) 造成電壓暴跌與 BOD 死鎖循環</h2>
+    <div class="callout" style="--c:var(--warn)">
+      <b>事故現象：</b> 某東北寒冷測試場（-35°C），車輛啟動瞬間，MCU 頻繁發生復位，LIN 總線中斷發送，未能及時監控到啟動機短路，保險絲熔斷。
+    </div>
+    <h3>根因分析 (Root Cause)</h3>
+    <p>低溫下電瓶內阻急遽增大，啟動馬達抽載瞬間，12V 電瓶電壓瞬間崩塌至 <b>3.2V ~ 3.5V</b>。傳統車規微控制器仰賴外部 5V 轉 3.3V LDO，當輸入只有 3.2V 時，LDO 發生壓差飽和（Dropout），輸出電壓跌破 MCU 內部欠壓檢測閾值（Brown-out Detect, BOD = 2.7V），觸發晶片復位。復位後啟動馬達停止抽載，電壓回升，晶片再次開機並啟動馬達，再度跌破 BOD，陷入無休止的<b>死鎖重啟循環（Reset Loop Storm）</b>。</p>
+    <h3>解決對策與工程防範 (Countermeasure)</h3>
+    <ul>
+      <li><b>採用超寬壓輸入 MCU：</b> PSoC™ 4 HVPA 的內部高壓線性穩壓器支援最低 <b>3.6V 直接輸入</b>，且內部 1.8V 核心調節器具備超低壓差（Dropout &lt; 200 mV），保證即便 VBAT 短暫跌至 3.0V，核心 CPU 依然能穩定運行並正確控制接觸器。</li>
+      <li><b>設定軟體 BOD 遲滯（Hysteresis）：</b> 將開機電壓閥值與重置閥值設定為 100 mV 遲滯間隙，避免在邊界電平抖動。</li>
+    </ul>
+
+    <h2 id="case3-seebeck">3. 案例三：分流電阻塞貝克熱電效應 (Seebeck Effect) 導致庫倫計長期漂移</h2>
+    <div class="callout" style="--c:var(--app)">
+      <b>事故現象：</b> 某混合動力車輛在夏季長途行駛後，電池剩餘電量顯示 85%，但停車靜置數小時後，電量突降至 62%，車主抱怨電池容量嚴重虛標。
+    </div>
+    <h3>根因分析 (Root Cause)</h3>
+    <p>分流器由銅焊盤（Copper）與錳銅合金（Manganin）兩種不同金屬焊接而成。在車輛大功率充電或行駛時，分流器一側靠近發熱的引擎機艙，另一側靠近底盤通風口，兩端產生了高達 <b>$\Delta T = 15^\circ\text{C}$ 的溫差</b>。</p>
+    <div class="math-block">
+      根據熱電效應（Seebeck Effect），異質金屬溫差產生額外熱電勢：<br>
+      \[V_{\text{Seebeck}} = S_{\text{Cu-Manganin}} \cdot \Delta T \approx 1.5\,\mu\text{V/}^\circ\text{C} \times 15^\circ\text{C} = 22.5\,\mu\text{V}\]
+      在 \(100\,\mu\Omega\) 分流電阻下，這相當於產生了 <b>225 mA 的虛假直流電流</b>！長途行駛 6 小時累計產生了 1.35 Ah 的虛假電量。
+    </div>
+    <h3>解決對策與工程防範 (Countermeasure)</h3>
+    <ul>
+      <li><b>晶片內自動斬波歸零（Chopping）：</b> 週期性反轉 ADC 輸入多工器極性，將直流熱電勢調變為高頻交流信號，再由數位 Sinc³ 濾波器徹底抵消。</li>
+      <li><b>對稱熱佈局（Thermal Symmetry Layout）：</b> 確保分流電阻兩端銅排體積與熱阻嚴格對稱，消除溫差。</li>
+    </ul>
+
+    <h2 id="case4-linshort">4. 案例四：LIN 匯流排短路至 12V 火線造成晶片擊穿</h2>
+    <div class="callout" style="--c:var(--safety)">
+      <b>事故現象：</b> 車輛線束在車門鉸鏈處磨損，LIN 訊號線與 12V 常電火線短路，導致感測器晶片整片燒黑。
+    </div>
+    <h3>根因分析與對策</h3>
+    <p>部分廠商為降低成本採用了耐壓僅 5V 的微控制器外掛未隔離收發器。當線束短路或發電機拋負載發生時，高達 40V 的電壓直接灌入 LIN 引腳。PSoC 4 HVPA 晶片內部整合了<b>車規級高壓 LIN 2.2A 收發器實體層</b>，其 LIN 引腳支援 \(-27\text{V} \sim +42\text{V}\) 的持續直流耐壓，短路至電瓶正負極均可自我保護，杜絕火災隱患。</p>
+
+    <h2 id="troubleshooting-matrix">5. 車用 MCU 系統排查決策矩陣</h2>
+    <div class="tblwrap"><table>
+      <tr><th>異常現象</th><th>最可能根因</th><th>第一步排查動作</th><th>推薦修復對策</th></tr>
+      <tr><td><b>ADC 讀數隨溫度升高持續漂移</b></td><td>Offset 溫漂或未啟用 Chopping</td><td>示波器測量輸入跨壓，檢查暫存器 <code>PACSS_CHOP</code></td><td>啟用硬體 Auto-zero 斬波，並校準 eFuse 溫漂參數</td></tr>
+      <tr><td><b>隨機觸發 NMI 異常中斷</b></td><td>SRAM 或 Flash 發生雙位元翻轉 (SEU)</td><td>讀取 <code>CPUSS_ECC_STATUS</code> 與 <code>FAULT_STATUS</code> 暫存器</td><td>加強電源去耦電容，檢查 PCB 是否緊鄰高壓點火線圈</td></tr>
+      <tr><td><b>看門狗在高低溫下頻繁重置</b></td><td>內部 RC 振盪器溫漂導致時間窗口偏離</td><td>量測輸出頻率，檢查看門狗餵狗週期</td><td>加大窗口冗餘（將窗口設為 ±25% 裕度）或用外部晶振</td></tr>
+      <tr><td><b>LIN 通訊在低溫下丟包</b></td><td>波特率偏差超過 ±1.5%</td><td>檢查 LIN Synch 欄位自動波特率校準功能</td><td>開啟 PSoC 4 硬體自動同步計時校驗機制</td></tr>
+    </table></div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

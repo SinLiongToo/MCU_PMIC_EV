@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Careers &amp; Roles · MCU Notes</title>
+<meta name="description" content="Automotive MCU & semiconductor career guide: System architects, embedded firmware engineers (AUTOSAR), analog IC designers, ISO 26262 functional safety specialists, and test/product engineers (TE/PE).">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="roles" data-ch="app">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Career Map · Roles &amp; Interview Guide</div>
+    <h1>Automotive MCU Career Map: Roles, Skills &amp; Interview Questions</h1>
+    <p class="lead">The automotive microcontroller domain spans wafer fabrication, mixed-signal analog IC design, low-level firmware, automotive networking, and ISO 26262 functional safety. Here is a breakdown of the key roles, toolchains, and interview questions.</p>
+
+    <h2 id="roles-matrix">1. Six Key Engineering Disciplines</h2>
+    <div class="tblwrap"><table>
+      <tr><th>Role</th><th>Primary Responsibility</th><th>Key Toolchain</th><th>Recommended Chapters</th></tr>
+      <tr><td><b>MCU System Architect</b></td><td>Silicon specs, core selection, bus matrix, power domains, packaging</td><td>Enterprise Architect, MATLAB, PSpice</td><td><a href="core.html">01 Core</a>, <a href="analog.html">02 Analog</a>, <a href="process.html">04 Fab</a></td></tr>
+      <tr><td><b>Embedded Firmware Engineer</b></td><td>MCAL drivers, SafeTlib integration, LIN/CAN stacks, Kalman filtering</td><td>IAR, Keil, Lauterbach TRACE32, Git</td><td><a href="core.html">01 Core</a>, <a href="application.html">03 BMS</a>, <a href="safety.html">06 Safety</a></td></tr>
+      <tr><td><b>Mixed-Signal IC Designer</b></td><td>Delta-Sigma ADCs, PGA amplifiers, bandgaps, internal 42V LDOs</td><td>Cadence Virtuoso, Spectre, CustomSim</td><td><a href="analog.html">02 Analog</a>, <a href="process.html">04 Fab</a>, <a href="test.html">05 Test</a></td></tr>
+      <tr><td><b>ISO 26262 FuSa Engineer</b></td><td>HARA hazard analysis, safety mechanisms, Safety Manual, FMEDA</td><td>Ansys Medini Analyze, Polarion</td><td><a href="safety.html">06 Safety</a>, <a href="lessons.html">Lessons</a></td></tr>
+      <tr><td><b>BMS Application Engineer</b></td><td>Customer support, shunt selection, EMC mitigation, field debugging</td><td>Vector CANoe/CANalyzer, Oscilloscopes</td><td><a href="application.html">03 BMS</a>, <a href="designer.html">Designer</a>, <a href="lessons.html">Lessons</a></td></tr>
+      <tr><td><b>Test &amp; Product Engineer</b></td><td>ATE test programs, wafer probe eFuse trimming, yield optimization</td><td>Teradyne/Advantest ATE, Python, JMP</td><td><a href="test.html">05 Test</a>, <a href="process.html">04 Fab</a></td></tr>
+    </table></div>
+
+    <h2 id="interview-prep">2. Automotive High-Frequency Interview Prep</h2>
+    <div class="callout" style="--c:var(--core)">
+      <b>Q1: Why are Sigma-Delta ADCs preferred over SAR ADCs for automotive BMS current sensing?</b><br>
+      <b>Key points:</b> Dynamic range (> 100 dB to cover both 15mA sleep and 1500A cranking across a 100 µΩ shunt) and intrinsic noise filtering (Sinc decimation filter places transmission notches at 50/60 Hz and PWM inverter harmonics).
+    </div>
+    <div class="callout" style="--c:var(--safety)">
+      <b>Q2: What is the key difference between a standard Window Watchdog and a Challenge-Response Watchdog?</b><br>
+      <b>Key points:</b> A standard window watchdog only enforces feeding timing. A challenge-response watchdog also tests algorithmic logic: the MCU must execute safety self-tests and calculate a dynamic token from a pseudo-random seed, preventing execution loops from faking health.
+    </div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

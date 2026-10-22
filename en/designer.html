@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU Spec Designer · MCU Notes</title>
+<meta name="description" content="Automotive MCU & BMS specification designer: Shunt resistor dimensioning, battery standby sleep budget, firmware memory mapping, and auto-generated C header configuration files.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="designer">
+<main class="app-wrap">
+<div class="app-head">
+  <div class="eyebrow">Spec Designer · Specification &amp; Dimensioning</div>
+  <h1>Derive Shunt Resistors, ADC Margins, Standby Power &amp; Memory Layout</h1>
+  <p class="lead">Select a dimensioning tool, tune battery and silicon parameters, observe real-time thermal and resolution trade-offs, and generate ready-to-use C headers and linker scripts.</p>
+</div>
+
+<div class="seg" role="tablist" aria-label="Tools">
+  <button role="tab" data-type="shunt" aria-selected="true">BMS Shunt &amp; AFE Frontend</button>
+  <button role="tab" data-type="power" aria-selected="false">Battery Standby &amp; Sleep Budget</button>
+  <button role="tab" data-type="memory" aria-selected="false">Firmware Memory &amp; Safety Layout</button>
+</div>
+
+<div class="bench">
+  <div class="panel">
+    <div class="ctl"><label for="ds-preset">Automotive Reference Presets</label>
+      <select id="ds-preset">
+        <option value="12v_ibs" selected>12V Start-Stop Lead-Acid IBS (PSoC 4 HVPA)</option>
+        <option value="24v_truck">24V Commercial Hauler Heavy-Duty IBS</option>
+        <option value="48v_mild">48V Mild Hybrid (MHEV) Dual-Shunt Pack</option>
+        <option value="ev_bdu">400V/800V EV Battery Disconnect Unit (BDU)</option>
+      </select>
+    </div>
+    <div id="ds-inputs"></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="ds-metrics"></div>
+    <div class="two">
+      <div class="panel"><h3>Design Trade-offs &amp; Metrics</h3><div class="tblwrap" style="margin:0"><table id="ds-table-trade"></table></div></div>
+      <div class="panel"><h3>Compliance &amp; Safety Margins</h3><div id="ds-checks" class="log" style="max-height:none;font-family:var(--sans);font-size:13.5px"></div></div>
+    </div>
+    <div class="panel">
+      <h3>Auto-Generated Configuration Code
+        <small><button class="btn" id="ds-copy-btn" type="button" style="padding:3px 10px">Copy</button></small>
+      </h3>
+      <pre class="code" id="ds-output"></pre>
+    </div>
+  </div>
+</div>
+</main>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+<script src="../assets/designer.js"></script>
+</body>
+</html>

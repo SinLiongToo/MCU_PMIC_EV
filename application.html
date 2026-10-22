@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>03 車用電池管理應用 · MCU Notes</title>
+<meta name="description" content="詳解車用電池管理系統（BMS）中智慧電池感測器（IBS）與高壓電池斷路單元（BDU）的演算法實踐：庫倫積分法 SoC 估算、卡爾曼濾波、開路電壓 OCV 校準、交流內阻 SoH 劣化追蹤，以及車載 LIN 2.2A 匯流排通訊協議。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="application" data-ch="app">
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article>
+    <div class="eyebrow">Chapter 03 · Automotive BMS Applications</div>
+    <h1>車用電池管理系統：從電瓶端子到整車網路</h1>
+    <p class="lead">無論是傳統燃油車的 12V 啟停（Start-Stop）電瓶、商用車 24V 系統，還是現代電動車（EV）的 48V 輔助電網與高壓電池斷路單元（BDU），精確監測電瓶狀態是整車能源管理系統（EMS）的決策基石。微控制器在此扮演<b>智慧電池感測器（Intelligent Battery Sensor, IBS）</b>的中樞。</p>
+
+    <h2 id="ibs-bdu">1. 智慧電池感測器 (IBS) 與電池斷路單元 (BDU) 架構</h2>
+    <p>傳統車輛僅憑發電機調節器粗略充電，無法得知電池真實電量。現代 IBS 將 MCU、分流電阻與高壓保護電路整合為一體，直接鑄造鎖固在<b>電瓶負極極柱（Negative Battery Pole Clamp）</b>上，透過單一螺栓固定即可完成電流、電壓與極柱溫度三合一感測。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 720 260" role="img" aria-label="IBS 在電瓶負極端子的安裝與連接示意圖">
+        <!-- Battery representation -->
+        <rect x="30" y="30" width="220" height="200" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+        <text class="ts" x="140" y="60" text-anchor="middle" font-weight="700">12V / 24V Lead-Acid / LFP</text>
+        <circle cx="80" cy="90" r="14" fill="var(--bad)" opacity=".2"/><text class="ts" x="80" y="95" text-anchor="middle" font-weight="700" fill="var(--bad)">+</text>
+        <circle cx="200" cy="90" r="14" fill="var(--core)" opacity=".2"/><text class="ts" x="200" y="95" text-anchor="middle" font-weight="700" fill="var(--core)">−</text>
+        <text class="ts t-mut" x="140" y="150" text-anchor="middle">Automotive Battery Pack</text>
+
+        <!-- IBS unit clamped on pole -->
+        <rect x="230" y="70" width="200" height="120" rx="6" fill="var(--surface)" stroke="var(--app)" stroke-width="2"/>
+        <text class="ts" x="330" y="95" text-anchor="middle" font-weight="700" fill="var(--app)">IBS Module (PSoC 4 HVPA)</text>
+        <rect x="250" y="110" width="70" height="30" rx="3" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts t-mono" x="285" y="130" text-anchor="middle" font-size="11">Shunt 100µΩ</text>
+
+        <rect x="340" y="110" width="75" height="30" rx="3" fill="var(--surface)" stroke="var(--analog)"/>
+        <text class="ts t-mono" x="377" y="130" text-anchor="middle" font-size="11">MCU SoC</text>
+
+        <!-- Ground chassis -->
+        <line x1="430" y1="125" x2="510" y2="125" stroke="var(--ink)" stroke-width="4"/>
+        <text class="ts" x="470" y="115" text-anchor="middle">Heavy Cable</text>
+        <path d="M510 115v20M516 119v12M522 123v4" stroke="var(--ink)" stroke-width="2.5"/>
+        <text class="ts" x="545" y="130">Vehicle Chassis (GND)</text>
+
+        <!-- Wiring to BCM -->
+        <path d="M377 140v50h140" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="4 3"/>
+        <rect x="520" y="170" width="160" height="50" rx="6" fill="var(--surface)" stroke="var(--line)"/>
+        <text class="ts" x="600" y="195" text-anchor="middle" font-weight="600">BCM / EMS Gateway</text>
+        <text class="ts t-mono" x="600" y="210" text-anchor="middle" font-size="11" fill="var(--warn)">LIN 2.2A Wire (Single)</text>
+      </svg>
+      <figcaption>圖 3.1：智慧電池感測器（IBS）實體安裝於電瓶極柱與車載 LIN 單線拓撲</figcaption>
+    </div>
+
+    <h2 id="soc-coulomb">2. 荷電狀態 (SoC) 估算：庫倫積分與開路電壓 (OCV) 融合</h2>
+    <p>電池的荷電狀態（State of Charge, SoC）代表電池當前可用電量佔額定容量的百分比（0% ~ 100%）。在行駛或充放電過程中，MCU 採用<b>安時積分法（Coulomb Counting）</b>：</p>
+
+    <div class="math-block">
+      \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^t \eta(I) \cdot I(\tau) \, d\tau\]
+      其中 \(Q_n\) 為電池額定安時容量，\(\eta(I)\) 為庫倫庫倫充放電效率係數。
+    </div>
+
+    <h3>庫倫積分法致命痛點：偏移量（Offset）長期累積發散</h3>
+    <p>如果電流感測通道存在僅僅 <b>\(10\,\mu\text{V}\) 的未校正 Offset 電壓</b>，在 \(100\,\mu\Omega\) 分流電阻下等效於：</p>
+    <div class="math-block">
+      \[I_{\text{err}} = \frac{10\,\mu\text{V}}{100\,\mu\Omega} = 100\text{ mA}\]
+      若車輛連續停放 10 天（240 小時），累積虛假放電量高達：
+      \[Q_{\text{err}} = 0.1\text{ A} \times 240\text{ h} = 24\text{ Ah}\]
+      對於一顆 60 Ah 的汽車電瓶，這意味著 <b>40% 的巨大虛假電量漂移！</b> 這正是 PSoC 4 HVPA 採用晶片內斬波自歸零（Chopping Auto-Zero）將 Offset 壓低至 &lt; 1 µV 的關鍵原因。
+    </div>
+
+    <h3>靜置開路電壓 (OCV) 校準策略</h3>
+    <p>當車輛熄火且整車休眠達 3 小時以上，電瓶化學反應達到熱力學平衡（電流 \(|I| &lt; 20\text{ mA}\)），MCU 的電壓通道精確讀取電池端電壓，此時端電壓等於開路電壓（Open-Circuit Voltage, OCV）。MCU 查閱晶片內儲存的 <code>OCV-to-SoC</code> 溫度關聯校正表，一鍵重設庫倫積分器的初始值 \(t_0\)，消除累積漂移。</p>
+
+    <h2 id="soh-impedance">3. 健康狀態 (SoH) 估算：低溫冷啟動動態內阻追蹤</h2>
+    <p>健康狀態（State of Health, SoH）衡量電瓶老化程度。當鉛酸電瓶極板硫化或鋰電池固體電解質界面膜（SEI）增厚時，電瓶容量衰退且直流內部阻抗（$R_{\text{int}}$）顯著增加。</p>
+
+    <div class="math-block">
+      <b>冷啟動（Cold Crank）動態阻抗提取演算法：</b><br>
+      在發動機啟動點火瞬間（約 100 ms 內），啟動馬達抽載高達數百至上千安培，端電壓瞬間塌陷。PSoC 4 HVPA 的雙通道 ADC 以高達 1 kHz 速率同步採集電流跳變 \(\Delta I\) 與電壓跳變 \(\Delta V\)：<br>
+      \[R_{\text{int}}(T) = \frac{V_{\text{pre-crank}} - V_{\text{min-crank}}}{I_{\text{peak-crank}} - I_{\text{idle}}}\]
+      MCU 將計算所得動態內阻與新電瓶基準內阻比對，並根據阿瑞尼斯溫度模型補償溫度系數，當 \(R_{\text{int}}\) 翻倍或預測放電功率無法支撐下次啟動時，立即發出更換電瓶預警。
+    </div>
+
+    <h2 id="lin-bus">4. 車載 LIN 2.2A / SAE J2602 通訊協議</h2>
+    <p>IBS 模組通常不需要像動力系統那樣使用昂貴的 CAN FD 雙絞線，而是採用低成本、高抗干擾的單線制 <b>LIN 匯流排（Local Interconnect Network）</b> 與車身控制器（BCM）通訊。</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>LIN 欄位</th><th>長度</th><th>硬體處理邏輯與功能</th></tr>
+      <tr><td><b>Synch Break</b></td><td>&ge; 13 位元顯性</td><td>總線喚醒與幀起始識別，PSoC 4 內部硬體自動過濾毛刺並產生中斷</td></tr>
+      <tr><td><b>Synch Field</b></td><td>8 位元 (0x55)</td><td>自動波特率校準：硬體計時器比對 5 個下降沿週期，動態補償內部振盪器溫漂</td></tr>
+      <tr><td><b>Protected ID</b></td><td>8 位元 (6-bit ID + 2-bit P0/P1)</td><td>硬體同位檢查校驗，過濾非法節點指令</td></tr>
+      <tr><td><b>Data Payload</b></td><td>2 ~ 8 位元組</td><td>傳輸 IBS 狀態：即時電壓、電流、溫度、SoC、SoH、啟動預警代碼</td></tr>
+      <tr><td><b>Enhanced Checksum</b></td><td>8 位元</td><td>經典加和帶進位反相校驗（含 PID），確保電磁干擾下資料無篡改</td></tr>
+    </table></div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

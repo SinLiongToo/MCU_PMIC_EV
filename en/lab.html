@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU Interactive Lab · MCU Notes</title>
+<meta name="description" content="Interactive simulations: Shunt sensing & fast AGC, Coulomb counting SoC drift, ISO 7637-2 42V load dump, Challenge-Response Window Watchdog, Sinc³ filter frequency response, SECDED ECC injection, LIN bus transceiver, and analog wafer trimming.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="lab">
+<main class="app-wrap">
+<div class="app-head">
+  <div class="eyebrow">MCU Lab · Interactive Simulation Benches</div>
+  <h1>Hands-on Parameter Tuning: Explore Automotive MCU Behaviors &amp; Fault Mechanisms</h1>
+  <p class="lead">All benches execute live physical models in your browser. Switch tabs above and adjust sliders on the left to inspect dynamic waveforms and system diagnostics.</p>
+</div>
+
+<div class="seg" role="tablist" aria-label="Simulators">
+  <button role="tab" data-tab="shunt" aria-selected="true">Shunt &amp; Fast AGC</button>
+  <button role="tab" data-tab="coulomb" aria-selected="false">Coulomb Drift</button>
+  <button role="tab" data-tab="loaddump" aria-selected="false">42V Load Dump</button>
+  <button role="tab" data-tab="wdt" aria-selected="false">Window Watchdog</button>
+  <button role="tab" data-tab="sinc" aria-selected="false">Sinc³ Filter</button>
+  <button role="tab" data-tab="ecc" aria-selected="false">SECDED ECC</button>
+  <button role="tab" data-tab="lin" aria-selected="false">LIN 2.2A Bus</button>
+  <button role="tab" data-tab="trim" aria-selected="false">Analog Trimming</button>
+</div>
+
+<!-- ============ 1. SHUNT & AGC ============ -->
+<section class="tabp" id="tab-shunt" role="tabpanel">
+<div class="bench">
+  <div class="panel">
+    <h3>Parameters <small>Shunt &amp; Gain</small></h3>
+    <div class="ctl"><label for="sh-shunt">Shunt Resistor \(R_{\text{shunt}}\) <output id="sh-shunt-o"></output></label>
+      <select id="sh-shunt"><option value="50">50 µΩ (High-Power EV)</option><option value="100" selected>100 µΩ (Standard 12V IBS)</option><option value="200">200 µΩ (High Precision)</option><option value="500">500 µΩ (Low Capacity)</option></select></div>
+    <div class="ctl"><label for="sh-curr">Load Current \(I_{\text{load}}\) <output id="sh-curr-o"></output></label>
+      <input id="sh-curr" type="range" min="-1200" max="1500" step="10" value="12"></div>
+    <div class="ctl"><label>Operating Scenarios</label>
+      <div class="btnrow" id="sh-presets">
+        <button class="btn" type="button" data-val="0.015">Standby Dark (15mA)</button>
+        <button class="btn" type="button" data-val="12">Headlamps (12A)</button>
+        <button class="btn" type="button" data-val="250">Alternator (250A)</button>
+        <button class="btn" type="button" data-val="1100">Cold Crank (1100A)</button>
+      </div>
+    </div>
+    <div class="ctl"><label for="sh-mode">Gain Control Mode</label>
+      <select id="sh-mode"><option value="auto" selected>Fast Hardware AGC LUT (&lt;5µs)</option><option value="1">Fixed Gain = 1x (±150mV FSR)</option><option value="8">Fixed Gain = 8x</option><option value="64">Fixed Gain = 64x (±2.3mV FSR)</option></select></div>
+    <div class="ctl"><label for="sh-vref">ADC Reference Voltage \(V_{\text{REF}}\) <output id="sh-vref-o"></output></label>
+      <input id="sh-vref" type="range" min="1.0" max="1.5" step="0.05" value="1.2"></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="sh-metrics"></div>
+    <div class="two">
+      <div class="panel"><h3>Input Vdiff &amp; AGC Thresholds</h3><svg class="viz" id="sh-plot-in" role="img"></svg></div>
+      <div class="panel"><h3>16-bit ADC Output Code &amp; Utilization</h3><svg class="viz" id="sh-plot-out" role="img"></svg></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 2. COULOMB COUNTING ============ -->
+<section class="tabp" id="tab-coulomb" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>Parameters <small>Integration &amp; Offset</small></h3>
+    <div class="ctl"><label for="cc-cap">Battery Capacity \(Q_n\) <output id="cc-cap-o"></output></label><input id="cc-cap" type="range" min="20" max="120" step="5" value="60"></div>
+    <div class="ctl"><label for="cc-days">Vehicle Parking Duration <output id="cc-days-o"></output></label><input id="cc-days" type="range" min="1" max="60" step="1" value="14"></div>
+    <div class="ctl"><label for="cc-offset">Uncalibrated Offset Voltage <output id="cc-offset-o"></output></label><input id="cc-offset" type="range" min="0" max="50" step="1" value="12"></div>
+    <div class="ctl"><label for="cc-shunt">Shunt Value \(R_{\text{shunt}}\) <output id="cc-shunt-o"></output></label><select id="cc-shunt"><option value="100" selected>100 µΩ</option><option value="200">200 µΩ</option></select></div>
+    <div class="ctl"><label for="cc-chop">On-Chip Auto-Zero Chopping</label><select id="cc-chop"><option value="on" selected>Enabled (Offset &lt; 0.5 µV)</option><option value="off">Disabled (Full Raw Offset)</option></select></div>
+    <div class="ctl"><label for="cc-ocv">Enable Periodic OCV Resets</label><select id="cc-ocv"><option value="yes" selected>Yes (Every 7 days)</option><option value="no">No (Open Loop Divergence)</option></select></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="cc-metrics"></div>
+    <div class="panel"><h3>SoC vs Cumulative Drift Timeline</h3><svg class="viz" id="cc-plot" role="img"></svg>
+      <div class="legend"><span><i style="background:var(--ok)"></i>True SoC</span><span><i style="background:var(--bad)"></i>Estimated SoC</span><span><i style="background:var(--warn)"></i>OCV Reset Points</span></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 3. LOAD DUMP ============ -->
+<section class="tabp" id="tab-loaddump" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>Transient Surge <small>ISO 7637-2 Pulse 5b</small></h3>
+    <div class="ctl"><label for="ld-vp">Peak Surge Voltage \(V_{\text{peak}}\) <output id="ld-vp-o"></output></label><input id="ld-vp" type="range" min="28" max="50" step="1" value="42"></div>
+    <div class="ctl"><label for="ld-td">Pulse Duration \(t_d\) <output id="ld-td-o"></output></label><input id="ld-td" type="range" min="100" max="600" step="50" value="400"></div>
+    <div class="ctl"><label for="ld-clamp">On-Chip Active Clamp</label><select id="ld-clamp"><option value="on" selected>Active 38V Dynamic Clamp (PSoC 4 HVPA)</option><option value="off">Disabled (Standard 30V Silicon)</option></select></div>
+    <div class="btnrow"><button class="btn pri" id="ld-fire" type="button">Trigger Load Dump Pulse</button></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="ld-metrics"></div>
+    <div class="panel"><h3>Transient Power Rail Capture</h3><svg class="viz" id="ld-plot" role="img"></svg>
+      <div class="legend"><span><i style="background:var(--bad)"></i>VBAT Surge</span><span><i style="background:var(--accent)"></i>VDDD (3.3V)</span><span><i style="background:var(--ok)"></i>VCCD (1.8V Core)</span></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 4. WDT ============ -->
+<section class="tabp" id="tab-wdt" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>Watchdog Timing <small>Window &amp; Token</small></h3>
+    <div class="ctl"><label for="wdt-open">Open Window \(T_{\text{open}}\) <output id="wdt-open-o"></output></label><input id="wdt-open" type="range" min="10" max="60" step="5" value="30"></div>
+    <div class="ctl"><label for="wdt-close">Close Timeout \(T_{\text{close}}\) <output id="wdt-close-o"></output></label><input id="wdt-close" type="range" min="70" max="150" step="10" value="100"></div>
+    <div class="ctl"><label for="wdt-ans">Challenge-Response Key</label><select id="wdt-ans"><option value="valid" selected>Valid Token (SafeTlib verified)</option><option value="invalid">Corrupted Token (Simulate SEU)</option></select></div>
+    <div class="btnrow">
+      <button class="btn pri" id="wdt-feed" type="button">Feed Watchdog Now</button>
+      <button class="btn" id="wdt-reset" type="button">Reset Timer</button>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="wdt-metrics"></div>
+    <div class="panel"><h3>Window Timeline &amp; Feed Diagnostics</h3><svg class="viz" id="wdt-plot" role="img"></svg>
+      <div id="wdt-log" class="callout" style="--c:var(--safety);margin-top:10px">Status: Running...</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 5. SINC3 ============ -->
+<section class="tabp" id="tab-sinc" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>Filter Settings</h3>
+    <div class="ctl"><label for="sc-osr">Oversampling Decimation (OSR) <output id="sc-osr-o"></output></label><select id="sc-osr"><option value="64">OSR = 64 (Low Latency)</option><option value="256" selected>OSR = 256 (Standard)</option><option value="512">OSR = 512 (High Precision)</option><option value="1536">OSR = 1536 (50/60Hz Notch)</option></select></div>
+    <div class="ctl"><label for="sc-order">Filter Order</label><select id="sc-order"><option value="1">Sinc¹</option><option value="2">Sinc²</option><option value="3" selected>Sinc³ (PSoC 4 standard)</option><option value="4">Sinc⁴</option></select></div>
+    <div class="ctl"><label for="sc-fmod">Modulator Clock \(f_{\text{mod}}\) <output id="sc-fmod-o"></output></label><select id="sc-fmod"><option value="1000000">1.000 MHz</option><option value="1536000" selected>1.536 MHz</option><option value="2000000">2.000 MHz</option></select></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="sc-metrics"></div>
+    <div class="panel"><h3>Filter Magnitude Response (Bode Plot)</h3><svg class="viz" id="sc-plot" role="img"></svg></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 6. ECC ============ -->
+<section class="tabp" id="tab-ecc" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>SECDED Bit Manipulator <small>32-bit Word</small></h3>
+    <p>Click any bit below to inject a Single Event Upset (SEU):</p>
+    <div id="ecc-bits" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:14px"></div>
+    <div class="btnrow">
+      <button class="btn" id="ecc-flip1" type="button">Flip 1 Bit</button>
+      <button class="btn" id="ecc-flip2" type="button">Flip 2 Bits</button>
+      <button class="btn" id="ecc-clean" type="button">Clean All</button>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="ecc-metrics"></div>
+    <div class="panel"><h3>Hardware ECC Decoder Diagnostic Status</h3>
+      <div id="ecc-report" class="callout" style="--c:var(--core);font-size:14px">Data intact.</div>
+      <div class="code" id="ecc-code" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 7. LIN BUS ============ -->
+<section class="tabp" id="tab-lin" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>LIN 2.2A Frame Generator</h3>
+    <div class="ctl"><label for="lin-id">Frame ID <output id="lin-id-o"></output></label><input id="lin-id" type="range" min="0" max="63" step="1" value="34"></div>
+    <div class="ctl"><label for="lin-baud">Baud Rate</label><select id="lin-baud"><option value="9600">9.6 kbps</option><option value="19200" selected>19.2 kbps</option><option value="20000">20.0 kbps</option></select></div>
+    <div class="ctl"><label for="lin-d0">Byte 0 (V_BAT LSB)</label><input id="lin-d0" type="number" min="0" max="255" value="216"></div>
+    <div class="ctl"><label for="lin-d1">Byte 1 (V_BAT MSB)</label><input id="lin-d1" type="number" min="0" max="255" value="48"></div>
+    <div class="ctl"><label for="lin-d2">Byte 2 (I_BMS LSB)</label><input id="lin-d2" type="number" min="0" max="255" value="120"></div>
+    <div class="ctl"><label for="lin-d3">Byte 3 (SoC 0-100%)</label><input id="lin-d3" type="number" min="0" max="100" value="85"></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="lin-metrics"></div>
+    <div class="panel"><h3>LIN Physical Layer Waveform (Slew-Rate Controlled)</h3><svg class="viz" id="lin-plot" role="img"></svg></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 8. TRIMMING ============ -->
+<section class="tabp" id="tab-trim" role="tabpanel" hidden>
+<div class="bench">
+  <div class="panel">
+    <h3>Wafer Trimming</h3>
+    <div class="ctl"><label for="tr-sigma">Process Raw Sigma \(\sigma_{\text{raw}}\) <output id="tr-sigma-o"></output></label><input id="tr-sigma" type="range" min="50" max="300" step="10" value="150"></div>
+    <div class="ctl"><label for="tr-bits">eFuse Trim Resolution</label><select id="tr-bits"><option value="0">0-bit (Untrimmed)</option><option value="4">4-bit (16 steps)</option><option value="6" selected>6-bit (64 steps)</option><option value="8">8-bit (256 steps)</option></select></div>
+    <div class="ctl"><label for="tr-spec">Spec Limit Target <output id="tr-spec-o"></output></label><input id="tr-spec" type="range" min="10" max="60" step="5" value="25"></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="tr-metrics"></div>
+    <div class="panel"><h3>Gaussian Offset Distribution: Raw vs Trimmed</h3><svg class="viz" id="tr-plot" role="img"></svg></div>
+  </div>
+</div>
+</section>
+
+</main>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+<script src="../assets/plot.js"></script>
+<script src="../assets/lab.js"></script>
+</body>
+</html>

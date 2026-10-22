@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06 功能安全與可靠度 · MCU Notes</title>
+<meta name="description" content="深入探討車載微控制器的 ISO 26262 道路車輛功能安全標準：ASIL-C 系統安全要求、安全機制（問答式窗口看門狗、類比環迴自檢、記憶體 ECC）、隨機硬體失效率 FIT 計算與 FMEDA 定量指標（SPFM &gt; 97%, LFM &gt; 80%）。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="safety" data-ch="safety">
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article>
+    <div class="eyebrow">Chapter 06 · Functional Safety &amp; ISO 26262 Reliability</div>
+    <h1>功能安全與可靠度：ISO 26262 ASIL-C 系統實踐</h1>
+    <p class="lead">在汽車高壓動力電池與電池斷路單元（BDU）中，一旦感測晶片死當或誤將短路電流判定為正常放電，極可能導致整車失控或火災。ISO 26262 標準要求微控制器從晶片架構設計起就必須防範系統性故障與隨機硬體故障。PSoC™ 4 HVPA 原生滿足 <b>ISO 26262 ASIL-C</b> 嚴格要求。</p>
+
+    <h2 id="asil-requirements">1. 汽車安全完整性等級 (ASIL) 與 BMS 安全目標</h2>
+    <p>ISO 26262 根據嚴重度（Severity, S）、暴露率（Exposure, E）與可控度（Controllability, C）定義了 QM 至 ASIL-A ~ ASIL-D 的安全等級。對於電池管理系統（BMS），常見的核心安全目標（Safety Goal, SG）包括：</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>安全目標編號</th><th>危害場景描述 (Hazardous Event)</th><th>對應 ASIL 等級</th><th>微控制器安全功能承擔</th></tr>
+      <tr><td><b>SG-01</b></td><td>防止因過流或短路未及時切斷導致高壓電池過熱起火</td><td><b>ASIL-C / ASIL-D</b></td><td>雙通道高速類比電流感測與毫秒級獨立超流硬體比較中斷</td></tr>
+      <tr><td><b>SG-02</b></td><td>防止行駛中因感測晶片誤報故障而意外觸發接觸器斷開 (失速)</td><td><b>ASIL-C</b></td><td>雙通道類比冗餘交叉比對、演算法合理性自檢驗證</td></tr>
+      <tr><td><b>SG-03</b></td><td>防止微控制器死當、程式跑飛或無響應時持續輸出錯誤指令</td><td><b>ASIL-B / ASIL-C</b></td><td>挑戰-應答問答式窗口看門狗（Challenge-Response WDT）強制重置</td></tr>
+    </table></div>
+
+    <h2 id="safety-mechanisms">2. 晶片內五大硬體安全機制 (Safety Mechanisms)</h2>
+    <p>為了在單核 Cortex-M0+ 架構下達到 ASIL-C 等級的診斷覆蓋率（Diagnostic Coverage, DC），PSoC 4 HVPA 配備了一整套相互獨立的硬體安全診斷機制：</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 720 280" role="img" aria-label="晶片內安全機制環迴自檢方塊圖">
+        <rect x="20" y="20" width="680" height="240" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="360" y="45" text-anchor="middle" font-weight="700" fill="var(--safety)">PSoC™ 4 HVPA ON-CHIP SAFETY ARCHITECTURE (ASIL-C)</text>
+
+        <!-- Block 1: WDT -->
+        <rect x="40" y="70" width="180" height="80" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="130" y="95" text-anchor="middle" font-weight="600">Challenge-Response WDT</text>
+        <text class="ts t-mut" x="130" y="115" text-anchor="middle">Windowed Watchdog</text>
+        <text class="ts t-mono" x="130" y="135" text-anchor="middle" fill="var(--safety)" font-size="11">Independent ILO Clock</text>
+
+        <!-- Block 2: Memory ECC -->
+        <rect x="260" y="70" width="190" height="80" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="355" y="95" text-anchor="middle" font-weight="600">SECDED ECC Logic</text>
+        <text class="ts t-mut" x="355" y="115" text-anchor="middle">Flash &amp; SRAM Parity</text>
+        <text class="ts t-mono" x="355" y="135" text-anchor="middle" fill="var(--core)" font-size="11">Fault Injection Diagnostic</text>
+
+        <!-- Block 3: Analog Loopback -->
+        <rect x="490" y="70" width="190" height="80" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="585" y="95" text-anchor="middle" font-weight="600">Analog BIST &amp; Loopback</text>
+        <text class="ts t-mut" x="585" y="115" text-anchor="middle">VREF &amp; Shunt Open-Check</text>
+        <text class="ts t-mono" x="585" y="135" text-anchor="middle" fill="var(--analog)" font-size="11">Wire-Break Detection</text>
+
+        <!-- Lower Row: Power & Clocks -->
+        <rect x="40" y="170" width="310" height="70" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="195" y="195" text-anchor="middle" font-weight="600">Voltage &amp; Temp Monitors</text>
+        <text class="ts t-mut" x="195" y="215" text-anchor="middle">BOD (Brown-Out) / OVD (Over-Voltage) / TSD</text>
+
+        <rect x="370" y="170" width="310" height="70" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="525" y="195" text-anchor="middle" font-weight="600">Clock Supervisor (CSV)</text>
+        <text class="ts t-mut" x="525" y="215" text-anchor="middle">Cross-Reference Monitor (IMO vs ILO vs WCO)</text>
+      </svg>
+      <figcaption>圖 6.1：ISO 26262 ASIL-C 晶片硬體安全機制與自主診斷監視環</figcaption>
+    </div>
+
+    <h3>1. 問答式窗口看門狗 (Challenge-Response Window Watchdog)</h3>
+    <p>傳統看門狗僅要求定時清狗（Feed Dog），如果程式陷入簡單死循環並在循環內餵狗，傳統看門狗將無法識別。窗口問答看門狗引入了兩重防護：</p>
+    <ul>
+      <li><b>時間窗口限制（Windowing）：</b> 餵狗時間過早（Early Feed）或過晚（Late Timeout）都被判定為嚴重故障，立即引發復位。</li>
+      <li><b>問答機制（Challenge-Response）：</b> 看門狗硬體隨機產生一個動態問題（Seed/Question），CPU 必須執行多個關鍵業務任務（如 ADC 採樣、ECC 檢查、堆疊溢位檢查），將各任務執行狀態代入多項式算出正解（Response）寫入。唯有答案正確且時間在精確窗口內，才允許重置計時器。</li>
+    </ul>
+
+    <h3>2. 類比路徑斷線與環迴自檢 (Analog Loopback &amp; Wire-Break Detection)</h3>
+    <p>車輛長年行駛震動可能導致分流電阻焊點疲勞開路。PACSS 類比前端內建微弱上拉/下拉電流源（Pull-up/Pull-down Diagnostic Currents），安全診斷週期性注入 50 nA 診斷電流：正常情況下分流電阻阻抗極小（$100\,\mu\Omega$），端電壓幾乎不變；若焊點斷線開路，端電壓將立即被拉至滿量程，晶片瞬態識別<b>斷線故障（Wire-break Fault）</b>並上報。</p>
+
+    <h2 id="fmeda-metrics">3. FMEDA 與定量隨機硬體失效率指標</h2>
+    <p>ISO 26262 Part 5 規範了隨機硬體失效的量化驗證方法——<b>失效模式、影響與診斷分析（FMEDA）</b>。其衡量標準以 <b>FIT（Failures in Time，每 \(10^9\) 工作小時的失效次數）</b> 為單位。</p>
+
+    <div class="math-block">
+      <b>單點故障指標 (Single-Point Fault Metric, SPFM)：</b><br>
+      \[\text{SPFM} = \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})_{\text{covered}}}{\sum \lambda} = 1 - \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})}{\sum \lambda_{\text{safety}}}\]
+      <b>潛伏故障指標 (Latent Fault Metric, LFM)：</b><br>
+      \[\text{LFM} = 1 - \frac{\sum \lambda_{\text{MPF, latent}}}{\sum (\lambda - \lambda_{\text{SPF}} - \lambda_{\text{RF}})}\]
+    </div>
+
+    <div class="tblwrap"><table>
+      <tr><th>車規指標</th><th>ISO 26262 ASIL-B 門檻</th><th>ISO 26262 ASIL-C 門檻</th><th>PSoC™ 4 HVPA 典型達標值</th></tr>
+      <tr><td><b>SPFM (單點故障指標)</b></td><td>&ge; 90%</td><td><b>&ge; 97%</b></td><td><b>&gt; 98.4%</b></td></tr>
+      <tr><td><b>LFM (潛伏故障指標)</b></td><td>&ge; 60%</td><td><b>&ge; 80%</b></td><td><b>&gt; 85.2%</b></td></tr>
+      <tr><td><b>PMHF (隨機硬體失效機率)</b></td><td>&lt; 100 FIT</td><td><b>&lt; 100 FIT</b></td><td><b>&lt; 18 FIT (極高安全性)</b></td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--safety)">
+      <b>安全軟體庫 SafeTlib：</b> 英飛凌為該系列晶片提供通過 TÜV 認證的 SafeTlib 軟體庫，完全符合 MISRA-C:2012 與 A-SPICE 流程。其在開機自檢（POST）與運行週期檢查（Periodic Test）中自動調度 CPU 暫存器檢測、ALU 指令集測試、Flash/SRAM ECC 錯誤注入驗證與時脈漂移交叉比對，為整車廠免去數千小時的底層安全認證開發週期。
+    </div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

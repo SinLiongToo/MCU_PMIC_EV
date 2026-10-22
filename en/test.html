@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>05 Test &amp; Qualification · MCU Notes</title>
+<meta name="description" content="Automotive microcontroller testing & qualification: Wafer probe CP and final test FT, eFuse precision analog trimming, tri-temp testing (-40°C, 25°C, 125°C), AEC-Q100 standards, and wettable flank QFN packaging for 100% AOI inspection.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="test" data-ch="test">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Chapter 05 · Test, Calibration &amp; Automotive Qualification</div>
+    <h1>Testing, Trimming &amp; AEC-Q100: Industrial Journey to Zero Defects</h1>
+    <p class="lead">Consumer silicon allows occasional RMA returns; automotive microcontrollers mandate <b>Zero PPM (parts per million)</b>. A single errant voltage sample during sub-zero highway driving could trip high-voltage contactors and stall the powertrain. This chapter examines wafer probe testing, eFuse trimming, and AEC-Q100 qualification.</p>
+
+    <h2 id="ate-trimming">1. Wafer Probe (CP) &amp; eFuse Precision Analog Trimming</h2>
+    <div class="math-block">
+      \[V_{\text{corrected}} = \text{Gain\_Trim} \times (V_{\text{raw}} - \text{Offset\_Trim}) + T_{\text{coeff}} \times (T - T_0)\]
+      On-chip non-volatile eFuses store laser/ATE-measured calibration coefficients, trimming bandgap references to &plusmn;0.05% and reducing raw ADC offset from &plusmn;250 µV down to sub-microvolt levels.
+    </div>
+
+    <h2 id="multi-temp">2. Tri-Temp Production Screening (-40°C, +25°C, +125°C)</h2>
+    <p>Cold test (-40°C) screens for timing race conditions and threshold shifts; hot test (+125°C ~ +150°C) weeds out oxide tunneling, high-temperature gate leakage, and early life bathtub curve failures.</p>
+
+    <h2 id="aec-q100">3. AEC-Q100 Qualification Protocols</h2>
+    <p>HTOL (1000 hours at 125°C, zero fails across 231 units), HAST (130°C / 85% RH bias), temperature cycling (-55°C to +150°C 1000 cycles), and electrostatic discharge (ESD &ge; 2kV HBM, &ge; 8kV LIN).</p>
+
+    <h2 id="wettable-flanks">4. Wettable Flank QFN Packaging for 100% AOI Optical Inspection</h2>
+    <p>Step-cut plated flanks allow solder to wick up the sidewall of the package, forming visible solder fillets that enable high-speed Automated Optical Inspection (AOI) cameras on automotive surface-mount lines.</p>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

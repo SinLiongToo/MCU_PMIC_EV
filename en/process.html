@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>04 HV Silicon Process · MCU Notes</title>
+<meta name="description" content="Semiconductor process integration in automotive mixed-signal MCUs: BCD (Bipolar-CMOS-DMOS) technology, Deep Trench Isolation (DTI), ISO 7637-2 load dump avalanche clamping, and thermal packaging.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="process" data-ch="fab">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Integration</div>
+    <h1>High-Voltage Silicon Process: Harmonizing Microvolts and 42V on a Single Die</h1>
+    <p class="lead">Integrating 1.8V dense logic, microvolt-sensitive differential analog amplifiers, and 42V high-voltage power switches on one monolithic piece of silicon requires <b>BCD (Bipolar-CMOS-DMOS) smart power fabrication technology</b>.</p>
+
+    <h2 id="bcd-technology">1. BCD Smart Power Fabrication</h2>
+    <ul>
+      <li><b>Bipolar (BJT):</b> Ultra-low 1/f flicker noise and precise temperature linearity for the on-chip bandgap reference and low-noise operational preamplifiers.</li>
+      <li><b>CMOS:</b> High gate density and minimal static leakage for the 48 MHz Cortex-M0+ core, 128KB Flash, and digital decimation filters.</li>
+      <li><b>DMOS (LDMOS):</b> Lateral double-diffused MOSFETs with breakdown voltage \(V_{BR} &gt; 45\text{ V}\) for the internal 42V regulator and LIN driver.</li>
+    </ul>
+
+    <h2 id="isolation-dti">2. Deep Trench Isolation (DTI) &amp; Substrate Noise Immunity</h2>
+    <p>High-voltage switching injects minority carriers into the p-substrate. Deep Trench Isolation (DTI) creates vertical silicon dioxide and polysilicon insulating barriers down into the buried oxide, attenuating substrate noise by over <b>40 dB</b> and preventing CMOS latch-up.</p>
+
+    <h2 id="esd-loaddump">3. ISO 7637-2 Load Dump Pulse 5b Transient Clamping</h2>
+    <p>Active dynamic clamp circuits turn on large-area DMOS power structures when VBAT surges past 38V, safely absorbing surge energy and preventing thermal second breakdown.</p>
+
+    <h2 id="thermal-package">4. Automotive Thermal Management (-40°C to +125°C / +150°C)</h2>
+    <p>Qualified to AEC-Q100 Grade 1, PSoC™ 4 HVPA operates reliably in engine compartments up to +125°C ambient and +150°C junction temperature with a thermal resistance \(\theta_{JC} &lt; 2.5\text{ °C/W}\) through its bottom exposed pad.</p>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

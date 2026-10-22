@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>01 核心微架構 · MCU Notes</title>
+<meta name="description" content="剖析 32-bit Arm Cortex-M0+ 核心管線、單週期 I/O 埠、巢狀向量中斷控制器 NVIC、單層 AHB-Lite 匯流排拓撲，以及具備 SECDED 硬體錯誤更正（ECC）的 Flash 與 SRAM 記憶體子系統。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="core" data-ch="core">
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article>
+    <div class="eyebrow">Chapter 01 · Core &amp; Microarchitecture</div>
+    <h1>核心微架構：計算、匯流排與記憶體保護</h1>
+    <p class="lead">在車用電池管理系統（BMS）中，微控制器必須在極低待機功耗與嚴苛即時中斷之間取得完美平衡。以 Infineon PSoC™ 4 HVPA-144K 為例，其採用 32-bit Arm® Cortex®-M0+ 為運算核心，整合 8 通道 DMA 控制器、單層 AHB-Lite 系統互連矩陣，以及全晶片具備 SECDED 硬體糾錯功能的 Flash 與 SRAM 記憶體架構。</p>
+
+    <h2 id="cortex-m0plus">1. Arm Cortex-M0+ 處理器核心深度解析</h2>
+    <p>傳統 8-bit 或 16-bit 車用微控制器在處理 32-bit 浮點濾波或 16-bit $\Delta\Sigma$ 高精度積分散熱計算時，需要消耗大量時脈週期。PSoC 4 HVPA 採用 Arm Cortex-M0+，運行時脈達 24 MHz 至 48 MHz，具備極高的能效比（達 2.46 CoreMark/MHz）。</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>架構特性</th><th>Cortex-M0</th><th>Cortex-M0+ (PSoC 4 HVPA 採用)</th><th>車用 BMS 實務優勢</th></tr>
+      <tr><td><b>管線級數 (Pipeline)</b></td><td>3 級（Fetch, Decode, Execute）</td><td><b>2 級（Fetch, Execute）</b></td><td>減少分支預測失敗懲罰，顯著降低動態功耗（約省電 30%）</td></tr>
+      <tr><td><b>單週期 I/O 埠 (Fast I/O)</b></td><td>否（需經由 AHB 匯流排，2 週期）</td><td><b>支援專屬單週期 I/O 匯流排</b></td><td>高壓接觸器或緊急斷路（Pyro-fuse）引爆信號能在 1 個時脈週期內響應</td></tr>
+      <tr><td><b>向量中斷控制器 (NVIC)</b></td><td>固定優先級分組</td><td><b>動態支援多達 32 個中斷，4 級可程式優先級</b></td><td>高頻類比過流（Overcurrent）中斷具備確定性極低延遲（Deterministic Latency）</td></tr>
+      <tr><td><b>記憶體保護單元 (MPU)</b></td><td>無</td><td><b>選配 8 區域硬體 MPU</b></td><td>劃分 AUTOSAR OS 與 SafeTlib 安全庫，防止非授權記憶體存取</td></tr>
+      <tr><td><b>乘法器硬體支援</b></td><td>32 週期或 1 週期</td><td><b>單週期 32×32 硬體乘法器</b></td><td>即時執行 Sinc 濾波器抽取與卡爾曼濾波矩陣乘法</td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--core)">
+      <b>即時中斷延遲優勢：</b> Cortex-M0+ 具備硬體自動壓棧（Hardware Stacking）特性，當中斷發生時，硬體自動將 <code>r0-r3, r12, lr, pc, xPSR</code> 推入堆疊，中斷進入時間精確固定為 15 個時脈週期，退出中斷時支援尾鏈（Tail-Chaining）技術，僅需 6 個時脈週期即可接續執行下一個中斷。
+    </div>
+
+    <h2 id="bus-matrix">2. 系統互連拓撲：AHB-Lite 與 DMA 控制器</h2>
+    <p>車載類比感測需要以數 kHz 至數百 kHz 的高採樣率連續採集分流器電流波形。如果每次 ADC 轉換完成都透過中斷喚醒 CPU 讀取，處理器將被中斷淹沒。PSoC 4 HVPA 建立了單層 32-bit AHB-Lite 主幹匯流排與 APB 周邊橋接架構，並配置了 8 通道直接記憶體存取控制器（DMA）。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 720 280" role="img" aria-label="系統互連拓撲">
+        <rect x="20" y="20" width="140" height="70" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="90" y="50" text-anchor="middle" font-weight="700">Arm Cortex-M0+</text>
+        <text class="ts t-mut" x="90" y="70" text-anchor="middle">CPU Master (48MHz)</text>
+
+        <rect x="20" y="110" width="140" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="90" y="140" text-anchor="middle" font-weight="700">8-Channel DMA</text>
+        <text class="ts t-mut" x="90" y="160" text-anchor="middle">Autonomous Master</text>
+
+        <!-- Bus Matrix -->
+        <rect x="220" y="20" width="110" height="230" rx="8" fill="var(--sunk)" stroke="var(--line)" stroke-width="2"/>
+        <text class="ts" x="275" y="125" text-anchor="middle" font-weight="700" transform="rotate(-90 275 125)">AHB-Lite Bus Matrix</text>
+
+        <!-- Slaves -->
+        <rect x="390" y="20" width="140" height="50" rx="6" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts" x="460" y="45" text-anchor="middle" font-weight="600">Flash (128 KB + ECC)</text>
+
+        <rect x="390" y="80" width="140" height="50" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts" x="460" y="105" text-anchor="middle" font-weight="600">SRAM (8 KB + ECC)</text>
+
+        <rect x="390" y="140" width="140" height="50" rx="6" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts" x="460" y="165" text-anchor="middle" font-weight="600">AHB-to-APB Bridge</text>
+
+        <!-- APB Slaves -->
+        <rect x="580" y="90" width="120" height="40" rx="4" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
+        <text class="ts" x="640" y="115" text-anchor="middle">PACSS (Dual ADC)</text>
+
+        <rect x="580" y="140" width="120" height="40" rx="4" fill="var(--surface)" stroke="var(--app)" stroke-width="1.5"/>
+        <text class="ts" x="640" y="165" text-anchor="middle">LIN Transceiver</text>
+
+        <rect x="580" y="190" width="120" height="40" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="640" y="215" text-anchor="middle">Window WDT</text>
+
+        <!-- Arrows -->
+        <line x1="160" y1="55" x2="220" y2="55" stroke="var(--core)" stroke-width="2"/>
+        <line x1="160" y1="145" x2="220" y2="145" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="330" y1="45" x2="390" y2="45" stroke="var(--line)" stroke-width="2"/>
+        <line x1="330" y1="105" x2="390" y2="105" stroke="var(--core)" stroke-width="2"/>
+        <line x1="330" y1="165" x2="390" y2="165" stroke="var(--line)" stroke-width="2"/>
+        <line x1="530" y1="165" x2="560" y2="165" stroke="var(--line)" stroke-width="2"/>
+        <path d="M560 165v-55h20M560 165h20M560 165v45h20" fill="none" stroke="var(--line)" stroke-width="2"/>
+      </svg>
+      <figcaption>圖 1.1：PSoC™ 4 HVPA 匯流排架構與 DMA 自主資料傳輸路徑</figcaption>
+    </div>
+
+    <h3>DMA 描述符鏈接機制 (Descriptor Chaining)</h3>
+    <p>DMA 控制器支援散佈/聚集（Scatter-Gather）鏈結傳輸模式。當類比子系統 PACSS 完成一組雙通道（電流 + 電壓）採樣後，發出硬體觸發信號，DMA 即可自動將 32-bit 資料從 ADC 結果暫存器搬移至 SRAM 雙緩衝區（Ping-Pong Buffer），全程無需 CPU 參與，CPU 可持續處於低功耗 Sleep 模式，直到累積 100 筆資料後才產生一次中斷進行批次計算。</p>
+
+    <h2 id="memory-ecc">3. 記憶體子系統與 SECDED 硬體糾錯 (ECC)</h2>
+    <p>車載環境中，高能宇宙射線中子與封裝材料中的微量放射性同位素（如釷、鈾釋放的 $\alpha$ 粒子）會引發單粒子翻轉（Single Event Upset, SEU）。如果 SRAM 內的電池電壓或電流標定值被竄改，將導致 BMS 誤判斷路。</p>
+
+    <div class="math-block">
+      <b>單錯修正、雙錯檢測 (SECDED Hamming Code) 檢查位元公式：</b><br>
+      若資料寬度為 \(k = 32\) 位元，所需校驗位元 \(p\) 必須滿足：<br>
+      \[2^p \ge k + p + 1 \implies 2^6 = 64 \ge 32 + 6 + 1 = 39 \quad (p = 6 \text{ 位元用於單錯修正})\]
+      額外增加 1 個全體同位檢查位元（Parity Bit），總共需要 \(p = 7\) 位元校驗碼（Check Bits），即可達成 SECDED。
+    </div>
+
+    <h3>Flash 與 SRAM 的雙重防護機制</h3>
+    <ul>
+      <li><b>128 KB Code Flash + 8 KB Data Flash：</b> 內建硬體 ECC 產生器，每 64-bit 資料附加 8-bit ECC。讀取時硬體單週期透明解碼修正。若發生單一位元錯誤，硬體即時修正並累計至警示暫存器；若發生雙位元錯誤，硬體立即拉高非遮蔽中斷（NMI），阻止執行非法指令。</li>
+      <li><b>8 KB SRAM ECC 防護：</b> 每一筆寫入操作同步計算校驗碼寫入 ECC RAM，讀取時由硬體 SECDED 邏輯自動校驗。同時提供<b>錯誤注入暫存器（Fault Injection Register）</b>，供安全診斷軟體在開機自我檢測（POST）期間手動翻轉位元，以驗證安全中斷機制是否完好。</li>
+    </ul>
+
+    <h2 id="clock-power">4. 時脈樹與系統資源 (SRSS) 低功耗模式</h2>
+    <p>汽車在長達數週甚至數月的停放期間，12V 電瓶的總漏電流必須控制在極低水準（通常整車熄火暗電流規範 &lt; 5 mA，分配給 IBS 感測器單位的暗電流通常要求 <b>&lt; 50 µA</b>）。</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>運行模式</th><th>CPU 狀態</th><th>類比子系統 PACSS</th><th>時脈來源</th><th>典型耗電 (Typical @ 12V VBAT)</th></tr>
+      <tr><td><b>Active</b></td><td>全速運行 (24~48 MHz)</td><td>雙 ADC 全開高速連續採樣</td><td>高頻內部振盪器 IMO (48 MHz)</td><td><b>3.5 mA ~ 5.5 mA</b></td></tr>
+      <tr><td><b>Sleep</b></td><td>時脈閘控暫停 (Clock Gated)</td><td>ADC 正常運作，DMA 自主搬移</td><td>IMO (48 MHz)</td><td><b>1.8 mA ~ 2.4 mA</b></td></tr>
+      <tr><td><b>Deep Sleep</b></td><td>低漏電待機，暫存器內容保持</td><td>依排程週期性脈衝喚醒 (Duty-Cycled)</td><td>超低功耗低頻振盪器 ILO (32 kHz)</td><td><b>12 µA ~ 25 µA</b></td></tr>
+      <tr><td><b>Hibernate / Stop</b></td><td>核心電源切斷，僅保留備用計時器</td><td>關閉</td><td>32.768 kHz 外部晶振 WCO (選配)</td><td><b>&lt; 5 µA</b></td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--safety)">
+      <b>看門狗時脈獨立性：</b> 車規 ISO 26262 明確要求安全看門狗時脈不得與主 CPU 時脈同源。PSoC 4 HVPA 配備獨立的 32 kHz 內部低速振盪器（ILO），即便主晶振或內部高頻 IMO 因外部干擾或晶體受損停振，看門狗依然能準確計時並強制重置晶片。
+    </div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

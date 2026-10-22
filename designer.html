@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU 規格設計器 · MCU Notes</title>
+<meta name="description" content="車用微控制器與電池管理系統（BMS）規格推導設計器：BMS 分流電阻與類比前端選型計算、車載暗電流休眠功耗預算評估、Flash 與 SRAM 韌體安全記憶體分區配置，並自動生成 C 語言硬體驅動配置標頭檔。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="designer">
+<main class="app-wrap">
+<div class="app-head">
+  <div class="eyebrow">Spec Designer · 規格設計器</div>
+  <h1>從系統規格推導分流器、ADC 裕度、待機功耗與記憶體佈局</h1>
+  <p class="lead">選擇上方設計器模組，輸入電池與硬體參數，即時估算熱損耗、微伏量測解析度、長達數月的電瓶待機極限，並生成可直接複製至工程專案的 Linker Script 與 C 標頭檔。</p>
+</div>
+
+<div class="seg" role="tablist" aria-label="設計器選單">
+  <button role="tab" data-type="shunt" aria-selected="true">BMS 分流電阻與前端選型</button>
+  <button role="tab" data-type="power" aria-selected="false">電瓶休眠與待機壽命評估</button>
+  <button role="tab" data-type="memory" aria-selected="false">韌體記憶體配置與安全開銷</button>
+</div>
+
+<div class="bench">
+  <div class="panel">
+    <div class="ctl"><label for="ds-preset">常用車規參考範本</label>
+      <select id="ds-preset">
+        <option value="12v_ibs" selected>12V 啟停鉛酸 IBS (標準 PSoC 4 HVPA-144K)</option>
+        <option value="24v_truck">24V 商用重卡智慧電瓶感測器</option>
+        <option value="48v_mild">48V 輕油電 (MHEV) 鋰電池雙向分流器</option>
+        <option value="ev_bdu">400V/800V EV 高壓電池斷路單元 (BDU)</option>
+      </select>
+    </div>
+    <div id="ds-inputs"></div>
+  </div>
+  <div class="stack">
+    <div class="metrics" id="ds-metrics"></div>
+    <div class="two">
+      <div class="panel"><h3>設計運算與關鍵折衷指標</h3><div class="tblwrap" style="margin:0"><table id="ds-table-trade"></table></div></div>
+      <div class="panel"><h3>合規性檢查與安全餘裕</h3><div id="ds-checks" class="log" style="max-height:none;font-family:var(--sans);font-size:13.5px"></div></div>
+    </div>
+    <div class="panel">
+      <h3>工程代碼與規格配置生成
+        <small><button class="btn" id="ds-copy-btn" type="button" style="padding:3px 10px">一鍵複製</button></small>
+      </h3>
+      <pre class="code" id="ds-output"></pre>
+    </div>
+  </div>
+</div>
+</main>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/designer.js"></script>
+</body>
+</html>

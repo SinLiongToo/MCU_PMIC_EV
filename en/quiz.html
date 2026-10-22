@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU Knowledge Quiz · MCU Notes</title>
+<meta name="description" content="Automotive MCU & precision analog PMIC knowledge test: 60 rigorous multiple-choice questions covering microarchitecture, dual Delta-Sigma ADC, BMS Coulomb counting, BCD fab, AEC-Q100, and ISO 26262.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="quiz">
+<main class="app-wrap">
+<div class="app-head">
+  <div class="eyebrow">MCU Knowledge Quiz · Self Assessment</div>
+  <h1>Test Your Automotive Microcontroller &amp; Precision Analog Mastery</h1>
+  <p class="lead">60 questions covering all 6 core chapters. Select your test scope below. Immediate answers, grading, and in-depth explanations provided after every question.</p>
+</div>
+
+<div class="panel" style="margin-bottom:24px">
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+      <label><b>Chapter Scope:</b>
+        <select id="qz-chapter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+          <option value="all" selected>All Chapters Comprehensive (60 Questions)</option>
+          <option value="core">Chapter 1 · Core Architecture</option>
+          <option value="analog">Chapter 2 · Precision Analog &amp; PMIC</option>
+          <option value="app">Chapter 3 · Automotive BMS Applications</option>
+          <option value="fab">Chapter 4 · High-Voltage Silicon Process</option>
+          <option value="test">Chapter 5 · Test, Calibration &amp; AEC</option>
+          <option value="safety">Chapter 6 · ISO 26262 Functional Safety</option>
+        </select>
+      </label>
+      <label><b>Question Count:</b>
+        <select id="qz-count" style="padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+          <option value="10" selected>10 Questions (Quick Test)</option>
+          <option value="20">20 Questions (Standard)</option>
+          <option value="60">60 Questions (Full Bank)</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn pri" id="qz-start" type="button">Start New Quiz</button>
+  </div>
+</div>
+
+<div id="qz-container"></div>
+<div id="qz-summary" style="display:none" class="panel"></div>
+
+</main>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

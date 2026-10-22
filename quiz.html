@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU 專業測驗 · MCU Notes</title>
+<meta name="description" content="車用微控制器與高精度類比 PMIC 專業知識測驗：60 道嚴選單選與多選實戰題，涵蓋微架構、雙通道 Delta-Sigma ADC、BMS 庫倫計演算法、BCD 製程、車規 AEC-Q100 認證與 ISO 26262 功能安全。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="quiz">
+<main class="app-wrap">
+<div class="app-head">
+  <div class="eyebrow">MCU Knowledge Quiz · 專業自我測驗</div>
+  <h1>檢驗你的車用微控制器與高精度類比核心功底</h1>
+  <p class="lead">題庫共 60 題，涵蓋六大知識章節。可自由選擇測驗範圍與題目數量。作答後即時公佈正解與深度技術解析，並可點擊超連結回顧章節知識點。</p>
+</div>
+
+<div class="panel" style="margin-bottom:24px">
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+      <label><b>章節範圍：</b>
+        <select id="qz-chapter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+          <option value="all" selected>全站綜合 (全部 6 大章節)</option>
+          <option value="core">Chapter 1 · 核心微架構</option>
+          <option value="analog">Chapter 2 · 高精度類比與 PMIC</option>
+          <option value="app">Chapter 3 · 車用 BMS 系統應用</option>
+          <option value="fab">Chapter 4 · 半導體高壓製程</option>
+          <option value="test">Chapter 5 · 測試校準與車規</option>
+          <option value="safety">Chapter 6 · 功能安全 ISO 26262</option>
+        </select>
+      </label>
+      <label><b>題數：</b>
+        <select id="qz-count" style="padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+          <option value="10" selected>10 題 (快速自測)</option>
+          <option value="20">20 題 (標準測試)</option>
+          <option value="60">60 題 (全套完整測驗)</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn pri" id="qz-start" type="button">開始全新測驗</button>
+  </div>
+</div>
+
+<div id="qz-container"></div>
+<div id="qz-summary" style="display:none" class="panel"></div>
+
+</main>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/quiz.js"></script>
+</body>
+</html>

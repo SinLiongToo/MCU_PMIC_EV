@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06 Functional Safety · MCU Notes</title>
+<meta name="description" content="ISO 26262 functional safety for automotive MCUs: ASIL-C requirements, Challenge-Response Window Watchdog, analog loopback wire-break BIST, FMEDA analysis, and random hardware failure metrics (FIT, SPFM > 97%, LFM > 80%).">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="safety" data-ch="safety">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Chapter 06 · Functional Safety &amp; ISO 26262 Reliability</div>
+    <h1>Functional Safety &amp; Reliability: ISO 26262 ASIL-C in Practice</h1>
+    <p class="lead">In automotive battery disconnect units and high-voltage packs, an undetected runaway current or an accidental contactor drop-out poses severe thermal and vehicular safety hazards. Grounded in ISO 26262, the PSoC™ 4 HVPA natively achieves <b>ASIL-C certification</b>.</p>
+
+    <h2 id="asil-requirements">1. Automotive Safety Integrity Levels (ASIL) &amp; Safety Goals</h2>
+    <p>Core safety goals include preventing battery thermal runaway from sustained overcurrent (ASIL-C/D) and preventing false disconnection during highway cruising (ASIL-C).</p>
+
+    <h2 id="safety-mechanisms">2. Five On-Chip Hardware Safety Mechanisms</h2>
+    <ul>
+      <li><b>Challenge-Response Window Watchdog:</b> Dual-layer protection enforcing strict open/close timing windows and requiring algorithmic calculation of dynamic challenge tokens from independent 32 kHz ILO clocks.</li>
+      <li><b>Memory SECDED ECC &amp; Fault Injection:</b> Hardware corrects single-bit flips and issues Non-Maskable Interrupts (NMI) on fatal double-bit faults.</li>
+      <li><b>Analog BIST &amp; Wire-Break Detection:</b> 50 nA test current pulses verify shunt solder continuity and detect open circuits immediately.</li>
+      <li><b>Voltage &amp; Clock Supervisors:</b> Brown-Out (BOD) and Over-Voltage Detect (OVD) monitoring all power rails.</li>
+    </ul>
+
+    <h2 id="fmeda-metrics">3. FMEDA &amp; Quantitative Random Hardware Metrics</h2>
+    <div class="tblwrap"><table>
+      <tr><th>Metric</th><th>ASIL-B Threshold</th><th>ASIL-C Threshold</th><th>PSoC™ 4 HVPA Typical Metric</th></tr>
+      <tr><td><b>SPFM (Single-Point Fault Metric)</b></td><td>&ge; 90%</td><td><b>&ge; 97%</b></td><td><b>&gt; 98.4%</b></td></tr>
+      <tr><td><b>LFM (Latent Fault Metric)</b></td><td>&ge; 60%</td><td><b>&ge; 80%</b></td><td><b>&gt; 85.2%</b></td></tr>
+      <tr><td><b>PMHF (Random Hardware Failures)</b></td><td>&lt; 100 FIT</td><td><b>&lt; 100 FIT</b></td><td><b>&lt; 18 FIT (Failures in 10^9 hours)</b></td></tr>
+    </table></div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

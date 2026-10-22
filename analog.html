@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>02 高精度類比與電源整合 · MCU Notes</title>
+<meta name="description" content="深入解析 Infineon PSoC™ 4 HVPA 精密類比子系統 PACSS：雙通道 16-bit 差分 Sigma-Delta ADC、可程式增益放大器 PGA 與快速自動增益切換 AGC、Sinc³ 數位濾波器，以及直連 12V/24V 電池耐受 42V 拋負載的內部高壓 PMIC 穩壓電源架構。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="analog" data-ch="analog">
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article>
+    <div class="eyebrow">Chapter 02 · Precision Analog &amp; PMIC Subsystem</div>
+    <h1>高精度類比與電源整合：微伏級感測與 42V 直連</h1>
+    <p class="lead">在汽車動力與電瓶監控中，感測前端面臨極度極端的物理挑戰：電流動態範圍高達 <b>1,000,000:1</b>（車輛鎖車待機時僅有數毫安培暗電流，引擎啟動或負載突變時瞬間飆升至 1500 安培），同時電瓶端子常伴隨數十伏特的拋負載（Load Dump）高壓突波。本章剖析如何透過單一晶片實現高壓穩壓與 $\pm 0.1\%$ 精密感測。</p>
+
+    <h2 id="pacss-overview">1. 精密類比子系統架構 (PACSS)</h2>
+    <p>PSoC™ 4 HVPA 內部將高精度量測硬體封裝為獨立的類比子系統（Precision Analog Subsystem, PACSS）。PACSS 包含兩個完全同步但功能特化的類比-數位轉換通道：<b>電流通道（Current Channel）</b>與<b>電壓通道（Voltage Channel）</b>。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 740 320" role="img" aria-label="PACSS 類比子系統架構方塊圖">
+        <!-- Input Section -->
+        <rect x="20" y="30" width="120" height="90" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="80" y="65" text-anchor="middle" font-weight="700">Shunt Resistor</text>
+        <text class="ts t-mut" x="80" y="85" text-anchor="middle">100 µΩ ~ 1 mΩ</text>
+        <text class="ts t-mono" x="80" y="105" text-anchor="middle" fill="var(--analog)">±1500A (±150mV)</text>
+
+        <rect x="20" y="160" width="120" height="80" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="80" y="195" text-anchor="middle" font-weight="700">Battery +</text>
+        <text class="ts t-mut" x="80" y="215" text-anchor="middle">3.6V ~ 28V (42V pk)</text>
+
+        <!-- PACSS Outer Box -->
+        <rect x="170" y="15" width="550" height="285" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="2"/>
+        <text class="ts" x="445" y="35" text-anchor="middle" font-weight="700" letter-spacing="1">PACSS PRECISION ANALOG SUBSYSTEM</text>
+
+        <!-- Current Channel Internal -->
+        <rect x="190" y="50" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
+        <text class="ts" x="245" y="75" text-anchor="middle" font-weight="600">Dual PGA</text>
+        <text class="ts t-mut" x="245" y="95" text-anchor="middle">Gain 1x ~ 64x</text>
+        <text class="ts t-mono" x="245" y="110" text-anchor="middle" font-size="10">Auto-Zero Chop</text>
+
+        <rect x="330" y="50" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
+        <text class="ts" x="385" y="75" text-anchor="middle" font-weight="600">16-bit ΔΣ ADC</text>
+        <text class="ts t-mut" x="385" y="95" text-anchor="middle">Over-sampling</text>
+        <text class="ts t-mono" x="385" y="110" text-anchor="middle" font-size="10">OSR 32 ~ 2048</text>
+
+        <rect x="470" y="50" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
+        <text class="ts" x="525" y="75" text-anchor="middle" font-weight="600">Sinc³ Filter</text>
+        <text class="ts t-mut" x="525" y="95" text-anchor="middle">Decimation</text>
+        <text class="ts t-mono" x="525" y="110" text-anchor="middle" font-size="10">50/60Hz Rejection</text>
+
+        <!-- Fast AGC Box -->
+        <rect x="250" y="130" width="200" height="40" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="350" y="155" text-anchor="middle" font-weight="600" fill="var(--safety)">Fast AGC Logic &amp; LUT (&lt;5µs)</text>
+
+        <!-- Voltage Channel Internal -->
+        <rect x="190" y="195" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="245" y="225" text-anchor="middle" font-weight="600">HV Attenuator</text>
+        <text class="ts t-mut" x="245" y="245" text-anchor="middle">Ratio 24:1 Divider</text>
+
+        <rect x="330" y="195" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="385" y="225" text-anchor="middle" font-weight="600">16-bit ΔΣ ADC</text>
+        <text class="ts t-mut" x="385" y="245" text-anchor="middle">Voltage Channel</text>
+
+        <rect x="470" y="195" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="525" y="225" text-anchor="middle" font-weight="600">Sinc³ Filter</text>
+        <text class="ts t-mut" x="525" y="245" text-anchor="middle">V_BAT Decimation</text>
+
+        <!-- Result Registers -->
+        <rect x="610" y="100" width="90" height="110" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="655" y="140" text-anchor="middle" font-weight="700">FIFO / DMA</text>
+        <text class="ts t-mut" x="655" y="160" text-anchor="middle">Registers</text>
+        <text class="ts t-mono" x="655" y="180" text-anchor="middle" fill="var(--core)">32-bit Sync</text>
+
+        <!-- Connection lines -->
+        <line x1="140" y1="75" x2="190" y2="75" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="300" y1="75" x2="330" y2="75" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="440" y1="75" x2="470" y2="75" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="580" y1="75" x2="610" y2="130" stroke="var(--analog)" stroke-width="2"/>
+
+        <line x1="140" y1="200" x2="190" y2="225" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="300" y1="230" x2="330" y2="230" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="440" y1="230" x2="470" y2="230" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="580" y1="230" x2="610" y2="170" stroke="var(--warn)" stroke-width="2"/>
+
+        <path d="M385 120v10M300 150h-55v-30" fill="none" stroke="var(--safety)" stroke-width="1.5" stroke-dasharray="3 3"/>
+      </svg>
+      <figcaption>圖 2.1：PSoC™ 4 HVPA PACSS 精密類比子系統與自動增益切換路徑</figcaption>
+    </div>
+
+    <h2 id="sigma-delta">2. 雙 16-bit 差分 $\Delta\Sigma$ 轉換與 Sinc³ 數位濾波</h2>
+    <p>傳統逐次逼近暫存器（SAR）ADC 容易受到車內高頻電磁干擾（如點火線圈、逆變器 PWM 開關雜訊）污染。$\Delta\Sigma$（Sigma-Delta）架構藉由超採樣（Oversampling）與雜訊整形（Noise Shaping）技術，將量化雜訊推向高頻，再由數位濾波器完全濾除。</p>
+
+    <div class="math-block">
+      <b>$\Delta\Sigma$ ADC 動態範圍與超採樣增益公式：</b><br>
+      若調變器階數為 \(L = 2\)，超採樣比為 \(OSR = f_s / (2 f_B)\)，則訊噪比增益為：<br>
+      \[\text{SNR}_{\text{gain}} = 10 \log_{10}\left(\frac{2L + 1}{\pi^{2L}} \cdot OSR^{2L + 1}\right) \approx 15.05 \log_2(OSR) - 12.9 \text{ dB}\]
+      當 \(OSR = 256\) 時，即便單一位元量化器也能獲得高達 <b>96 dB 以上的有效動態範圍（ENOB &gt; 15.6 bits）</b>。
+    </div>
+
+    <h3>Sinc³ 抽取濾波器與 50Hz/60Hz 工頻消除</h3>
+    <p>PACSS 整合了專屬硬體 Sinc³ 數位濾波器，其離散轉移函數為：</p>
+    <div class="math-block">
+      \[H(z) = \left( \frac{1 - z^{-D}}{1 - z^{-1}} \right)^3\]
+      其中 \(D\) 為抽取率（Decimation Ratio）。硬體濾波器在頻率響應上產生週期性凹陷（Notch）。當將調變器時脈設定為 1.536 MHz 且 \(D = 1536\) 時，輸出數據率正好為 1 kHz，其傳輸零點精準落在 50 Hz 與 60 Hz 及其諧波頻率上，獲得超過 <b>80 dB 的工頻電網干擾抑制比（Normal Mode Rejection Ratio, NMRR）</b>。
+    </div>
+
+    <h2 id="agc-shunt">3. 自動增益控制 (AGC) 與微伏級分流檢測</h2>
+    <p>為了將動力線路上的損耗降至最低，車用分流電阻（Shunt）阻值通常只有 <b>$100\,\mu\Omega$</b>（$0.0001\,\Omega$）。</p>
+    <ul>
+      <li>當車輛引擎發動瞬間，啟動馬達電流 \(I = 1200\text{ A}\)，分流電阻跨壓為：
+        \[V_{\text{shunt}} = 1200\text{ A} \times 100\,\mu\Omega = 120\text{ mV}\]
+        此時 PGA 必須切換至低增益（如 Gain = 1x 或 2x），防止 ADC 飽和溢位。</li>
+      <li>當車輛熄火休眠時，車載電子系統暗電流僅有 \(I = 5\text{ mA}\)，分流電阻跨壓僅有：
+        \[V_{\text{shunt}} = 0.005\text{ A} \times 100\,\mu\Omega = 0.5\,\mu\text{V} \quad (500\text{ nV})\]
+        此時 PGA 必須即刻切換至高增益（如 Gain = 64x），將微弱訊號放大至 32 mV 進行精密轉換。</li>
+    </ul>
+
+    <div class="callout" style="--c:var(--safety)">
+      <b>硬體快速查表 AGC 機制：</b> 若由軟體偵測幅值再切換 PGA 增益，中斷與計算延遲超過 100 µs，在突發大電流時 ADC 會出現持續飽和截波，造成嚴重的庫倫積分誤差。PSoC 4 HVPA 配備獨立硬體快速比較器與查表單元（LUT），能在 <b>&lt; 5 µs 內自動縮放 PGA 增益</b>，並在同一時鐘週期自動標記該筆採樣資料的縮放權重，保證動態量測零丟包。
+    </div>
+
+    <h2 id="hv-pmic">4. 整合式 42V 高壓 PMIC 穩壓電源架構</h2>
+    <p>傳統分離式架構必須在 MCU 外圍放置一顆額外的車規 LDO 或 Buck 晶片將 12V 降至 3.3V。PSoC™ 4 HVPA 在晶片內部直接整合了耐受高達 42V 的智慧功率高壓調節器（HV Linear Regulator）。</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>電源節點</th><th>輸入來源</th><th>輸出電壓</th><th>功能說明與車規指標</th></tr>
+      <tr><td><b>VBAT</b></td><td>汽車電瓶極柱直連</td><td>3.6V ~ 28V 額定 (耐受 42V)</td><td>具備防反接二極體（Reverse Polarity）與內部主動箝位保護</td></tr>
+      <tr><td><b>HV Regulator</b></td><td>VBAT</td><td>3.3V (VDDD / VDDA)</td><td>驅動外部 IO、LIN 收發器與內部類比電路，PSRR &gt; 65 dB @ 100 kHz</td></tr>
+      <tr><td><b>Core Active LDO</b></td><td>VDDD (3.3V)</td><td>1.8V (VCCD)</td><td>供應 Cortex-M0+ 核心高速運算、Flash 讀取與 DMA 匯流排</td></tr>
+      <tr><td><b>Core Deep Sleep LDO</b></td><td>VDDD (3.3V)</td><td>1.8V (VCCD_LP)</td><td>超微安級超低靜態電流偏壓電路，休眠時供應 SRAM 資料保留與 WDT</td></tr>
+    </table></div>
+
+    <div class="math-block">
+      <b>ISO 7637-2 Pulse 5b（拋負載 Load Dump）耐壓耐受驗證：</b><br>
+      當發電機全力向電瓶充電時，電瓶端子突然鬆脫斷開，發電機磁場能量釋放，在電源線上產生高達 \(40\text{V} \sim 42\text{V}\) 的破壞性突波，持續時間達 \(t_d = 400\text{ ms}\)。<br>
+      PSoC 4 HVPA 內部的高壓 DMOS 功率管具備 <b>45V 崩潰電壓額定值（Breakdown Voltage $V_{BR}$）</b>，無需外部 TVS 即可直接承受拋負載衝擊而持續正常運作。
+    </div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

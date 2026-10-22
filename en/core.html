@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>01 Core Architecture · MCU Notes</title>
+<meta name="description" content="Detailed analysis of the 32-bit Arm Cortex-M0+ core pipeline, fast single-cycle I/O ports, NVIC interrupt controller, AHB-Lite bus matrix, DMA, and Flash/SRAM SECDED ECC protection.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="core" data-ch="core">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Chapter 01 · Core &amp; Microarchitecture</div>
+    <h1>Core Microarchitecture: Computation, Bus &amp; Memory Safety</h1>
+    <p class="lead">In automotive battery management systems (BMS), microcontrollers must balance ultra-low standby quiescent power with deterministic, hard real-time interrupt responsiveness. Taking the Infineon PSoC™ 4 HVPA-144K as a baseline, this chapter explores the 32-bit Arm® Cortex®-M0+ core, 8-channel DMA controller, single-layer AHB-Lite interconnect matrix, and SECDED hardware ECC protected memory subsystem.</p>
+
+    <h2 id="cortex-m0plus">1. Arm Cortex-M0+ Processor Core Architecture</h2>
+    <p>Legacy 8-bit and 16-bit automotive microcontrollers struggle to handle 32-bit digital filtering and high-precision integration without consuming excessive clock cycles. The PSoC 4 HVPA utilizes an Arm Cortex-M0+ operating up to 48 MHz, delivering outstanding energy efficiency (2.46 CoreMark/MHz).</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>Architecture Feature</th><th>Cortex-M0</th><th>Cortex-M0+ (PSoC 4 HVPA)</th><th>Automotive BMS Practical Value</th></tr>
+      <tr><td><b>Pipeline Stages</b></td><td>3 stages (Fetch, Decode, Execute)</td><td><b>2 stages (Fetch, Execute)</b></td><td>Reduces branch penalty; cuts dynamic power dissipation by ~30%</td></tr>
+      <tr><td><b>Single-Cycle I/O Port</b></td><td>No (via AHB bus, 2 cycles)</td><td><b>Dedicated Fast I/O Bus</b></td><td>Pyro-fuse actuation or high-voltage contactor disconnect in 1 clock cycle</td></tr>
+      <tr><td><b>Interrupt Controller (NVIC)</b></td><td>Fixed priority grouping</td><td><b>Up to 32 interrupts, 4 priority levels</b></td><td>Over-current trips receive deterministic sub-microsecond latency</td></tr>
+      <tr><td><b>Memory Protection (MPU)</b></td><td>None</td><td><b>Optional 8-region hardware MPU</b></td><td>Isolates AUTOSAR OS tasks and SafeTlib library partitions</td></tr>
+      <tr><td><b>Hardware Multiplier</b></td><td>32 cycles or 1 cycle</td><td><b>Single-cycle 32×32 Multiplier</b></td><td>Real-time Sinc decimation filtering and Kalman matrix operations</td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--core)">
+      <b>Deterministic Interrupt Latency:</b> The Cortex-M0+ features hardware auto-stacking (pushing <code>r0-r3, r12, lr, pc, xPSR</code> onto the stack) with fixed 15-cycle entry latency and 6-cycle tail-chaining, providing guaranteed timing for critical safety faults.
+    </div>
+
+    <h2 id="bus-matrix">2. System Interconnect: AHB-Lite &amp; 8-Channel DMA Controller</h2>
+    <p>Continuous shunt current measurement requires sampling rates in the tens of kHz. Interrupting the CPU for every sample would cause severe CPU starvation. PSoC 4 HVPA establishes an autonomous 8-channel DMA controller directly bridged to the AHB-Lite matrix.</p>
+
+    <h3>Descriptor Chaining &amp; Ping-Pong Buffers</h3>
+    <p>The DMA supports scatter-gather descriptor chaining. When the PACSS analog subsystem finishes a synchronized current and voltage sample, a hardware trigger instructs the DMA to transfer the 32-bit packet into SRAM ping-pong buffers without waking the Cortex-M0+ core, allowing the CPU to remain in low-power Sleep mode.</p>
+
+    <h2 id="memory-ecc">3. Memory Subsystem with SECDED Hardware ECC</h2>
+    <p>Cosmic neutron flux and package trace alpha particles can induce Single Event Upsets (SEU). If battery state calibration parameters in SRAM flip a bit, catastrophic BMS misjudgments could occur.</p>
+
+    <div class="math-block">
+      <b>Single Error Correction, Double Error Detection (SECDED Hamming Code):</b><br>
+      For a data word of \(k = 32\) bits, parity bits \(p\) must satisfy:<br>
+      \[2^p \ge k + p + 1 \implies 2^6 = 64 \ge 39 \quad (p = 6 \text{ bits for single-error correction})\]
+      Adding 1 overall parity bit yields \(p = 7\) check bits for full SECDED capability.
+    </div>
+
+    <ul>
+      <li><b>128 KB Code Flash + 8 KB Data Flash:</b> Transparent hardware ECC decodes and corrects single-bit faults in 1 clock cycle. Double-bit errors immediately raise a Non-Maskable Interrupt (NMI).</li>
+      <li><b>8 KB SRAM ECC:</b> Accompanied by dedicated fault injection registers for runtime self-testing by safety libraries during power-on self-test (POST).</li>
+    </ul>
+
+    <h2 id="clock-power">4. Clock Tree &amp; Ultra-Low Power Modes</h2>
+    <p>Automotive battery sensors must draw minimal quiescent current during vehicle parking (&lt; 50 µA OEM budget).</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>Operating Mode</th><th>CPU State</th><th>PACSS Analog Subsystem</th><th>Clock Source</th><th>Typical Current (@ 12V VBAT)</th></tr>
+      <tr><td><b>Active</b></td><td>Full speed (24~48 MHz)</td><td>Dual ADC continuous sampling</td><td>Internal Main Oscillator IMO (48 MHz)</td><td><b>3.5 mA ~ 5.5 mA</b></td></tr>
+      <tr><td><b>Sleep</b></td><td>Clock gated</td><td>ADC active, DMA autonomous</td><td>IMO (48 MHz)</td><td><b>1.8 mA ~ 2.4 mA</b></td></tr>
+      <tr><td><b>Deep Sleep</b></td><td>Low leakage retention</td><td>Duty-cycled periodic wake-up</td><td>Internal Low-speed Oscillator ILO (32 kHz)</td><td><b>12 µA ~ 25 µA</b></td></tr>
+      <tr><td><b>Hibernate</b></td><td>Core unpowered</td><td>Off</td><td>Optional 32.768 kHz WCO crystal</td><td><b>&lt; 5 µA</b></td></tr>
+    </table></div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

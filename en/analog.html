@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>02 Precision Analog &amp; PMIC · MCU Notes</title>
+<meta name="description" content="In-depth analysis of Infineon PSoC™ 4 HVPA precision analog subsystem (PACSS): Dual 16-bit Sigma-Delta ADCs, fast AGC look-up table, Sinc³ decimation filter, and 42V load-dump tolerant PMIC high-voltage regulator.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="analog" data-ch="analog">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Chapter 02 · Precision Analog &amp; PMIC Subsystem</div>
+    <h1>Precision Analog &amp; High-Voltage Power: Microvolt Sensing &amp; 42V Direct Feed</h1>
+    <p class="lead">Automotive battery monitoring poses an extreme physical challenge: current dynamic range spans over <b>1,000,000:1</b> (from a few milliamps in vehicle parking sleep to 1500 Amps during engine cranking or high-power regenerative braking), all while enduring destructive 42V load dump spikes on the battery bus.</p>
+
+    <h2 id="pacss-overview">1. Precision Analog Subsystem (PACSS) Architecture</h2>
+    <p>The PSoC™ 4 HVPA PACSS integrates two synchronized differential converter channels: the <b>Current Channel (ISENSE)</b> and the <b>Voltage Channel (VSENSE)</b>.</p>
+
+    <h2 id="sigma-delta">2. Dual 16-bit Differential $\Delta\Sigma$ ADCs &amp; Sinc³ Decimation</h2>
+    <p>Unlike SAR ADCs that are prone to switching noise from inverters, Sigma-Delta converters oversample the input and shape quantization noise out of the band of interest.</p>
+
+    <div class="math-block">
+      <b>Sinc³ Decimation Filter Transfer Function:</b><br>
+      \[H(z) = \left( \frac{1 - z^{-D}}{1 - z^{-1}} \right)^3\]
+      By setting the modulator clock to 1.536 MHz and decimation ratio \(D = 1536\), output data rate is 1 kHz. The periodic notches fall exactly at 50 Hz, 60 Hz, and their harmonics, providing over <b>80 dB of normal-mode power grid rejection</b>.
+    </div>
+
+    <h2 id="agc-shunt">3. Fast Hardware Automatic Gain Control (AGC)</h2>
+    <p>Using a standard \(100\,\mu\Omega\) shunt, a 1500 A cranking surge yields 150 mV across the inputs, while a 15 mA standby current yields just 1.5 µV.</p>
+    <ul>
+      <li>PGA Gain 1x (±150 mV FSR) covers heavy charging and engine start.</li>
+      <li>PGA Gain 64x (±2.3 mV FSR) magnifies microvolt standby currents.</li>
+      <li><b>Fast Look-Up Table AGC:</b> Switches gain stages in <b>&lt; 5 µs</b> without CPU overhead, ensuring zero clipping and complete Coulomb tracking.</li>
+    </ul>
+
+    <h2 id="hv-pmic">4. Integrated 42V High-Voltage Regulator / PMIC</h2>
+    <p>Eliminating external PMIC bucks and LDOs, the integrated high-voltage linear regulator accepts direct battery connections from 3.6V to 28V, and survives 42V ISO 7637-2 load dump transients with high PSRR.</p>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

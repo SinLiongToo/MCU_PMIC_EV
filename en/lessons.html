@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lessons Learned · MCU Notes</title>
+<meta name="description" content="Automotive MCU production war stories: Contactor ground bounce, sub-zero cold crank BOD reset storms, shunt Seebeck thermoelectric drift, LIN bus 12V shorts, and RC oscillator thermal drift.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="lessons" data-ch="safety">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Lessons Learned · Field Failures &amp; Troubleshooting</div>
+    <h1>Automotive MCU Field Lessons: Five Real Failure Cases &amp; Troubleshooting</h1>
+    <p class="lead">Veteran automotive engineers say: "Behind every design guideline and AEC standard lies an expensive vehicle recall." This chapter dissects five classic automotive failure cases (<b>Phenomenon &rarr; Root Cause &rarr; Countermeasure &rarr; Takeaways</b>) and presents a systematic debugging matrix.</p>
+
+    <h2 id="case1-groundbounce">1. Case 1: Contactor Switching Ground Bounce &amp; ADC Latch-up</h2>
+    <div class="callout" style="--c:var(--bad)">
+      <b>Phenomenon:</b> High-voltage contactor closure during regenerative braking caused continuous 0xFFFF saturation on current channels, followed by a Brown-out Reset (BOD) and instrument cluster alarms.
+    </div>
+    <h3>Root Cause &amp; Countermeasure</h3>
+    <p>High \(dI/dt\) through chassis grounding bolts induced hundreds of millivolts of ground bounce (\(V = L \cdot dI/dt\)), pulling differential inputs below ground and triggering substrate ESD diodes. <b>Fix:</b> Monolithic high-voltage integration (PSoC 4 HVPA) with exposed pad star-grounding and symmetric RC input filters.</p>
+
+    <h2 id="case2-coldcrank">2. Case 2: Sub-Zero Cold Crank (3.2V) &amp; BOD Reset Storms</h2>
+    <div class="callout" style="--c:var(--warn)">
+      <b>Phenomenon:</b> At -35°C in cold-weather testing, engine cranking collapsed 12V battery rails to 3.2V, causing continuous MCU reset loops and blown starter fuses.
+    </div>
+    <h3>Root Cause &amp; Countermeasure</h3>
+    <p>External LDOs experienced dropout, dropping core rails below BOD thresholds. <b>Fix:</b> Ultra-wide input MCUs supporting operation down to 3.0V direct battery feed, coupled with 100 mV BOD threshold hysteresis.</p>
+
+    <h2 id="case3-seebeck">3. Case 3: Shunt Resistor Seebeck Thermoelectric Drift</h2>
+    <div class="callout" style="--c:var(--app)">
+      <b>Phenomenon:</b> A 15°C thermal gradient across the copper-manganin shunt generated 22.5 µV of thermoelectric EMF, producing a 225 mA phantom current and 1.35 Ah drift during a 6-hour summer drive.
+    </div>
+    <h3>Root Cause &amp; Countermeasure</h3>
+    <p><b>Fix:</b> Enable on-chip auto-zero chopping to modulate DC Seebeck EMF into high frequencies that are decimated away by the Sinc³ filter, and enforce symmetric PCB copper terminal thermal layouts.</p>
+
+    <h2 id="case4-linshort">4. Case 4: LIN Bus Short-to-Battery Terminal</h2>
+    <div class="callout" style="--c:var(--safety)">
+      <b>Phenomenon:</b> A pinched door wire harness shorted LIN to 12V permanent battery power, charring non-automotive grade transceiver chips.
+    </div>
+    <h3>Root Cause &amp; Countermeasure</h3>
+    <p><b>Fix:</b> Use AEC-Q100 certified MCUs with integrated automotive-grade LIN PHYs featuring -27V to +42V DC fault withstand capability.</p>
+
+    <h2 id="troubleshooting-matrix">5. Troubleshooting Decision Matrix</h2>
+    <div class="tblwrap"><table>
+      <tr><th>Symptom</th><th>Likely Root Cause</th><th>Initial Check</th><th>Recommended Fix</th></tr>
+      <tr><td><b>ADC drift with temperature</b></td><td>Offset drift / Chopping disabled</td><td>Check <code>PACSS_CHOP</code> register</td><td>Enable auto-zero chopping &amp; trim eFuses</td></tr>
+      <tr><td><b>Random NMI BusFaults</b></td><td>Double-bit memory flip (SEU)</td><td>Inspect <code>ECC_STATUS</code> register</td><td>Add decoupling caps; distance from ignition coils</td></tr>
+      <tr><td><b>WDT resets at high temp</b></td><td>RC oscillator thermal drift</td><td>Measure WDT feed timing window</td><td>Expand window tolerance to &plusmn;25% or use crystal</td></tr>
+      <tr><td><b>LIN dropouts in sub-zero</b></td><td>Baud rate clock deviation &gt; 1.5%</td><td>Inspect LIN 0x55 synch byte timer</td><td>Enable hardware automatic baud calibration</td></tr>
+    </table></div>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

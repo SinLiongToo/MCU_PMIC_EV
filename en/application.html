@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>03 Automotive BMS · MCU Notes</title>
+<meta name="description" content="Automotive Battery Management System (BMS) implementations: Intelligent Battery Sensor (IBS), Coulomb counting for SoC, Kalman filter fusion, OCV recalibration, internal impedance for SoH, and LIN 2.2A protocol.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="application" data-ch="app">
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article>
+    <div class="eyebrow">Chapter 03 · Automotive BMS Applications</div>
+    <h1>Automotive Battery Management: From Terminal Clamp to Vehicle Network</h1>
+    <p class="lead">Whether in traditional 12V start-stop lead-acid batteries, 24V commercial haulers, 48V mild hybrids, or high-voltage electric vehicle Battery Disconnect Units (BDU), the microcontroller acts as the central hub of the <b>Intelligent Battery Sensor (IBS)</b>.</p>
+
+    <h2 id="ibs-bdu">1. Intelligent Battery Sensor (IBS) Hardware Architecture</h2>
+    <p>Mounted directly onto the battery's negative pole clamp, the IBS integrates the MCU, shunt resistor, and protection circuitry on a single compact substrate.</p>
+
+    <h2 id="soc-coulomb">2. State of Charge (SoC): Coulomb Counting &amp; OCV Recalibration</h2>
+    <div class="math-block">
+      \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^t \eta(I) \cdot I(\tau) \, d\tau\]
+      A tiny uncalibrated offset of \(10\,\mu\text{V}\) across a \(100\,\mu\Omega\) shunt causes a 100 mA phantom current, yielding a 24 Ah drift after 10 days! PSoC 4 HVPA eliminates this drift via auto-zero chopping (&lt; 0.5 µV offset) and Open-Circuit Voltage (OCV) table resets after prolonged vehicle parking.
+    </div>
+
+    <h2 id="soh-impedance">3. State of Health (SoH) via Cold Crank Dynamic Impedance</h2>
+    <div class="math-block">
+      During engine cranking, peak current spikes by hundreds of amperes, causing terminal voltage to sag. The dual ADCs capture \(\Delta V\) and \(\Delta I\) synchronously at 1 kHz:
+      \[R_{\text{int}}(T) = \frac{V_{\text{pre-crank}} - V_{\text{min-crank}}}{I_{\text{peak-crank}} - I_{\text{idle}}}\]
+      Tracking dynamic internal resistance over time reveals plate sulfation, dry-out, and impending battery death before stranded road calls happen.
+    </div>
+
+    <h2 id="lin-bus">4. In-Vehicle LIN 2.2A / SAE J2602 Physical Layer</h2>
+    <p>The IBS communicates with the Body Control Module (BCM) or Engine Management Gateway via a robust single-wire LIN 2.2A bus with automatic baud-rate synchronization on byte 0x55 and enhanced checksum security.</p>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>
