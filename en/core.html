@@ -57,40 +57,49 @@
         <text class="ts t-mono" x="382" y="215" text-anchor="middle" font-size="10" fill="var(--muted)">Cross-Coupled PMOS</text>
         <text class="ts t-mut" x="382" y="235" text-anchor="middle" font-size="10">Nanosecond Propagation</text>
 
-        <!-- Output Gate signals -->
-        <line x1="480" y1="165" x2="540" y2="165" stroke="#c0392b" stroke-width="2.5"/>
-        <rect x="485" y="146" width="50" height="18" fill="var(--surface)" stroke="var(--line)" rx="3"/>
-        <text class="ts t-mono" x="510" y="159" text-anchor="middle" font-size="9" font-weight="700" fill="#c0392b">12V Gate</text>
+        <!-- Output Gate signals to Detonator Stage -->
+        <line x1="480" y1="165" x2="525" y2="165" stroke="#c0392b" stroke-width="2.5"/>
+        <rect x="485" y="146" width="55" height="18" fill="var(--surface)" stroke="var(--line)" rx="3"/>
+        <text class="ts t-mono" x="512" y="159" text-anchor="middle" font-size="10" font-weight="700" fill="#c0392b">12V Gate</text>
 
         <!-- Detonator Output Stage -->
-        <rect x="540" y="45" width="255" height="240" rx="8" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
-        <text class="ts" x="667" y="75" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">High-Reliability Firing Loop</text>
+        <rect x="545" y="45" width="255" height="245" rx="8" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
+        <text class="ts" x="672" y="73" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">High-Reliability Firing Loop</text>
 
-        <!-- 12V Supply Rail -->
-        <line x1="565" y1="98" x2="770" y2="98" stroke="#c0392b" stroke-width="2"/>
-        <text class="ts t-mono" x="565" y="92" font-size="10" font-weight="700" fill="#c0392b">+12V KL30</text>
+        <!-- 12V Supply Rail & Connection to HS PMOS -->
+        <line x1="570" y1="95" x2="775" y2="95" stroke="#c0392b" stroke-width="2.5"/>
+        <circle cx="615" cy="95" r="3.5" fill="#c0392b"/>
+        <line x1="615" y1="95" x2="615" y2="115" stroke="#c0392b" stroke-width="2.5"/>
+        <text class="ts t-mono" x="570" y="88" font-size="11" font-weight="700" fill="#c0392b">+12V KL30</text>
+
+        <!-- Gate drive routing to HS PMOS and LS NMOS -->
+        <line x1="525" y1="165" x2="525" y2="136" stroke="#c0392b" stroke-width="2"/>
+        <line x1="525" y1="136" x2="570" y2="136" stroke="#c0392b" stroke-width="2"/>
+        <line x1="525" y1="165" x2="525" y2="236" stroke="#c0392b" stroke-width="2"/>
+        <line x1="525" y1="236" x2="570" y2="236" stroke="#c0392b" stroke-width="2"/>
+        <circle cx="525" cy="165" r="3.5" fill="#c0392b"/>
 
         <!-- Dual MOSFET safety switches (High-Side & Low-Side) -->
-        <rect x="565" y="115" width="90" height="42" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="610" y="135" text-anchor="middle" font-size="11" font-weight="600">HS PMOS</text>
-        <text class="ts t-mut" x="610" y="150" text-anchor="middle" font-size="9">Safe Armed</text>
+        <rect x="570" y="115" width="90" height="42" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="615" y="134" text-anchor="middle" font-size="12" font-weight="700">HS PMOS</text>
+        <text class="ts t-mut" x="615" y="149" text-anchor="middle" font-size="10" font-weight="600">Safe Armed</text>
 
         <!-- Igniter Load -->
-        <line x1="655" y1="136" x2="685" y2="136" stroke="var(--ink)" stroke-width="2"/>
-        <rect x="685" y="130" width="95" height="65" rx="5" fill="#fef5e7" stroke="#d35400" stroke-width="2"/>
-        <text class="ts t-mono" x="732" y="153" text-anchor="middle" font-weight="700" font-size="12" fill="#d35400">Pyro-fuse</text>
-        <text class="ts t-mono" x="732" y="172" text-anchor="middle" font-size="10" fill="var(--ink)">2.0 &Omega; Bridge</text>
-        <text class="ts" x="732" y="187" text-anchor="middle" font-size="9" fill="var(--muted)">Firing &gt; 1.75A</text>
+        <line x1="660" y1="136" x2="690" y2="136" stroke="var(--ink)" stroke-width="2.5"/>
+        <rect x="690" y="126" width="95" height="68" rx="5" fill="#fef5e7" stroke="#d35400" stroke-width="2"/>
+        <text class="ts t-mono" x="737" y="149" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">Pyro-fuse</text>
+        <text class="ts t-mono" x="737" y="168" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">2.0 &Omega; Bridge</text>
+        <text class="ts" x="737" y="184" text-anchor="middle" font-size="10" font-weight="600" fill="var(--muted)">Firing &gt; 1.75A</text>
 
-        <line x1="732" y1="195" x2="732" y2="235" stroke="var(--ink)" stroke-width="2"/>
-        <line x1="732" y1="235" x2="655" y2="235" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="737" y1="194" x2="737" y2="236" stroke="var(--ink)" stroke-width="2.5"/>
+        <line x1="737" y1="236" x2="660" y2="236" stroke="var(--ink)" stroke-width="2.5"/>
 
-        <rect x="565" y="215" width="90" height="42" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="610" y="235" text-anchor="middle" font-size="11" font-weight="600">LS NMOS</text>
-        <text class="ts t-mut" x="610" y="250" text-anchor="middle" font-size="9">Fire Trigger</text>
+        <rect x="570" y="215" width="90" height="42" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="615" y="234" text-anchor="middle" font-size="12" font-weight="700">LS NMOS</text>
+        <text class="ts t-mut" x="615" y="249" text-anchor="middle" font-size="10" font-weight="600">Fire Trigger</text>
 
-        <line x1="565" y1="236" x2="550" y2="236" stroke="var(--ink)" stroke-width="2"/>
-        <path d="M545 236h10M547 240h6M549 244h2" stroke="var(--ink)" stroke-width="1.5"/>
+        <line x1="570" y1="236" x2="550" y2="236" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M545 236h10M547 240h6M549 244h2" stroke="var(--ink)" stroke-width="2"/>
       </svg>
       <figcaption>Figure 1.1: Single-Cycle Fast I/O Bus with 1.8V to 12V Level-Shifting Pyro-fuse Actuation Circuit</figcaption>
     </div>

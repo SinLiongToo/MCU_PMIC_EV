@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCU 專業術語辭典 · MCU Notes</title>
+<meta name="description" content="車用微控制器（MCU）、高精度類比 PMIC、電池管理系統（BMS）、半導體製程與 ISO 26262 功能安全專業術語、縮寫、核心物理公式與工程定義全辭典。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="glossary">
+<div class="doc" style="max-width:1100px">
+  <article style="max-width:100%">
+    <div class="eyebrow">MCU Reference &amp; Standards · 術語與規範辭典</div>
+    <h1>車用微控制器與高精度類比 PMIC 專業術語辭典</h1>
+    <p class="lead">彙整車用 MCU、雙通道 ΔΣ AFE、電源管理 PMIC、BMS 電池演算法、BCD 智慧功率半導體製程與 ISO 26262 功能安全核心縮寫、定義、數值指標與對應章節。</p>
+
+    <div class="term-search-wrap">
+      <input type="search" id="termSearch" class="term-search-inp" placeholder="輸入關鍵字或縮寫檢索（例如：PACSS, AGC, SECDED, FIT, LDMOS, OCV, Sinc3, Pyro-fuse...）" autocomplete="off">
+      <div class="term-chips" id="termChips">
+        <button class="term-chip active" type="button" data-filter="all">全部術語 (All)</button>
+        <button class="term-chip" type="button" data-filter="core">核心微架構 (Core)</button>
+        <button class="term-chip" type="button" data-filter="analog">類比與感測 (Analog &amp; AFE)</button>
+        <button class="term-chip" type="button" data-filter="app">車用與電池 (BMS &amp; Power)</button>
+        <button class="term-chip" type="button" data-filter="safety">功能安全 (ISO 26262)</button>
+        <button class="term-chip" type="button" data-filter="process">製程與車規 (Process &amp; AEC)</button>
+      </div>
+    </div>
+
+    <div class="term-grid" id="termGrid">
+
+      <!-- ==================== CORE ==================== -->
+      <div class="term-card" data-cat="core" data-term="arm cortex-m0+ fast io nvic ahb">
+        <div class="term-head">
+          <h3 class="term-title">Arm® Cortex®-M0+ <small>32-bit RISC 微控制器核心</small></h3>
+          <span class="term-badge cat-core">核心微架構</span>
+        </div>
+        <p class="term-def">兼具超低動態功耗與確定性中斷延遲的 32 位元處理器。採用 2 級指令管線，在 48 MHz 時脈下提供 0.93 CoreMark/MHz，內建向量巢狀中斷控制器（NVIC）與單週期專屬 I/O 匯流排。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>核心指標：</b>中斷確定性響應延遲僅 15 個時脈週期；待機功耗 &lt; 15 µA</span>
+          <a class="term-link" href="core.html#cortex-m0p-pipeline">前往章節 01 · 核心微架構 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="core" data-term="fast io single cycle level shifter gpio 點火">
+        <div class="term-head">
+          <h3 class="term-title">Fast I/O Port <small>單週期專屬高速 I/O 匯流排</small></h3>
+          <span class="term-badge cat-core">核心微架構</span>
+        </div>
+        <p class="term-def">繞過傳統 AHB/APB 系統匯流排仲裁器的直連硬體通道，將 CPU 暫存器直通 I/O 引腳輸出鎖存器。在短路事故中，CPU 可於單個時脈週期（約 20 ns）內觸發 Pyro-fuse 點火信號。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>硬體機制：</b>暫存器直連 + 1.8V 轉 12V 交叉耦合 PMOS 電平轉換前驅電路</span>
+          <a class="term-link" href="core.html#fast-io-circuit">前往章節 01 · Fast I/O 電路原理 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="core" data-term="secded ecc hamming code 漢明碼 記憶體錯誤更正">
+        <div class="term-head">
+          <h3 class="term-title">SECDED ECC <small>Single Error Correction, Double Error Detection · 漢明碼錯誤校正</small></h3>
+          <span class="term-badge cat-core">核心微架構</span>
+        </div>
+        <p class="term-def">全硬體組合邏輯漢明碼電路。為 32 位元資料附加 7 位元同位校驗位（共 39 位元），能在單週期內自動糾正宇宙射線單粒子翻轉（SEU）引發的 1-bit 錯誤，並在偵測到 2-bit 嚴重錯誤時觸發安全 NMI 中斷。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>硬體開銷：</b>額外 21.9% 記憶體儲存容量；0 時脈延遲全透明硬體 XOR 邏輯樹</span>
+          <a class="term-link" href="core.html#ecc-logic-circuit">前往章節 01 · SECDED 硬體電路 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="core" data-term="dma direct memory access 描述符鏈結 直接記憶體存取">
+        <div class="term-head">
+          <h3 class="term-title">DMA <small>Direct Memory Access · 直接記憶體存取控制器</small></h3>
+          <span class="term-badge cat-core">核心微架構</span>
+        </div>
+        <p class="term-def">多通道硬體搬移引擎。在 CPU 休眠或執行複雜 BMS 演算法時，自動將雙 ΔΣ ADC 的 24-bit 採樣數據搬移至 SRAM 雙緩衝區（Ping-Pong Buffer），完全解放 CPU 運算負載。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>應用特點：</b>8 通道鏈結描述符；支援 ADC 採樣完成硬體握手觸發</span>
+          <a class="term-link" href="core.html#dma-controller">前往章節 01 · DMA 拓撲架構 →</a>
+        </div>
+      </div>
+
+      <!-- ==================== ANALOG & AFE ==================== -->
+      <div class="term-card" data-cat="analog" data-term="pacss programmable analog cell subsystem 類比前端">
+        <div class="term-head">
+          <h3 class="term-title">PACSS <small>Programmable Analog Cell Sub-System · 可程式化類比子系統</small></h3>
+          <span class="term-badge cat-analog">類比與感測</span>
+        </div>
+        <p class="term-def">Infineon PSoC™ 4 HVPA 專利高精度類比引擎。在單晶片內整合雙 16-bit 差分切換電容 ΔΣ 調變器、斬波穩零低噪聲 PGA、可程式化增益切換、晶片內 42V 高壓輸入衰減器與硬體 Sinc³ 降採樣濾波器。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>核心指標：</b>電流通道解析度 &plusmn;150 mV；電壓通道輸入高達 28V (Survives 42V)</span>
+          <a class="term-link" href="analog.html#pacss-architecture">前往章節 02 · PACSS 類比子系統 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="analog" data-term="kelvin 4-wire connection 凱爾文檢測 4端子 四線式分流器">
+        <div class="term-head">
+          <h3 class="term-title">Kelvin 4-Wire <small>四端子凱爾文分流檢測架構</small></h3>
+          <span class="term-badge cat-analog">類比與感測</span>
+        </div>
+        <p class="term-def">分離大電流功率迴路與微伏感測信號路徑的拓撲。兩個外端子承載高達 1500A 的電池主電流，兩個內側獨立引腳引出微伏差分信號，消除焊錫接觸電阻（0.5 mΩ）與銅箔溫漂對 100 µΩ 分流器的毀滅性影響。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>濾波設計：</b>對稱 RC 濾波 \(f_c \approx 7.58\,\text{kHz}\)，強烈衰減逆變器 &gt;20 kHz 開關雜訊</span>
+          <a class="term-link" href="analog.html#kelvin-shunt-circuit">前往章節 02 · 凱爾文檢測與濾波拓撲 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="analog" data-term="chopper stabilization 斬波穩零 1/f flicker noise 閃爍雜訊 vos">
+        <div class="term-head">
+          <h3 class="term-title">Chopper Stabilization <small>斬波穩零調變放大技術</small></h3>
+          <span class="term-badge cat-analog">類比與感測</span>
+        </div>
+        <p class="term-def">以開關矩陣交替反轉微弱直流輸入極性，將信號調變至高頻（如 250 kHz），經放大後二次解調還原基頻，同時將原生電晶體偏移電壓 \(V_{os}\) 與低頻 1/f 閃爍雜訊搬移至高頻，最後由 Sinc³ 濾波器消除。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>性能突破：</b>等效輸入偏移電壓由 250 µV 降至 &lt; 0.5 µV，溫漂 &lt; 5 nV/°C</span>
+          <a class="term-link" href="analog.html#chopper-pga">前往章節 02 · 斬波穩零電路架構 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="analog" data-term="delta-sigma delta sigma adc 切換電容 調變器 噪聲整形">
+        <div class="term-head">
+          <h3 class="term-title">Delta-Sigma ADC (ΔΣ) <small>二階切換電容超採樣類比數位轉換器</small></h3>
+          <span class="term-badge cat-analog">類比與感測</span>
+        </div>
+        <p class="term-def">利用超採樣（Over-Sampling）與高階雜訊整形（Noise Shaping）將基頻量化噪聲強烈推向高頻的 ADC 架構。二階調變器具備 \((1 - z^{-1})^2\) 噪聲傳遞函數，基頻帶內有效訊噪比 SNR 達 98 dB 以上（ENOB &gt; 16-bit）。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>採樣特徵：</b>OSR = 256；單位元量化回授 DAC；全差分積分器電荷平衡</span>
+          <a class="term-link" href="analog.html#delta-sigma-schematic">前往章節 02 · 二階切換電容 ΔΣ 電路 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="analog" data-term="agc automatic gain control 自動增益控制 飽和動態範圍">
+        <div class="term-head">
+          <h3 class="term-title">AGC <small>Automatic Gain Control · 硬體自動增益控制</small></h3>
+          <span class="term-badge cat-analog">類比與感測</span>
+        </div>
+        <p class="term-def">跨越 5 個數量級電流動態範圍（15 mA 暗電流至 1500A 啟動短路）的核心機制。硬體比較器實時監控調變器幅值，在 1 個採樣週期內自動於 1x, 2x, 4x, 8x, 16x, 32x, 64x 間無縫切換 PGA 增益。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>防飽和邏輯：</b>幅值 &gt; 90% 立即降增益；幅值 &lt; 40% 延遲升增益（抗遲滯震盪）</span>
+          <a class="term-link" href="analog.html#agc-section">前往章節 02 · 自動增益控制原理 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="analog" data-term="sinc3 comb filter 降採樣濾波器 梳狀濾波器 抽取率">
+        <div class="term-head">
+          <h3 class="term-title">Sinc³ Filter <small>三階梳狀數位降採樣濾波器</small></h3>
+          <span class="term-badge cat-analog">類比與感測</span>
+        </div>
+        <p class="term-def">由 3 級積分器（Integrator）與 3 級微分器（Comb）串聯而成的數位硬體抽取低通濾波器。其傳遞函數 \(H(z) = (\frac{1 - z^{-D}}{1 - z^{-1}})^3\)，在調變頻率及其諧波處具備天然凹槽，完全濾除斬波漣波與高頻量化噪聲。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>數學特性：</b>通帶滾降快速，在 f_ch 處衰減 &gt; 80 dB；輸出 24-bit 濾波結果</span>
+          <a class="term-link" href="analog.html#sinc3-section">前往章節 02 · Sinc³ 硬體濾波器 →</a>
+        </div>
+      </div>
+
+      <!-- ==================== POWER & APPLICATION ==================== -->
+      <div class="term-card" data-cat="app" data-term="ibs intelligent battery sensor 智慧電池感測器 電瓶夾極柱">
+        <div class="term-head">
+          <h3 class="term-title">IBS <small>Intelligent Battery Sensor · 智慧電池感測器</small></h3>
+          <span class="term-badge cat-app">車用與電池</span>
+        </div>
+        <p class="term-def">直接固定於 12V 鉛酸或 48V/高壓鋰電池負極柱夾具上的車載微型單元。整合高精度分流器與單晶片 MCU，向整車車身控制器（BCM）透過 LIN 總線即時報告電池電流、電壓、溫度、SoC、SoH 與啟動能力 SoF。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>工作條件：</b>-40°C ~ +125°C；耐受引擎室劇烈震動；靜態暗電流 &lt; 15 µA</span>
+          <a class="term-link" href="application.html#ibs-circuit">前往章節 03 · IBS 電瓶極柱完整電路圖 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="app" data-term="coulomb counting 庫倫計 積分法 soc 電量估算">
+        <div class="term-head">
+          <h3 class="term-title">Coulomb Counting <small>安時庫倫積分電量計算法</small></h3>
+          <span class="term-badge cat-app">車用與電池</span>
+        </div>
+        <p class="term-def">對高精度電流採樣值進行連續時間積分以推算電池荷電狀態（SoC）的古典演算法：\(SoC(t) = SoC(0) + \frac{1}{Q_n}\int I(\tau)\,d\tau\)。其精確度極度依賴 ADC 的零點偏移漂移（Offset Drift）與電流積分微秒級時序同步性。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>漂移敏感度：</b>1 µV 的等效輸入偏移在 100 µΩ 分流器上相當於 10 mA 恆定誤差，30 天漂移達 7.2 Ah</span>
+          <a class="term-link" href="application.html#coulomb-counting">前往章節 03 · 庫倫積分演算法 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="app" data-term="bdu battery disconnect unit 接觸器 繼電器 快速退磁 齊納箝位">
+        <div class="term-head">
+          <h3 class="term-title">BDU <small>Battery Disconnect Unit · 高壓電池斷路單元</small></h3>
+          <span class="term-badge cat-app">車用與電池</span>
+        </div>
+        <p class="term-def">電動車高壓電池包總正總負回路的切斷控制核心。包含主繼電器、預充迴路、電流感測分流器與超高速火工斷路器（Pyro-fuse），由 MCU PMIC 直驅線圈並配置 36V 齊納快速退磁消弧電路。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>消弧物理：</b>磁場釋放能量 \(t_{\text{demag}} = \frac{L \cdot I_{\text{coil}}}{V_Z}\)；36V 齊納將斷開時間由 18 ms 縮短至 2.5 ms</span>
+          <a class="term-link" href="application.html#bdu-circuit">前往章節 03 · 接觸器退磁與 Pyro-fuse 驅動 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="app" data-term="lin bus local interconnect network 20kbps 車載通訊">
+        <div class="term-head">
+          <h3 class="term-title">LIN 2.2A <small>Local Interconnect Network · 局域車載通訊總線</small></h3>
+          <span class="term-badge cat-app">車用與電池</span>
+        </div>
+        <p class="term-def">單線 12V 差分回授車載低速通訊標準，速率最高 20 kbps。PSoC 4 HVPA 晶片內部整合了耐受 42V 拋負載的 LIN 實體層收發器（PHY），具備壓擺率斜率控制（Slew-Rate Control）以符合嚴格的 CISPR 25 車載射頻輻射規範。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>協議特性：</b>Master/Slave 架構；具備自動喚醒（Wakeup）與幀校驗硬體 CRC</span>
+          <a class="term-link" href="application.html#lin-communication">前往章節 03 · LIN 總線通訊實務 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="app" data-term="ocv open circuit voltage 開路電壓 靜置平衡 熱力學">
+        <div class="term-head">
+          <h3 class="term-title">OCV <small>Open Circuit Voltage · 電池開路電壓</small></h3>
+          <span class="term-badge cat-app">車用與電池</span>
+        </div>
+        <p class="term-def">電池斷開負載、充分靜置達到電化學平衡時的電極熱力學端電壓。BMS 演算法在車輛鎖車過夜（靜置 &gt; 4 小時）後，利用 OCV-SoC 查表曲線重新校準因庫倫計累積漂移導致的累計電量誤差。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>物理依據：</b>能斯特方程式（Nernst Equation）；磷酸鐵鋰（LFP）平台區平坦需配合內阻卡爾曼濾波</span>
+          <a class="term-link" href="application.html#ocv-calibration">前往章節 03 · OCV 與卡爾曼校準 →</a>
+        </div>
+      </div>
+
+      <!-- ==================== FUNCTIONAL SAFETY ==================== -->
+      <div class="term-card" data-cat="safety" data-term="iso 26262 asil asil-c asil-d 功能安全 道路車輛">
+        <div class="term-head">
+          <h3 class="term-title">ISO 26262 ASIL-C <small>Automotive Safety Integrity Level · 汽車安全完整性等級 C</small></h3>
+          <span class="term-badge cat-safety">功能安全</span>
+        </div>
+        <p class="term-def">國際車用功能安全標準中針對高風險事故等級（如電池過充失火、意外高壓斷電）的嚴格規範。要求 MCU 在單晶片架構下達成極高的單點故障防護率（SPFM ≥ 97%）與潛在故障防護率（LFM ≥ 80%）。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>定標門檻：</b>PMHF &lt; 100 FIT（PSoC 4 HVPA 實測 &lt; 18 FIT）；隨附完整 FMEDA 與 Safety Manual</span>
+          <a class="term-link" href="safety.html#fmeda-metrics-detail">前往章節 06 · 功能安全架構與 FMEDA →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="safety" data-term="wire-break shunt 焊點斷線 診斷 微電流注入 開路">
+        <div class="term-head">
+          <h3 class="term-title">Shunt Wire-Break <small>微電流注入式分流器焊點斷線安全診斷</small></h3>
+          <span class="term-badge cat-safety">功能安全</span>
+        </div>
+        <p class="term-def">硬體主動安全機制。由晶片內部定時注入 50 nA 微弱電流，若分流電阻焊點完好，100 µΩ 阻值僅產生 5 pV 壓降；若焊點因熱疲勞開路，微電流迅速將差分引腳拉至 3.3V 飽和軌，差分窗口比較器在 2 µs 內觸發安全中斷。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>故障攔截：</b>防止浮空引腳拾取空間雜訊被誤判為正常電流而遮蔽真實故障</span>
+          <a class="term-link" href="safety.html#shunt-wire-break-circuit">前往章節 06 · 焊點斷線診斷電路原理 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="safety" data-term="window watchdog wdt lfsr 問答看門狗 挑戰應答 偽隨機">
+        <div class="term-head">
+          <h3 class="term-title">Challenge-Response WDT <small>問答式窗口看門狗硬體 LFSR 檢驗架構</small></h3>
+          <span class="term-badge cat-safety">功能安全</span>
+        </div>
+        <p class="term-def">由獨立低速晶內振盪器（ILO）驅動的硬體時序與邏輯雙重校驗看門狗。看門狗以 16-bit LFSR 多項式生成隨機題目，CPU 執行自檢後必須在限定時域窗口內（過早或過晚皆復位）回傳正確的多項式 Answer Token。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>多項式：</b>\(x^{16} + x^{14} + x^{13} + x^{11} + 1\)；防止程式陷入死循環卻依舊定時餵狗</span>
+          <a class="term-link" href="safety.html#wdt-lfsr-circuit">前往章節 06 · LFSR 問答看門狗電路 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="safety" data-term="fmeda fit spfm lfm 失效模式分析 隨機硬體故障">
+        <div class="term-head">
+          <h3 class="term-title">FMEDA <small>Failure Modes, Effects, and Diagnostic Analysis · 失效模式與診斷分析</small></h3>
+          <span class="term-badge cat-safety">功能安全</span>
+        </div>
+        <p class="term-def">ISO 26262 Part 5 規範的定量硬體可靠度計算工具。分解晶片內每一塊邏輯單元（CPU、AFE、SRAM、Flash、時脈、電源）的失效模式、佔比（Distribution）、診斷覆蓋率（DC），計算總體 SPFM、LFM 與 PMHF。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>FIT 定義：</b>Failures in Time，每 \(10^9\) 運作小時的失效次數；\(1\,\text{FIT} = 10^{-9}\text{ failures/hour}\)</span>
+          <a class="term-link" href="safety.html#fmeda-metrics-detail">前往章節 06 · FMEDA 算表解析 →</a>
+        </div>
+      </div>
+
+      <!-- ==================== PROCESS & RELIABILITY ==================== -->
+      <div class="term-card" data-cat="process" data-term="bcd process bipolar cmos dmos 智慧功率半導體製程">
+        <div class="term-head">
+          <h3 class="term-title">BCD 製程 <small>Bipolar-CMOS-DMOS 智慧功率半導體技術</small></h3>
+          <span class="term-badge cat-process">製程與車規</span>
+        </div>
+        <p class="term-def">在同一片單晶矽晶粒上同時集成高精度類比雙極電晶體（BJT）、高密度數位微控制器邏輯（CMOS）與 45V 高壓功率開關（DMOS）的晶圓製程，是高壓高精度車用 MCU 的製造基石。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>隔離工藝：</b>採用深溝槽隔離（DTI）防止高壓 DMOS 注入基板引發寄生 SCR 閂鎖效應</span>
+          <a class="term-link" href="process.html#bcd-process-overview">前往章節 04 · BCD 功率製程原理 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="process" data-term="load dump 42v 拋負載 iso 7637-2 ldmos active clamp 箝位">
+        <div class="term-head">
+          <h3 class="term-title">42V Active Clamp <small>晶片內動態負載突降主動雪崩箝位電路</small></h3>
+          <span class="term-badge cat-process">製程與車規</span>
+        </div>
+        <p class="term-def">在發電機充電時電池突發斷開引發 ISO 7637-2 Pulse 5b（高達 42V / 400 ms）高壓浪湧時的主動保護電路。利用齊納串聯反向擊穿觸發超寬功率 LDMOS（\(W = 15,000\,\mu\text{m}\)）飽和導通，洩放安培級破壞性電流。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>動態箝位：</b>將內部引腳電壓剛性限制在 36V 以下，保護後級薄氧化層類比電路免於介電質擊穿</span>
+          <a class="term-link" href="process.html#active-clamp-circuit">前往章節 04 · 42V 主動箝位電路原理 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="process" data-term="aec-q100 automotive grade 車規認證 應力測試 零缺陷">
+        <div class="term-head">
+          <h3 class="term-title">AEC-Q100 Grade 1 <small>汽車電子委員會積體電路可靠度應力測試認證</small></h3>
+          <span class="term-badge cat-process">製程與車規</span>
+        </div>
+        <p class="term-def">車載晶片進入量產的強制性通用認證規範。Grade 1 要求晶片在 \(-40^\circ\text{C} \sim +125^\circ\text{C}\) 環境溫度下完成 1000 小時高溫運作壽命試驗（HTOL）、1000 次溫度循環（TC）與 ESD 靜電放電防護（HBM &gt; 2 kV）。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>目標要求：</b>百萬分之零缺陷（Zero PPM）；涵蓋高溫高濕偏壓（HAST）與早夭率篩選</span>
+          <a class="term-link" href="test.html#aec-q100-standards">前往章節 05 · AEC-Q100 車規測試 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="process" data-term="trimming efuse wafer probe 晶圓修調 電阻雷射修調 溫漂補償">
+        <div class="term-head">
+          <h3 class="term-title">Wafer Trimming <small>晶圓級雷射與 eFuse 類比精密修調技術</small></h3>
+          <span class="term-badge cat-process">製程與車規</span>
+        </div>
+        <p class="term-def">半導體製程存在晶圓級幾何失配。在晶圓針測（CP）階段，自動測試機（ATE）在 \(-40^\circ\text{C}, +25^\circ\text{C}, +125^\circ\text{C}\) 下量測帶隙基準源與運放電壓，透過燒斷 eFuse 微熔絲永久修調晶片內部電阻網路，達成近乎完美的零溫漂。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>校準成效：</b>帶隙基準電壓初期失配由 &plusmn;3% 壓制至 &plusmn;0.1% 以內</span>
+          <a class="term-link" href="test.html#trimming-calibration">前往章節 05 · 晶圓修調與溫漂演算法 →</a>
+        </div>
+      </div>
+
+      <div class="term-card" data-cat="process" data-term="wettable flank qfn 封裝 aoi 光學檢查 爬錫">
+        <div class="term-head">
+          <h3 class="term-title">Wettable Flank QFN <small>側邊可潤濕側翼 QFN 車規封裝</small></h3>
+          <span class="term-badge cat-process">製程與車規</span>
+        </div>
+        <p class="term-def">專為車載 SMT 表面貼裝設計的先進無引腳封裝技術。引腳端面經過特殊的階梯式電鍍錫製程，焊接時焊錫能沿著封裝側面形成可見的飽滿彎月焊腳（Solder Meniscus），讓自動光學檢驗（AOI）100% 篩查出虛焊與微裂紋。</p>
+        <div class="term-meta">
+          <span class="term-prop"><b>品質意義：</b>免去昂貴緩慢的 X 射線抽檢；提升熱循環剪切應力耐受壽命 3 倍以上</span>
+          <a class="term-link" href="test.html#wettable-flank-qfn">前往章節 05 · 可潤濕側翼封裝實體 →</a>
+        </div>
+      </div>
+
+    </div>
+  </article>
+</div>
+
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function(){
+  const inp = document.getElementById('termSearch');
+  const chips = document.getElementById('termChips');
+  const cards = [...document.querySelectorAll('.term-card')];
+  let curFilter = 'all';
+
+  function applyFilter(){
+    const q = (inp.value || '').toLowerCase().trim();
+    cards.forEach(card => {
+      const cat = card.dataset.cat || '';
+      const termData = (card.dataset.term + ' ' + card.textContent).toLowerCase();
+      const matchCat = (curFilter === 'all' || cat === curFilter);
+      const matchQuery = !q || termData.includes(q);
+      if(matchCat && matchQuery){
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  }
+
+  inp.addEventListener('input', applyFilter);
+
+  chips.querySelectorAll('.term-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.querySelectorAll('.term-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      curFilter = chip.dataset.filter;
+      applyFilter();
+    });
+  });
+})();
+</script>
+</body>
+</html>

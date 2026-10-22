@@ -11,6 +11,7 @@
     {id:'test',        href:'test.html',        label:t('05 測試校準', '05 Test & AEC'),   ch:'test',   en:'Test, Calibration & AEC'},
     {id:'safety',      href:'safety.html',      label:t('06 功能安全', '06 FuSa & Rel'),    ch:'safety', en:'Functional Safety & Rel'},
     {sep:true},
+    {id:'glossary',    href:'glossary.html',    label:t('術語辭典', 'Glossary')},
     {id:'lab',         href:'lab.html',         label:t('互動實驗室', 'MCU Lab')},
     {id:'designer',    href:'designer.html',    label:t('規格設計器', 'Spec Designer')},
     {sep:true},
@@ -98,8 +99,8 @@
   }
 
   /* ---------- find (Ctrl+K) ---------- */
-  const PAGE_LABEL = EN ? {core:'Core', analog:'Analog', app:'Apps', fab:'Process', test:'Test', safety:'FuSa', lab:'Lab', designer:'Designer', roles:'Careers', quiz:'Quiz', lessons:'Lessons', index:'Home'}
-    : {core:'核心', analog:'類比', app:'應用', fab:'製程', test:'測試', safety:'安全', lab:'實驗室', designer:'設計器', roles:'職務', quiz:'測驗', lessons:'案例', index:'首頁'};
+  const PAGE_LABEL = EN ? {core:'Core', analog:'Analog', app:'Apps', fab:'Process', test:'Test', safety:'FuSa', glossary:'Glossary', lab:'Lab', designer:'Designer', roles:'Careers', quiz:'Quiz', lessons:'Lessons', index:'Home'}
+    : {core:'核心', analog:'類比', app:'應用', fab:'製程', test:'測試', safety:'安全', glossary:'辭典', lab:'實驗室', designer:'設計器', roles:'職務', quiz:'測驗', lessons:'案例', index:'首頁'};
 
   function openFind(){
     let modal = document.getElementById('findModal');
@@ -175,8 +176,168 @@
       e.preventDefault();
       const modal = document.getElementById('findModal');
       if(modal && !modal.hidden) closeFind(); else openFind();
+    } else if(e.key === 'Escape'){
+      closeFigModal();
     }
   });
+
+  /* ---------- Figure Zoom Lightbox (Square Icon) ---------- */
+  let figModal = null;
+  let currentScale = 1.0;
+  let panX = 0, panY = 0;
+  let isDragging = false;
+  let startX = 0, startY = 0;
+
+  function ensureFigModal(){
+    if(figModal) return figModal;
+    figModal = document.createElement('div');
+    figModal.id = 'figModal';
+    figModal.className = 'fig-modal';
+    figModal.setAttribute('role', 'dialog');
+    figModal.setAttribute('aria-modal', 'true');
+    figModal.innerHTML = '<div class="fig-modal-box">' +
+      '<div class="fig-modal-head">' +
+        '<div class="fig-modal-title">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M8 3.5v4.5H3.5M16 3.5v4.5h4.5M8 20.5v-4.5H3.5M16 20.5v-4.5h4.5"/></svg>' +
+          '<span id="figModalLabel">' + t('電路原理圖放大檢視', 'Schematic Diagram Viewer') + '</span>' +
+        '</div>' +
+        '<div class="fig-modal-tools">' +
+          '<button class="fig-modal-btn icon-only" id="figZoomOut" type="button" title="' + t('縮小', 'Zoom Out') + ' (−)">−</button>' +
+          '<button class="fig-modal-btn" id="figZoomReset" type="button" title="' + t('還原比例', 'Reset Zoom') + '">100%</button>' +
+          '<button class="fig-modal-btn icon-only" id="figZoomIn" type="button" title="' + t('放大', 'Zoom In') + ' (+)">+</button>' +
+          '<button class="fig-modal-btn icon-only" id="figModalClose" type="button" title="' + t('關閉', 'Close') + ' (Esc)">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="fig-modal-body" id="figModalBody">' +
+        '<div class="fig-modal-stage" id="figModalStage"></div>' +
+      '</div>' +
+      '<div class="fig-modal-foot">' +
+        '<span id="figModalCaption"></span>' +
+        '<span style="opacity:.75">' + t('滾輪縮放 · 拖曳平移 · Esc 關閉', 'Mouse Wheel: Zoom · Drag: Pan · Esc: Close') + '</span>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(figModal);
+
+    const stage = figModal.querySelector('#figModalStage');
+    const body = figModal.querySelector('#figModalBody');
+    const resetBtn = figModal.querySelector('#figZoomReset');
+
+    function updateTransform(){
+      stage.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+      resetBtn.textContent = `${Math.round(currentScale * 100)}%`;
+    }
+
+    function setZoom(newScale, centerOnMouse = false, clientX = 0, clientY = 0){
+      const clamped = Math.max(0.6, Math.min(3.5, newScale));
+      if(centerOnMouse){
+        const rect = body.getBoundingClientRect();
+        const mouseX = clientX - rect.left - rect.width / 2;
+        const mouseY = clientY - rect.top - rect.height / 2;
+        const factor = clamped / currentScale;
+        panX -= (mouseX - panX) * (factor - 1);
+        panY -= (mouseY - panY) * (factor - 1);
+      }
+      currentScale = clamped;
+      updateTransform();
+    }
+
+    figModal.querySelector('#figZoomIn').addEventListener('click', () => setZoom(currentScale + 0.25));
+    figModal.querySelector('#figZoomOut').addEventListener('click', () => setZoom(currentScale - 0.25));
+    resetBtn.addEventListener('click', () => { currentScale = 1.0; panX = 0; panY = 0; updateTransform(); });
+    figModal.querySelector('#figModalClose').addEventListener('click', closeFigModal);
+
+    figModal.addEventListener('click', e => {
+      if(e.target === figModal) closeFigModal();
+    });
+
+    body.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.15 : -0.15;
+      setZoom(currentScale + delta, true, e.clientX, e.clientY);
+    }, {passive: false});
+
+    body.addEventListener('mousedown', e => {
+      if(e.button !== 0) return;
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+      body.classList.add('panning');
+    });
+
+    window.addEventListener('mousemove', e => {
+      if(!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if(isDragging){
+        isDragging = false;
+        body.classList.remove('panning');
+      }
+    });
+
+    return figModal;
+  }
+
+  function openFigModal(fig){
+    const modal = ensureFigModal();
+    const svg = fig.querySelector('svg');
+    if(!svg) return;
+    const caption = fig.querySelector('figcaption');
+    const stage = modal.querySelector('#figModalStage');
+    const capEl = modal.querySelector('#figModalCaption');
+    const labelEl = modal.querySelector('#figModalLabel');
+
+    stage.innerHTML = svg.outerHTML;
+    const clonedSvg = stage.querySelector('svg');
+    if(clonedSvg){
+      clonedSvg.style.width = '100%';
+      clonedSvg.style.height = 'auto';
+      clonedSvg.style.minWidth = '850px';
+    }
+    capEl.textContent = caption ? caption.textContent : '';
+    const capText = caption ? caption.textContent : '';
+    labelEl.textContent = capText ? (capText.split('：')[0].split(':')[0] || capText) : t('電路圖放大檢視', 'Schematic Viewer');
+
+    currentScale = 1.0;
+    panX = 0;
+    panY = 0;
+    stage.style.transform = 'translate(0px, 0px) scale(1)';
+    modal.querySelector('#figZoomReset').textContent = '100%';
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeFigModal(){
+    if(!figModal) return;
+    figModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function initFigureZoom(){
+    document.querySelectorAll('.fig').forEach(fig => {
+      if(fig.querySelector('.fig-zoom-btn')) return;
+      const svg = fig.querySelector('svg');
+      if(!svg) return;
+      const btn = document.createElement('button');
+      btn.className = 'fig-zoom-btn';
+      btn.type = 'button';
+      btn.title = t('一鍵放大檢視電路圖 (點擊查看高解析原理圖)', 'Click to enlarge schematic diagram');
+      btn.setAttribute('aria-label', t('一鍵放大電路圖', 'Enlarge schematic'));
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/>' +
+        '<path d="M8 3.5v4.5H3.5M16 3.5v4.5h4.5M8 20.5v-4.5H3.5M16 20.5v-4.5h4.5"/>' +
+        '</svg>';
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openFigModal(fig);
+      });
+      fig.appendChild(btn);
+    });
+  }
 
   /* ---------- KaTeX auto-render helper ---------- */
   function tryRenderMath(){
@@ -196,10 +357,14 @@
       setTimeout(tryRenderMath, 200);
     }
   }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', tryRenderMath);
-  } else {
+  function initApp(){
     tryRenderMath();
+    initFigureZoom();
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
   }
 
 })();

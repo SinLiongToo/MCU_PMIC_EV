@@ -25,93 +25,94 @@
     <p>車用分流電阻阻值極低（通常僅為 <b>100 µΩ</b>，即 0.0001 Ω）。如果使用傳統雙引腳電阻，焊錫接觸電阻（約 0.5 mΩ ~ 2 mΩ）與銅箔走線電阻將比分流電阻本體大上 5 至 20 倍，且銅的電阻溫度係數高達 3900 ppm/°C，會徹底摧毀量測精度。因此，電路必須採用<b>四端子凱爾文檢測（Kelvin 4-Wire Connection）</b>架構。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="凱爾文檢測與抗混疊濾波電路原理圖">
-        <!-- Power Bus -->
-        <line x1="20" y1="65" x2="150" y2="65" stroke="#d35400" stroke-width="8"/>
-        <text class="ts" x="85" y="45" text-anchor="middle" font-weight="700" font-size="12" fill="#d35400">大電流路徑 (I_BMS 高達 1500A)</text>
-        <line x1="290" y1="65" x2="420" y2="65" stroke="#d35400" stroke-width="8"/>
+      <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="凱爾文檢測與抗混疊濾波電路原理圖">
+        <!-- Power Bus Bar -->
+        <line x1="20" y1="65" x2="160" y2="65" stroke="#d35400" stroke-width="9" stroke-linecap="round"/>
+        <text class="ts" x="120" y="30" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">大電流主迴路 (I_BMS 高達 1500A)</text>
+        <line x1="300" y1="65" x2="440" y2="65" stroke="#d35400" stroke-width="9" stroke-linecap="round"/>
 
-        <!-- Shunt body -->
-        <rect x="150" y="42" width="140" height="46" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
-        <text class="ts t-mono" x="220" y="66" text-anchor="middle" font-weight="700" font-size="13">R_shunt = 100 &mu;&Omega;</text>
-        <text class="ts t-mut" x="220" y="82" text-anchor="middle" font-size="10">錳銅合金 (TCR &lt; 15 ppm/&deg;C)</text>
+        <!-- Shunt Resistor Body -->
+        <rect x="160" y="40" width="140" height="50" rx="5" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2.2"/>
+        <text class="ts t-mono" x="230" y="66" text-anchor="middle" font-weight="700" font-size="14">R_shunt = 100 &mu;&Omega;</text>
+        <text class="ts t-mut" x="230" y="82" text-anchor="middle" font-size="11" font-weight="600">錳銅合金 (TCR &lt; 15 ppm/&deg;C)</text>
 
-        <!-- Kelvin Sense taps -->
-        <circle cx="175" cy="65" r="4" fill="var(--analog)"/>
-        <circle cx="265" cy="65" r="4" fill="var(--analog)"/>
-        <line x1="175" y1="65" x2="175" y2="150" stroke="var(--analog)" stroke-width="2"/>
-        <line x1="265" y1="65" x2="265" y2="230" stroke="var(--analog)" stroke-width="2"/>
-        <text class="ts t-mono" x="160" y="115" text-anchor="end" font-weight="700" font-size="11" fill="var(--analog)">Sense +</text>
-        <text class="ts t-mono" x="280" y="115" text-anchor="start" font-weight="700" font-size="11" fill="var(--analog)">Sense &minus;</text>
+        <!-- Kelvin Sense taps (Zero-crossing topology) -->
+        <!-- Sense - tap on left, drops down directly to bottom rail -->
+        <circle cx="185" cy="65" r="4.5" fill="var(--analog)"/>
+        <line x1="185" y1="65" x2="185" y2="230" stroke="var(--analog)" stroke-width="2.5"/>
+        <line x1="185" y1="230" x2="310" y2="230" stroke="var(--analog)" stroke-width="2.5"/>
+        <circle cx="185" cy="230" r="3.5" fill="var(--analog)"/>
+        <text class="ts t-mono" x="175" y="150" text-anchor="end" font-weight="700" font-size="12" fill="var(--analog)">Sense &minus;</text>
 
-        <!-- Filter Resistors Rf -->
-        <line x1="175" y1="150" x2="240" y2="150" stroke="var(--analog)" stroke-width="2"/>
-        <rect x="240" y="138" width="60" height="24" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="270" y="154" text-anchor="middle" font-size="11" font-weight="600">100 &Omega;</text>
-        <text class="ts" x="270" y="128" text-anchor="middle" font-size="10" fill="var(--muted)">Rf (Top)</text>
-        <line x1="300" y1="150" x2="615" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <!-- Sense + tap on right, drops down directly to top rail -->
+        <circle cx="275" cy="65" r="4.5" fill="var(--analog)"/>
+        <line x1="275" y1="65" x2="275" y2="140" stroke="var(--analog)" stroke-width="2.5"/>
+        <line x1="275" y1="140" x2="310" y2="140" stroke="var(--analog)" stroke-width="2.5"/>
+        <circle cx="275" cy="140" r="3.5" fill="var(--analog)"/>
+        <text class="ts t-mono" x="285" y="115" text-anchor="start" font-weight="700" font-size="12" fill="var(--analog)">Sense +</text>
 
-        <line x1="265" y1="230" x2="240" y2="230" stroke="var(--analog)" stroke-width="2"/>
-        <rect x="240" y="218" width="60" height="24" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="270" y="234" text-anchor="middle" font-size="11" font-weight="600">100 &Omega;</text>
-        <text class="ts" x="270" y="258" text-anchor="middle" font-size="10" fill="var(--muted)">Rf (Bot)</text>
-        <line x1="300" y1="230" x2="615" y2="230" stroke="var(--analog)" stroke-width="2"/>
+        <!-- Symmetric Filter Resistors Rf -->
+        <!-- Rf Top -->
+        <rect x="310" y="126" width="75" height="28" rx="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="347" y="145" text-anchor="middle" font-size="12" font-weight="700">100 &Omega;</text>
+        <text class="ts" x="347" y="118" text-anchor="middle" font-size="11" fill="var(--muted)" font-weight="600">Rf (Top)</text>
+        <line x1="385" y1="140" x2="620" y2="140" stroke="var(--analog)" stroke-width="2.5"/>
+
+        <!-- Rf Bot -->
+        <rect x="310" y="216" width="75" height="28" rx="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="347" y="235" text-anchor="middle" font-size="12" font-weight="700">100 &Omega;</text>
+        <text class="ts" x="347" y="260" text-anchor="middle" font-size="11" fill="var(--muted)" font-weight="600">Rf (Bot)</text>
+        <line x1="385" y1="230" x2="620" y2="230" stroke="var(--analog)" stroke-width="2.5"/>
 
         <!-- Differential Capacitor C_diff -->
-        <circle cx="380" cy="150" r="3" fill="var(--core)"/>
-        <line x1="380" y1="150" x2="380" y2="175" stroke="var(--core)" stroke-width="2"/>
-        <rect x="365" y="175" width="30" height="24" rx="3" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts t-mono" x="380" y="191" text-anchor="middle" font-size="10" font-weight="700" fill="var(--core)">Cdiff</text>
-        <line x1="380" y1="199" x2="380" y2="230" stroke="var(--core)" stroke-width="2"/>
-        <circle cx="380" cy="230" r="3" fill="var(--core)"/>
-        <text class="ts t-mono" x="425" y="191" font-size="11" font-weight="700" fill="var(--core)">100 nF (X7R)</text>
+        <circle cx="450" cy="140" r="3.5" fill="var(--core)"/>
+        <line x1="450" y1="140" x2="450" y2="170" stroke="var(--core)" stroke-width="2"/>
+        <rect x="430" y="170" width="40" height="30" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts t-mono" x="450" y="189" text-anchor="middle" font-size="11" font-weight="700" fill="var(--core)">Cdiff</text>
+        <line x1="450" y1="200" x2="450" y2="230" stroke="var(--core)" stroke-width="2"/>
+        <circle cx="450" cy="230" r="3.5" fill="var(--core)"/>
+        <text class="ts t-mono" x="450" y="118" text-anchor="middle" font-size="12" font-weight="700" fill="var(--core)">100 nF (X7R)</text>
 
         <!-- Common Mode Capacitors C_cm1 & C_cm2 -->
-        <circle cx="510" cy="150" r="3" fill="var(--line)"/>
-        <line x1="510" y1="150" x2="510" y2="178" stroke="var(--line)" stroke-width="2"/>
-        <rect x="498" y="178" width="24" height="20" rx="2" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="510" y="192" text-anchor="middle" font-size="9">Ccm</text>
-        <text class="ts t-mono" x="555" y="192" font-size="10" fill="var(--muted)">10 nF</text>
+        <circle cx="540" cy="140" r="3.5" fill="var(--line)"/>
+        <line x1="540" y1="140" x2="540" y2="168" stroke="var(--line)" stroke-width="2"/>
+        <rect x="524" y="168" width="32" height="24" rx="3" fill="var(--surface)" stroke="var(--line)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="540" y="184" text-anchor="middle" font-size="10" font-weight="600">Ccm</text>
+        <line x1="540" y1="192" x2="540" y2="206" stroke="var(--line)" stroke-width="2"/>
 
-        <!-- Common Ground point -->
-        <line x1="510" y1="198" x2="510" y2="242" stroke="var(--line)" stroke-width="2"/>
-        <circle cx="510" cy="242" r="3" fill="var(--line)"/>
-        <line x1="510" y1="242" x2="510" y2="310" stroke="var(--ink)" stroke-width="2"/>
-        <path d="M502 310h16M506 314h8M509 318h2" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts" x="525" y="322" font-size="10" fill="var(--muted)">類比地 (AGND)</text>
+        <circle cx="540" cy="206" r="3.5" fill="var(--ink)"/>
+        <!-- AGND Branch -->
+        <line x1="540" y1="206" x2="540" y2="305" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M530 305h20M534 309h12M538 313h4" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="540" y="330" text-anchor="middle" font-size="11" font-weight="600" fill="var(--muted)">類比地 (AGND)</text>
 
-        <!-- Bottom C_cm2 -->
-        <circle cx="510" cy="230" r="3" fill="var(--line)"/>
-        <line x1="510" y1="230" x2="510" y2="260" stroke="var(--line)" stroke-width="2"/>
-        <rect x="498" y="260" width="24" height="20" rx="2" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="510" y="274" text-anchor="middle" font-size="9">Ccm</text>
-        <line x1="510" y1="280" x2="510" y2="310" stroke="var(--line)" stroke-width="2"/>
+        <line x1="540" y1="206" x2="540" y2="220" stroke="var(--line)" stroke-width="2"/>
+        <rect x="524" y="220" width="32" height="24" rx="3" fill="var(--surface)" stroke="var(--line)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="540" y="236" text-anchor="middle" font-size="10" font-weight="600">Ccm</text>
+        <line x1="540" y1="244" x2="540" y2="230" stroke="var(--line)" stroke-width="2"/>
+        <circle cx="540" cy="230" r="3.5" fill="var(--line)"/>
+        <text class="ts t-mono" x="575" y="184" font-size="11" font-weight="600" fill="var(--muted)">10 nF</text>
 
-        <!-- IC Boundary -->
-        <rect x="615" y="65" width="205" height="270" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2" stroke-dasharray="6 4"/>
-        <text class="ts" x="717" y="95" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">PSoC 4 HVPA 晶片內部</text>
+        <!-- MCU Boundary -->
+        <rect x="620" y="60" width="205" height="275" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2.2" stroke-dasharray="6 4"/>
+        <text class="ts" x="722" y="92" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">PSoC 4 HVPA 晶片內部</text>
 
         <!-- Input Pin connection -->
-        <circle cx="615" cy="150" r="5" fill="var(--analog)"/>
-        <text class="ts t-mono" x="635" y="145" font-size="12" font-weight="700">ISENSE_P</text>
-        <line x1="615" y1="150" x2="730" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <circle cx="620" cy="140" r="5" fill="var(--analog)"/>
+        <text class="ts t-mono" x="635" y="132" font-size="12" font-weight="700">ISENSE_P</text>
+        <line x1="620" y1="140" x2="720" y2="140" stroke="var(--analog)" stroke-width="2.5"/>
 
-        <circle cx="615" cy="230" r="5" fill="var(--analog)"/>
-        <text class="ts t-mono" x="635" y="225" font-size="12" font-weight="700">ISENSE_N</text>
-        <line x1="615" y1="230" x2="730" y2="230" stroke="var(--analog)" stroke-width="2"/>
+        <circle cx="620" cy="230" r="5" fill="var(--analog)"/>
+        <text class="ts t-mono" x="635" y="222" font-size="12" font-weight="700">ISENSE_N</text>
+        <line x1="620" y1="230" x2="720" y2="230" stroke="var(--analog)" stroke-width="2.5"/>
 
-        <!-- Internal PGA input stage box -->
-        <rect x="730" y="125" width="75" height="130" rx="6" fill="var(--sunk)" stroke="var(--analog)" stroke-width="1.5"/>
-        <text class="ts" x="767" y="175" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">PGA</text>
-        <text class="ts" x="767" y="195" text-anchor="middle" font-size="10">前級放大</text>
-        <text class="ts t-mut" x="767" y="215" text-anchor="middle" font-size="9">Gain 1~64x</text>
+        <!-- Internal PGA stage -->
+        <rect x="720" y="115" width="85" height="140" rx="6" fill="var(--sunk)" stroke="var(--analog)" stroke-width="1.8"/>
+        <text class="ts" x="762" y="165" text-anchor="middle" font-weight="700" font-size="14" fill="var(--analog)">PGA</text>
+        <text class="ts" x="762" y="190" text-anchor="middle" font-size="12" font-weight="600">前級放大</text>
+        <text class="ts t-mut" x="762" y="215" text-anchor="middle" font-size="11">Gain 1~64x</text>
       </svg>
       <figcaption>圖 2.1：4 端子凱爾文分流檢測與對稱對差分 / 共模 RC 抗混疊濾波器電路拓撲</figcaption>
-    </div>
-        <path d="M640 220v20M632 240h16l-8 12zM640 252v8" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
-        <text class="ts" x="655" y="250" font-size="10">To VSSA</text>
-      </svg>
-      <figcaption>圖 2.1：4 端子凱爾文檢測與對稱型二階共模/差模 RC 抗混疊濾波電路原理圖</figcaption>
     </div>
 
     <h3>電路設計與濾波截止頻率計算</h3>
@@ -184,25 +185,25 @@
         <text class="ts t-mono" x="725" y="215" text-anchor="middle" font-weight="700" font-size="11" fill="var(--ok)">輸出 D_out (24-bit)</text>
 
         <!-- Frequency Spectrum Diagrams below (Cleanly partitioned with generous padding) -->
-        <rect x="25" y="250" width="245" height="115" fill="var(--surface)" stroke="var(--line)" rx="6"/>
-        <text class="ts" x="147" y="272" text-anchor="middle" font-weight="700" font-size="11">1. 調變前頻譜 (輸入基頻)</text>
-        <path d="M45 330h205M75 330v-38" stroke="var(--analog)" stroke-width="2.5"/>
-        <text class="ts t-mono" x="75" y="288" text-anchor="middle" font-size="10" font-weight="600" fill="var(--analog)">Vin(DC)</text>
-        <text class="ts t-mut" x="220" y="344" font-size="9">頻率 f &rarr;</text>
+        <rect x="25" y="245" width="245" height="120" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+        <text class="ts" x="147" y="268" text-anchor="middle" font-weight="700" font-size="12">1. 調變前頻譜 (輸入基頻)</text>
+        <path d="M45 330h205M75 330v-42" stroke="var(--analog)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="75" y="280" text-anchor="middle" font-size="11" font-weight="700" fill="var(--analog)">Vin(DC)</text>
+        <text class="ts t-mut" x="220" y="346" font-size="11">頻率 f &rarr;</text>
 
-        <rect x="295" y="250" width="250" height="115" fill="var(--surface)" stroke="var(--line)" rx="6"/>
-        <text class="ts" x="420" y="272" text-anchor="middle" font-weight="700" font-size="11">2. 放大級輸出頻譜 (信號搬移)</text>
-        <path d="M315 330h210M335 330c6-30 18-35 30-35M475 330v-38" stroke="var(--bad)" stroke-width="2"/>
-        <line x1="475" y1="330" x2="475" y2="292" stroke="var(--core)" stroke-width="2.5"/>
-        <text class="ts" x="350" y="290" font-size="9" font-weight="600" fill="var(--bad)">1/f 噪聲 (DC)</text>
-        <text class="ts t-mono" x="475" y="288" text-anchor="middle" font-size="10" font-weight="700" fill="var(--core)">Vin @ f_ch</text>
+        <rect x="295" y="245" width="250" height="120" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+        <text class="ts" x="420" y="268" text-anchor="middle" font-weight="700" font-size="12">2. 放大級輸出頻譜 (信號搬移)</text>
+        <path d="M315 330h210M335 330c6-30 18-35 30-35" stroke="var(--bad)" stroke-width="2"/>
+        <line x1="475" y1="330" x2="475" y2="285" stroke="var(--core)" stroke-width="2.5"/>
+        <text class="ts" x="350" y="285" font-size="11" font-weight="700" fill="var(--bad)">1/f 噪聲 (DC)</text>
+        <text class="ts t-mono" x="475" y="280" text-anchor="middle" font-size="11" font-weight="700" fill="var(--core)">Vin @ f_ch</text>
 
-        <rect x="570" y="250" width="245" height="115" fill="var(--surface)" stroke="var(--line)" rx="6"/>
-        <text class="ts" x="692" y="272" text-anchor="middle" font-weight="700" font-size="11">3. 解調濾波後頻譜 (純淨信號)</text>
-        <path d="M590 330h205M615 330v-38M745 330c6-25 18-28 30-28" stroke="var(--ok)" stroke-width="2"/>
-        <line x1="615" y1="330" x2="615" y2="292" stroke="var(--ok)" stroke-width="2.5"/>
-        <text class="ts t-mono" x="615" y="288" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ok)">Clean Vin</text>
-        <text class="ts" x="745" y="298" font-size="9" fill="var(--bad)">噪聲被推至 f_ch (濾除)</text>
+        <rect x="570" y="245" width="245" height="120" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+        <text class="ts" x="692" y="268" text-anchor="middle" font-weight="700" font-size="12">3. 解調濾波後頻譜 (純淨信號)</text>
+        <path d="M590 330h205M745 330c6-25 18-28 30-28" stroke="var(--bad)" stroke-width="2"/>
+        <line x1="615" y1="330" x2="615" y2="285" stroke="var(--ok)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="615" y="280" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ok)">Clean Vin</text>
+        <text class="ts" x="735" y="295" font-size="11" font-weight="600" fill="var(--bad)">噪聲推至 f_ch (濾除)</text>
       </svg>
       <figcaption>圖 2.2：斬波穩零前置放大器（Chopper-Stabilized PGA）電路架構與頻譜搬移原理解析</figcaption>
     </div>
@@ -220,65 +221,93 @@
     <p>PSoC™ 4 HVPA PACSS 採用的類比-數位轉換器是<b>二階切換電容（Switched-Capacitor, SC）ΔΣ 調變器</b>。它由兩級全差分積分器、一個高速鎖存比較器（1-bit Quantizer）與一個 1-bit 回饋 DAC 組成。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="二階切換電容 Delta-Sigma 調變器電路原理圖">
+      <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="二階切換電容 Delta-Sigma 調變器電路原理圖">
         <!-- Input Vin -->
-        <text class="ts t-mono" x="20" y="80" font-weight="700" font-size="12">V_in(+)</text>
-        <line x1="75" y1="75" x2="115" y2="75" stroke="var(--analog)" stroke-width="2"/>
-        <text class="ts t-mono" x="20" y="180" font-weight="700" font-size="12">V_in(&minus;)</text>
-        <line x1="75" y1="175" x2="115" y2="175" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="25" y="89" font-weight="700" font-size="13">V_in(+)</text>
+        <line x1="75" y1="85" x2="110" y2="85" stroke="var(--analog)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="25" y="169" font-weight="700" font-size="13">V_in(&minus;)</text>
+        <line x1="75" y1="165" x2="110" y2="165" stroke="var(--analog)" stroke-width="2.5"/>
 
-        <!-- Summer 1 / SC Sampling Cap 1 -->
-        <rect x="115" y="58" width="46" height="34" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="138" y="79" text-anchor="middle" font-size="11">Cs1</text>
-        <rect x="115" y="158" width="46" height="34" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="138" y="179" text-anchor="middle" font-size="11">Cs1</text>
+        <!-- Sampling Capacitors Cs1 -->
+        <rect x="110" y="68" width="50" height="34" rx="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="135" y="89" text-anchor="middle" font-size="12" font-weight="700">Cs1</text>
+        <rect x="110" y="148" width="50" height="34" rx="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="135" y="169" text-anchor="middle" font-size="12" font-weight="700">Cs1</text>
 
-        <!-- Integrator 1 Opamp -->
-        <polygon points="190,40 280,125 190,210" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="225" y="130" text-anchor="middle" font-weight="700" font-size="13">OTA 1</text>
-        <!-- Integrator 1 Feedback Cap Cint1 -->
-        <path d="M180 60h-10v-35h105v35" fill="none" stroke="var(--core)" stroke-width="1.5"/>
-        <rect x="210" y="12" width="45" height="24" rx="3" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="232" y="28" text-anchor="middle" font-size="10" font-weight="600">Cint1</text>
+        <!-- Summing node 1 and connections to OTA 1 -->
+        <line x1="160" y1="85" x2="215" y2="85" stroke="var(--analog)" stroke-width="2.5"/>
+        <circle cx="185" cy="85" r="4" fill="var(--core)"/>
+        <line x1="160" y1="165" x2="215" y2="165" stroke="var(--analog)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="205" y="80" font-size="11" font-weight="700">&minus;</text>
+        <text class="ts t-mono" x="205" y="160" font-size="11" font-weight="700">+</text>
 
-        <!-- Output of Int 1 to Int 2 -->
-        <line x1="280" y1="105" x2="335" y2="105" stroke="var(--analog)" stroke-width="2"/>
-        <line x1="280" y1="145" x2="335" y2="145" stroke="var(--analog)" stroke-width="2"/>
+        <!-- Integrator 1 Feedback Loop Cint1 (Firmly Connected) -->
+        <line x1="185" y1="85" x2="185" y2="30" stroke="var(--core)" stroke-width="2.2"/>
+        <line x1="185" y1="30" x2="225" y2="30" stroke="var(--core)" stroke-width="2.2"/>
+        <rect x="225" y="16" width="52" height="28" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts t-mono" x="251" y="34" text-anchor="middle" font-size="12" font-weight="700" fill="var(--core)">Cint1</text>
+        <line x1="277" y1="30" x2="310" y2="30" stroke="var(--core)" stroke-width="2.2"/>
+        <line x1="310" y1="30" x2="310" y2="125" stroke="var(--core)" stroke-width="2.2"/>
 
-        <!-- Sampling Cap 2 -->
-        <rect x="335" y="90" width="42" height="30" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="356" y="109" text-anchor="middle" font-size="10">Cs2</text>
-        <rect x="335" y="130" width="42" height="30" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="356" y="149" text-anchor="middle" font-size="10">Cs2</text>
+        <!-- Integrator 1 OTA Triangle -->
+        <polygon points="215,55 310,125 215,195" fill="var(--sunk)" stroke="var(--core)" stroke-width="2.2"/>
+        <text class="ts" x="250" y="130" text-anchor="middle" font-weight="700" font-size="14">OTA 1</text>
 
-        <!-- Integrator 2 Opamp -->
-        <polygon points="405,60 495,125 405,190" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="440" y="130" text-anchor="middle" font-weight="700" font-size="13">OTA 2</text>
-        <!-- Integrator 2 Feedback Cap Cint2 -->
-        <path d="M395 80h-10v-35h105v35" fill="none" stroke="var(--core)" stroke-width="1.5"/>
-        <rect x="425" y="32" width="45" height="24" rx="3" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
-        <text class="ts t-mono" x="447" y="48" text-anchor="middle" font-size="10" font-weight="600">Cint2</text>
+        <!-- OTA 1 Output Junction Node -->
+        <circle cx="310" cy="125" r="4.5" fill="var(--core)"/>
+        <line x1="310" y1="125" x2="370" y2="125" stroke="var(--analog)" stroke-width="2.5"/>
 
-        <!-- Output of Int 2 to Comparator -->
-        <line x1="495" y1="125" x2="560" y2="125" stroke="var(--analog)" stroke-width="2"/>
+        <!-- Sampling Capacitor 2 Cs2 -->
+        <rect x="370" y="108" width="50" height="34" rx="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="395" y="129" text-anchor="middle" font-size="12" font-weight="700">Cs2</text>
+        <line x1="420" y1="125" x2="475" y2="125" stroke="var(--analog)" stroke-width="2.5"/>
+
+        <!-- Summing node 2 and connections to OTA 2 -->
+        <circle cx="445" cy="125" r="4" fill="var(--core)"/>
+        <text class="ts t-mono" x="465" y="120" font-size="11" font-weight="700">&minus;</text>
+        <line x1="450" y1="165" x2="475" y2="165" stroke="var(--line)" stroke-width="2"/>
+        <text class="ts t-mono" x="465" y="160" font-size="11" font-weight="700">+</text>
+        <path d="M446 165h8M448 168h4M449 171h2" stroke="var(--ink)" stroke-width="1.5"/>
+
+        <!-- Integrator 2 Feedback Loop Cint2 (Firmly Connected) -->
+        <line x1="445" y1="125" x2="445" y2="52" stroke="var(--core)" stroke-width="2.2"/>
+        <line x1="445" y1="52" x2="485" y2="52" stroke="var(--core)" stroke-width="2.2"/>
+        <rect x="485" y="38" width="52" height="28" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts t-mono" x="511" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="var(--core)">Cint2</text>
+        <line x1="537" y1="52" x2="570" y2="52" stroke="var(--core)" stroke-width="2.2"/>
+        <line x1="570" y1="52" x2="570" y2="145" stroke="var(--core)" stroke-width="2.2"/>
+
+        <!-- Integrator 2 OTA Triangle -->
+        <polygon points="475,95 570,145 475,195" fill="var(--sunk)" stroke="var(--core)" stroke-width="2.2"/>
+        <text class="ts" x="510" y="150" text-anchor="middle" font-weight="700" font-size="14">OTA 2</text>
+
+        <!-- OTA 2 Output Junction Node -->
+        <circle cx="570" cy="145" r="4.5" fill="var(--core)"/>
+        <line x1="570" y1="145" x2="625" y2="145" stroke="var(--analog)" stroke-width="2.5"/>
 
         <!-- Clocked 1-bit Latched Comparator -->
-        <rect x="560" y="95" width="105" height="65" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="612" y="120" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">1-Bit Latch</text>
-        <rect x="575" y="130" width="75" height="20" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="612" y="144" text-anchor="middle" font-size="10">時脈 fs</text>
+        <rect x="625" y="112" width="105" height="66" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="677" y="136" text-anchor="middle" font-weight="700" font-size="13" fill="var(--bad)">1-Bit Latch</text>
+        <rect x="640" y="146" width="75" height="22" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="677" y="161" text-anchor="middle" font-size="11" font-weight="600">時脈 fs</text>
 
         <!-- Modulator Bitstream Output -->
-        <line x1="665" y1="125" x2="790" y2="125" stroke="var(--bad)" stroke-width="3"/>
-        <circle cx="790" cy="125" r="4" fill="var(--bad)"/>
-        <text class="ts t-mono" x="725" y="105" text-anchor="middle" font-weight="700" font-size="11" fill="var(--bad)">D_out (1-bit PDM)</text>
-        <text class="ts t-mut" x="725" y="145" text-anchor="middle" font-size="10">往 Sinc&sup3; 濾波器</text>
+        <line x1="730" y1="145" x2="815" y2="145" stroke="var(--bad)" stroke-width="3"/>
+        <circle cx="815" cy="145" r="4.5" fill="var(--bad)"/>
+        <text class="ts t-mono" x="765" y="125" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">D_out (1-bit PDM)</text>
+        <text class="ts t-mut" x="765" y="180" text-anchor="middle" font-size="11" font-weight="600">往 Sinc&sup3; 濾波器</text>
 
-        <!-- Feedback 1-bit DAC path -->
-        <path d="M720 125v150h-565v-90" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 3"/>
-        <rect x="290" y="245" width="260" height="60" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="420" y="270" text-anchor="middle" font-weight="700" font-size="12" fill="var(--warn)">1 位元差分 DAC 回授單元</text>
-        <text class="ts t-mono" x="420" y="290" text-anchor="middle" font-size="11">V_feedback = &plusmn;V_ref (1.200V)</text>
+        <!-- Feedback 1-bit DAC path (Complete Solid Junctions) -->
+        <circle cx="755" cy="145" r="4" fill="var(--warn)"/>
+        <line x1="755" y1="145" x2="755" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
+        <line x1="755" y1="280" x2="570" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
+
+        <rect x="290" y="250" width="280" height="60" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="430" y="274" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">1 位元差分 DAC 回授單元</text>
+        <text class="ts t-mono" x="430" y="295" text-anchor="middle" font-size="11" font-weight="600">V_feedback = &plusmn;V_ref (1.200V)</text>
+
+        <line x1="290" y1="280" x2="185" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
+        <line x1="185" y1="280" x2="185" y2="85" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
       </svg>
       <figcaption>圖 2.3：二階切換電容（Switched-Capacitor）差分 &Delta;&Sigma; 調變器電路拓撲與動態噪聲整形機制</figcaption>
     </div>

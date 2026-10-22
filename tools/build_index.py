@@ -33,6 +33,7 @@ EXTRA = [
     {"p": "designer.html", "a": "", "t": "電瓶休眠與待機壽命評估器", "s": "車載暗電流 Deep Sleep 停放天數 電瓶自放電 剩餘容量 50% 啟動極限", "g": "designer", "lv": 1},
     {"p": "designer.html", "a": "", "t": "韌體記憶體分區與安全開銷設計器", "s": "Flash SRAM Bootloader SafeTlib 連結腳本 Linker Script 堆疊深度", "g": "designer", "lv": 1},
     {"p": "quiz.html", "a": "", "t": "MCU 專業知識測驗 (60題)", "s": "車規測驗 題庫 自我檢測 核心 類比 BMS 製程 測試 ISO 26262", "g": "quiz", "lv": 1},
+    {"p": "glossary.html", "a": "", "t": "MCU 專業術語與規範全辭典", "s": "專業術語 詞彙 縮寫 PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc3 Coulomb Counting OCV Pyro-fuse", "g": "glossary", "lv": 1},
 ]
 
 EXTRA_EN = [
@@ -48,6 +49,7 @@ EXTRA_EN = [
     {"p": "designer.html", "a": "", "t": "Battery Standby & Sleep Budget Calculator", "s": "Dark quiescent current, Deep Sleep, parking duration, self-discharge, cranking threshold", "g": "designer", "lv": 1},
     {"p": "designer.html", "a": "", "t": "Firmware Memory & Safety Budget Designer", "s": "Flash, SRAM, Bootloader, SafeTlib footprint, linker script, stack depth", "g": "designer", "lv": 1},
     {"p": "quiz.html", "a": "", "t": "MCU Knowledge Quiz (60 Questions)", "s": "Automotive test, self-check, Core, Analog, BMS, Fab, Test, ISO 26262 FuSa", "g": "quiz", "lv": 1},
+    {"p": "glossary.html", "a": "", "t": "Automotive MCU & Precision Analog Glossary", "s": "Engineering glossary PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc3 Coulomb Counting OCV Pyro-fuse", "g": "glossary", "lv": 1},
 ]
 
 
