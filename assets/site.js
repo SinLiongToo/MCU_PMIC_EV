@@ -1,4 +1,4 @@
-/* MCU Notes · Shared chrome: top bar, theme, table of contents, pager, site-wide find (Ctrl+K). */
+/* MCU Notes · Shared chrome: top bar, theme, table of contents, pager, site-wide find (Ctrl+K), KaTeX auto-render. */
 (function(){
   const EN = (document.documentElement.lang || '').toLowerCase().startsWith('en');
   const t = (zh, en) => EN ? en : zh;
@@ -177,5 +177,29 @@
       if(modal && !modal.hidden) closeFind(); else openFind();
     }
   });
+
+  /* ---------- KaTeX auto-render helper ---------- */
+  function tryRenderMath(){
+    if(window.renderMathInElement){
+      try{
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          throwOnError: false
+        });
+      }catch(e){ console.warn('KaTeX render error:', e); }
+    } else {
+      setTimeout(tryRenderMath, 200);
+    }
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', tryRenderMath);
+  } else {
+    tryRenderMath();
+  }
 
 })();

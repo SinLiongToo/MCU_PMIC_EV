@@ -3,142 +3,359 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>02 高精度類比與電源整合 · MCU Notes</title>
-<meta name="description" content="深入解析 Infineon PSoC™ 4 HVPA 精密類比子系統 PACSS：雙通道 16-bit 差分 Sigma-Delta ADC、可程式增益放大器 PGA 與快速自動增益切換 AGC、Sinc³ 數位濾波器，以及直連 12V/24V 電池耐受 42V 拋負載的內部高壓 PMIC 穩壓電源架構。">
+<title>02 高精度類比與電源電路原理 · MCU Notes</title>
+<meta name="description" content="深入解析 Infineon PSoC™ 4 HVPA PACSS 精密類比電路原理：4 端子凱爾文分流檢測濾波、斬波穩零前置放大器（PGA）、二階切換電容 Delta-Sigma 調變器、Sinc³ 數位降採樣濾波，以及 42V 高壓 LDMOS 穩壓電源與帶隙基準電路。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="analog" data-ch="analog">
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
   <article>
-    <div class="eyebrow">Chapter 02 · Precision Analog &amp; PMIC Subsystem</div>
-    <h1>高精度類比與電源整合：微伏級感測與 42V 直連</h1>
-    <p class="lead">在汽車動力與電瓶監控中，感測前端面臨極度極端的物理挑戰：電流動態範圍高達 <b>1,000,000:1</b>（車輛鎖車待機時僅有數毫安培暗電流，引擎啟動或負載突變時瞬間飆升至 1500 安培），同時電瓶端子常伴隨數十伏特的拋負載（Load Dump）高壓突波。本章剖析如何透過單一晶片實現高壓穩壓與 $\pm 0.1\%$ 精密感測。</p>
+    <div class="eyebrow">Chapter 02 · Precision Analog &amp; Power Circuit Schematics</div>
+    <h1>高精度類比與電源：微伏級感測與 42V 直連電路原理</h1>
+    <p class="lead">在車用電池管理系統（BMS）中，微控制器必須直接與惡劣的車載強電母線交互。本文以 <b>Infineon PSoC™ 4 HVPA-144K</b> 晶片架構為基礎，從電晶體與運算放大器層級深度剖析：4 端子凱爾文分流檢測抗干擾電路、斬波穩零前置放大器（Chopper PGA）、二階切換電容 ΔΣ 調變器、數位 Sinc³ 抽取濾波器，以及直連電瓶耐受 42V 拋負載的內部高壓 PMIC 穩壓電源電路。</p>
 
-    <h2 id="pacss-overview">1. 精密類比子系統架構 (PACSS)</h2>
-    <p>PSoC™ 4 HVPA 內部將高精度量測硬體封裝為獨立的類比子系統（Precision Analog Subsystem, PACSS）。PACSS 包含兩個完全同步但功能特化的類比-數位轉換通道：<b>電流通道（Current Channel）</b>與<b>電壓通道（Voltage Channel）</b>。</p>
+    <!-- ==================== CIRCUIT 1 ==================== -->
+    <h2 id="kelvin-filter">1. 4 端子凱爾文 (Kelvin) 分流檢測與差模/共模濾波電路原理</h2>
+    <p>車用分流電阻阻值極低（通常僅為 <b>100 µΩ</b>，即 0.0001 Ω）。如果使用傳統雙引腳電阻，焊錫接觸電阻（約 0.5 mΩ ~ 2 mΩ）與銅箔走線電阻將比分流電阻本體大上 5 至 20 倍，且銅的電阻溫度係數高達 3900 ppm/°C，會徹底摧毀量測精度。因此，電路必須採用<b>四端子凱爾文檢測（Kelvin 4-Wire Connection）</b>架構。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 740 320" role="img" aria-label="PACSS 類比子系統架構方塊圖">
-        <!-- Input Section -->
-        <rect x="20" y="30" width="120" height="90" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
-        <text class="ts" x="80" y="65" text-anchor="middle" font-weight="700">Shunt Resistor</text>
-        <text class="ts t-mut" x="80" y="85" text-anchor="middle">100 µΩ ~ 1 mΩ</text>
-        <text class="ts t-mono" x="80" y="105" text-anchor="middle" fill="var(--analog)">±1500A (±150mV)</text>
+      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="凱爾文檢測與抗混疊濾波電路原理圖">
+        <!-- Power Bus -->
+        <line x1="30" y1="60" x2="160" y2="60" stroke="#d35400" stroke-width="8"/>
+        <text class="ts" x="90" y="45" text-anchor="middle" font-weight="700" fill="#d35400">Power Current Path (I_BMS up to 1500A)</text>
+        <line x1="280" y1="60" x2="400" y2="60" stroke="#d35400" stroke-width="8"/>
 
-        <rect x="20" y="160" width="120" height="80" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="80" y="195" text-anchor="middle" font-weight="700">Battery +</text>
-        <text class="ts t-mut" x="80" y="215" text-anchor="middle">3.6V ~ 28V (42V pk)</text>
+        <!-- Shunt body -->
+        <rect x="160" y="40" width="120" height="40" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts t-mono" x="220" y="65" text-anchor="middle" font-weight="700">R_shunt = 100 µΩ</text>
+        <text class="ts t-mut" x="220" y="95" text-anchor="middle">Manganin Alloy (TCR &lt; 15 ppm/°C)</text>
 
-        <!-- PACSS Outer Box -->
-        <rect x="170" y="15" width="550" height="285" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="2"/>
-        <text class="ts" x="445" y="35" text-anchor="middle" font-weight="700" letter-spacing="1">PACSS PRECISION ANALOG SUBSYSTEM</text>
+        <!-- Kelvin Sense taps -->
+        <circle cx="180" cy="60" r="4" fill="var(--analog)"/>
+        <circle cx="260" cy="60" r="4" fill="var(--analog)"/>
+        <line x1="180" y1="60" x2="180" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="260" y1="60" x2="260" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="165" y="110" text-anchor="end" fill="var(--analog)">Sense +</text>
+        <text class="ts" x="275" y="110" text-anchor="start" fill="var(--analog)">Sense −</text>
 
-        <!-- Current Channel Internal -->
-        <rect x="190" y="50" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
-        <text class="ts" x="245" y="75" text-anchor="middle" font-weight="600">Dual PGA</text>
-        <text class="ts t-mut" x="245" y="95" text-anchor="middle">Gain 1x ~ 64x</text>
-        <text class="ts t-mono" x="245" y="110" text-anchor="middle" font-size="10">Auto-Zero Chop</text>
+        <!-- Filter Resistors Rf -->
+        <rect x="220" y="140" width="50" height="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <line x1="180" y1="150" x2="220" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="270" y1="150" x2="350" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="245" y="132" text-anchor="middle">Rf = 100 Ω</text>
 
-        <rect x="330" y="50" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
-        <text class="ts" x="385" y="75" text-anchor="middle" font-weight="600">16-bit ΔΣ ADC</text>
-        <text class="ts t-mut" x="385" y="95" text-anchor="middle">Over-sampling</text>
-        <text class="ts t-mono" x="385" y="110" text-anchor="middle" font-size="10">OSR 32 ~ 2048</text>
+        <rect x="220" y="210" width="50" height="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <line x1="260" y1="150" x2="260" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="260" y1="220" x2="220" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="270" y1="220" x2="350" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="245" y="248" text-anchor="middle">Rf = 100 Ω</text>
 
-        <rect x="470" y="50" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
-        <text class="ts" x="525" y="75" text-anchor="middle" font-weight="600">Sinc³ Filter</text>
-        <text class="ts t-mut" x="525" y="95" text-anchor="middle">Decimation</text>
-        <text class="ts t-mono" x="525" y="110" text-anchor="middle" font-size="10">50/60Hz Rejection</text>
+        <!-- Differential & Common mode Caps -->
+        <line x1="380" y1="150" x2="380" y2="220" stroke="var(--line)" stroke-width="2"/>
+        <!-- C_diff -->
+        <rect x="365" y="175" width="30" height="20" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="410" y="190" fill="var(--core)">C_diff = 100 nF</text>
 
-        <!-- Fast AGC Box -->
-        <rect x="250" y="130" width="200" height="40" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="1.5"/>
-        <text class="ts" x="350" y="155" text-anchor="middle" font-weight="600" fill="var(--safety)">Fast AGC Logic &amp; LUT (&lt;5µs)</text>
+        <!-- C_cm1 to GND -->
+        <line x1="480" y1="150" x2="480" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <rect x="470" y="190" width="20" height="20" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="500" y="205">C_cm = 10 nF</text>
+        <path d="M472 280h16M476 284h8M479 288h2" stroke="var(--ink)" stroke-width="2"/>
 
-        <!-- Voltage Channel Internal -->
-        <rect x="190" y="195" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
-        <text class="ts" x="245" y="225" text-anchor="middle" font-weight="600">HV Attenuator</text>
-        <text class="ts t-mut" x="245" y="245" text-anchor="middle">Ratio 24:1 Divider</text>
+        <!-- C_cm2 to GND -->
+        <line x1="480" y1="220" x2="480" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <rect x="470" y="240" width="20" height="20" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
 
-        <rect x="330" y="195" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
-        <text class="ts" x="385" y="225" text-anchor="middle" font-weight="600">16-bit ΔΣ ADC</text>
-        <text class="ts t-mut" x="385" y="245" text-anchor="middle">Voltage Channel</text>
+        <!-- IC Boundary -->
+        <rect x="560" y="90" width="180" height="230" rx="8" fill="var(--sunk)" stroke="var(--analog)" stroke-width="2" stroke-dasharray="5 3"/>
+        <text class="ts" x="650" y="115" text-anchor="middle" font-weight="700" fill="var(--analog)">PSoC 4 HVPA IC PIN</text>
 
-        <rect x="470" y="195" width="110" height="70" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
-        <text class="ts" x="525" y="225" text-anchor="middle" font-weight="600">Sinc³ Filter</text>
-        <text class="ts t-mut" x="525" y="245" text-anchor="middle">V_BAT Decimation</text>
+        <!-- Input Pin connection -->
+        <circle cx="560" cy="150" r="5" fill="var(--analog)"/>
+        <line x1="350" y1="150" x2="560" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="580" y="145">ISENSE_P</text>
 
-        <!-- Result Registers -->
-        <rect x="610" y="100" width="90" height="110" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="655" y="140" text-anchor="middle" font-weight="700">FIFO / DMA</text>
-        <text class="ts t-mut" x="655" y="160" text-anchor="middle">Registers</text>
-        <text class="ts t-mono" x="655" y="180" text-anchor="middle" fill="var(--core)">32-bit Sync</text>
+        <circle cx="560" cy="220" r="5" fill="var(--analog)"/>
+        <line x1="350" y1="220" x2="560" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="580" y="235">ISENSE_N</text>
 
-        <!-- Connection lines -->
-        <line x1="140" y1="75" x2="190" y2="75" stroke="var(--analog)" stroke-width="2"/>
-        <line x1="300" y1="75" x2="330" y2="75" stroke="var(--analog)" stroke-width="2"/>
-        <line x1="440" y1="75" x2="470" y2="75" stroke="var(--analog)" stroke-width="2"/>
-        <line x1="580" y1="75" x2="610" y2="130" stroke="var(--analog)" stroke-width="2"/>
-
-        <line x1="140" y1="200" x2="190" y2="225" stroke="var(--warn)" stroke-width="2"/>
-        <line x1="300" y1="230" x2="330" y2="230" stroke="var(--warn)" stroke-width="2"/>
-        <line x1="440" y1="230" x2="470" y2="230" stroke="var(--warn)" stroke-width="2"/>
-        <line x1="580" y1="230" x2="610" y2="170" stroke="var(--warn)" stroke-width="2"/>
-
-        <path d="M385 120v10M300 150h-55v-30" fill="none" stroke="var(--safety)" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <!-- Internal ESD steering diodes -->
+        <path d="M640 150v-20M632 130h16l-8-12zM640 118v-8" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
+        <text class="ts" x="655" y="125" font-size="10">To VDDA</text>
+        <path d="M640 220v20M632 240h16l-8 12zM640 252v8" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
+        <text class="ts" x="655" y="250" font-size="10">To VSSA</text>
       </svg>
-      <figcaption>圖 2.1：PSoC™ 4 HVPA PACSS 精密類比子系統與自動增益切換路徑</figcaption>
+      <figcaption>圖 2.1：4 端子凱爾文檢測與對稱型二階共模/差模 RC 抗混疊濾波電路原理圖</figcaption>
     </div>
 
-    <h2 id="sigma-delta">2. 雙 16-bit 差分 $\Delta\Sigma$ 轉換與 Sinc³ 數位濾波</h2>
-    <p>傳統逐次逼近暫存器（SAR）ADC 容易受到車內高頻電磁干擾（如點火線圈、逆變器 PWM 開關雜訊）污染。$\Delta\Sigma$（Sigma-Delta）架構藉由超採樣（Oversampling）與雜訊整形（Noise Shaping）技術，將量化雜訊推向高頻，再由數位濾波器完全濾除。</p>
-
-    <div class="math-block">
-      <b>$\Delta\Sigma$ ADC 動態範圍與超採樣增益公式：</b><br>
-      若調變器階數為 \(L = 2\)，超採樣比為 \(OSR = f_s / (2 f_B)\)，則訊噪比增益為：<br>
-      \[\text{SNR}_{\text{gain}} = 10 \log_{10}\left(\frac{2L + 1}{\pi^{2L}} \cdot OSR^{2L + 1}\right) \approx 15.05 \log_2(OSR) - 12.9 \text{ dB}\]
-      當 \(OSR = 256\) 時，即便單一位元量化器也能獲得高達 <b>96 dB 以上的有效動態範圍（ENOB &gt; 15.6 bits）</b>。
-    </div>
-
-    <h3>Sinc³ 抽取濾波器與 50Hz/60Hz 工頻消除</h3>
-    <p>PACSS 整合了專屬硬體 Sinc³ 數位濾波器，其離散轉移函數為：</p>
-    <div class="math-block">
-      \[H(z) = \left( \frac{1 - z^{-D}}{1 - z^{-1}} \right)^3\]
-      其中 \(D\) 為抽取率（Decimation Ratio）。硬體濾波器在頻率響應上產生週期性凹陷（Notch）。當將調變器時脈設定為 1.536 MHz 且 \(D = 1536\) 時，輸出數據率正好為 1 kHz，其傳輸零點精準落在 50 Hz 與 60 Hz 及其諧波頻率上，獲得超過 <b>80 dB 的工頻電網干擾抑制比（Normal Mode Rejection Ratio, NMRR）</b>。
-    </div>
-
-    <h2 id="agc-shunt">3. 自動增益控制 (AGC) 與微伏級分流檢測</h2>
-    <p>為了將動力線路上的損耗降至最低，車用分流電阻（Shunt）阻值通常只有 <b>$100\,\mu\Omega$</b>（$0.0001\,\Omega$）。</p>
+    <h3>電路設計與濾波截止頻率計算</h3>
+    <p>在車載逆變器工作時，IGBT 或 SiC MOSFET 的高頻開關（10 kHz ~ 100 kHz）會透過空間電磁場與接地回路向分流電阻注入巨大的高頻共模噪聲（Common-Mode Noise）與差模毛刺。為防止高頻雜訊在 ΔΣ 採樣時混疊（Aliasing）回基頻，必須配置對稱的 RC 濾波網路：</p>
     <ul>
-      <li>當車輛引擎發動瞬間，啟動馬達電流 \(I = 1200\text{ A}\)，分流電阻跨壓為：
-        \[V_{\text{shunt}} = 1200\text{ A} \times 100\,\mu\Omega = 120\text{ mV}\]
-        此時 PGA 必須切換至低增益（如 Gain = 1x 或 2x），防止 ADC 飽和溢位。</li>
-      <li>當車輛熄火休眠時，車載電子系統暗電流僅有 \(I = 5\text{ mA}\)，分流電阻跨壓僅有：
-        \[V_{\text{shunt}} = 0.005\text{ A} \times 100\,\mu\Omega = 0.5\,\mu\text{V} \quad (500\text{ nV})\]
-        此時 PGA 必須即刻切換至高增益（如 Gain = 64x），將微弱訊號放大至 32 mV 進行精密轉換。</li>
+      <li><b>差模截止頻率（Differential Cut-off Frequency）：</b> 差模電容 \(C_{\text{diff}}\) 跨接於兩差分信號線之間，其等效電阻為 \(2 R_f\)。差模截止頻率公式為：
+        \[f_{c,\text{diff}} = \frac{1}{2\pi \cdot (2 R_f) \cdot \left( C_{\text{diff}} + \frac{C_{\text{cm}}}{2} \right)}\]
+        代入典型設計值 \(R_f = 100\,\Omega\)，\(C_{\text{diff}} = 100\,\text{nF}\)，\(C_{\text{cm}} = 10\,\text{nF}\)：
+        \[f_{c,\text{diff}} \approx \frac{1}{2\pi \times 200 \times 105 \times 10^{-9}} \approx 7.58\,\text{kHz}\]
+        該截止頻率既能完整保留 1 kHz 的電池動態充放電波形，又能將逆變器高頻 PWM 開關載波（&gt; 20 kHz）強烈衰減 20 dB 以上。</li>
+      <li><b>共模抑制平衡設計原則：</b> 兩側的 \(R_f\) 必須使用 0.1% 高精度對稱電阻，且 \(C_{\text{diff}} \ge 10 \times C_{\text{cm}}\)。若兩側電阻存在偏差 \(\Delta R\)，高頻共模干擾將轉化為偽差模信號，導致電流讀數劇烈跳動。</li>
     </ul>
 
-    <div class="callout" style="--c:var(--safety)">
-      <b>硬體快速查表 AGC 機制：</b> 若由軟體偵測幅值再切換 PGA 增益，中斷與計算延遲超過 100 µs，在突發大電流時 ADC 會出現持續飽和截波，造成嚴重的庫倫積分誤差。PSoC 4 HVPA 配備獨立硬體快速比較器與查表單元（LUT），能在 <b>&lt; 5 µs 內自動縮放 PGA 增益</b>，並在同一時鐘週期自動標記該筆採樣資料的縮放權重，保證動態量測零丟包。
+    <!-- ==================== CIRCUIT 2 ==================== -->
+    <h2 id="chopper-pga">2. 斬波穩零前置放大器 (Chopper-Stabilized PGA) 電路原理</h2>
+    <p>在測量汽車鎖車暗電流（如 15 mA）時，100 µΩ 分流器兩端的差分電壓僅有 <b>1.5 µV</b>。然而，CMOS 製程放大器本質上存在兩大干擾源：半導體晶格缺陷導致的 <b>1/f 閃爍雜訊（Flicker Noise）</b>，以及差分對電晶體幾何失配造成的<b>輸入偏移電壓（Input Offset Voltage $V_{os}$，通常高達 0.5 mV ~ 2 mV）</b>。若不加以消除，1.5 µV 的真值將徹底被數百微伏的噪聲淹沒。PSoC™ 4 HVPA PACSS 採用了<b>斬波調變穩零技術（Chopper Stabilization）</b>。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 320" role="img" aria-label="斬波穩零放大器電路原理圖">
+        <!-- Input Signal -->
+        <text class="ts" x="25" y="110" font-weight="700">V_in (DC ~ 1kHz)</text>
+        <line x1="30" y1="130" x2="90" y2="130" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="30" y1="190" x2="90" y2="190" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Chopper 1 Box -->
+        <rect x="90" y="110" width="90" height="100" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="135" y="130" text-anchor="middle" font-weight="700" fill="var(--core)">CHOP 1</text>
+        <text class="ts t-mono" x="135" y="150" text-anchor="middle" font-size="11">Clock f_ch</text>
+        <!-- Cross switches inside -->
+        <path d="M105 140l60 40M105 180l60-40" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+        <!-- Intermediate Modulated Signal -->
+        <line x1="180" y1="130" x2="240" y2="130" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="180" y1="190" x2="240" y2="190" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="210" y="115" text-anchor="middle" font-size="10" fill="var(--core)">±V_in @ f_ch</text>
+
+        <!-- Main Op-Amp Stage -->
+        <polygon points="240,90 380,160 240,230" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="280" y="165" text-anchor="middle" font-weight="700">Gm / Op-Amp</text>
+        <!-- Internal offset and 1/f noise source inside opamp -->
+        <circle cx="270" cy="140" r="10" fill="var(--bad)" opacity=".3"/>
+        <text class="ts t-mono" x="270" y="144" text-anchor="middle" font-size="10" fill="var(--bad)">Vos</text>
+        <text class="ts" x="270" y="125" text-anchor="middle" font-size="9" fill="var(--bad)">+ 1/f Noise</text>
+
+        <!-- Amp Outputs -->
+        <line x1="380" y1="140" x2="440" y2="140" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="380" y1="180" x2="440" y2="180" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Chopper 2 Demodulator Box -->
+        <rect x="440" y="110" width="90" height="100" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="485" y="130" text-anchor="middle" font-weight="700" fill="var(--core)">CHOP 2</text>
+        <text class="ts t-mono" x="485" y="150" text-anchor="middle" font-size="11">Clock f_ch</text>
+        <path d="M455 140l60 40M455 180l60-40" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+        <!-- Demodulated signals -->
+        <line x1="530" y1="130" x2="580" y2="130" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="530" y1="190" x2="580" y2="190" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Sinc3 Digital Filter -->
+        <rect x="580" y="105" width="140" height="110" rx="6" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="650" y="135" text-anchor="middle" font-weight="700" fill="var(--ok)">Sinc³ Decimation</text>
+        <text class="ts" x="650" y="155" text-anchor="middle" font-size="11">Low-Pass Filter</text>
+        <text class="ts t-mut" x="650" y="180" text-anchor="middle" font-size="10">Removes f_ch Ripples</text>
+        <line x1="720" y1="160" x2="750" y2="160" stroke="var(--ok)" stroke-width="3"/>
+        <text class="ts" x="735" y="150" font-weight="700">V_out</text>
+
+        <!-- Frequency Spectrum Diagrams below -->
+        <rect x="50" y="240" width="180" height="70" fill="var(--surface)" stroke="var(--line)" rx="4"/>
+        <text class="ts" x="140" y="255" text-anchor="middle" font-weight="600">調變前頻譜</text>
+        <path d="M70 295h140M90 295v-30" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="90" y="275" font-size="9" fill="var(--analog)">Vin(DC)</text>
+
+        <rect x="290" y="240" width="180" height="70" fill="var(--surface)" stroke="var(--line)" rx="4"/>
+        <text class="ts" x="380" y="255" text-anchor="middle" font-weight="600">放大級輸出頻譜</text>
+        <path d="M310 295h140M330 295c5-25 15-28 25-28M390 295v-30" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="330" y="275" font-size="9" fill="var(--bad)">1/f Noise</text>
+        <text class="ts" x="390" y="275" font-size="9" fill="var(--core)">Vin@f_ch</text>
+
+        <rect x="540" y="240" width="180" height="70" fill="var(--surface)" stroke="var(--line)" rx="4"/>
+        <text class="ts" x="630" y="255" text-anchor="middle" font-weight="600">解調濾波後頻譜</text>
+        <path d="M560 295h140M580 295v-30M650 295c5-20 15-22 25-22" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="580" y="275" font-size="9" fill="var(--ok)">Clean Vin</text>
+        <text class="ts" x="650" y="280" font-size="9" fill="var(--bad)">Noise@f_ch (濾除)</text>
+      </svg>
+      <figcaption>圖 2.2：斬波穩零前置放大器（Chopper-Stabilized PGA）電路架構與頻譜搬移原理解析</figcaption>
     </div>
 
-    <h2 id="hv-pmic">4. 整合式 42V 高壓 PMIC 穩壓電源架構</h2>
-    <p>傳統分離式架構必須在 MCU 外圍放置一顆額外的車規 LDO 或 Buck 晶片將 12V 降至 3.3V。PSoC™ 4 HVPA 在晶片內部直接整合了耐受高達 42V 的智慧功率高壓調節器（HV Linear Regulator）。</p>
+    <h3>斬波穩零運作三步驟原理</h3>
+    <ol>
+      <li><b>輸入調變（Modulation，CHOP 1）：</b> 輸入直流微伏信號 \(V_{\text{in}}\) 通過由非重疊時脈 \(\phi_1, \phi_2\) 控制的 MOS 開關矩陣，以高達 \(f_{\text{ch}} = 250\,\text{kHz}\) 的頻率交替反轉極性。直流信號被調變為頻率為 \(f_{\text{ch}}\) 的高頻方波交流信號。</li>
+      <li><b>中間級放大（Amplification）：</b> 交流化的方波信號進入運算放大器核心被放大 \(A_v\) 倍。此時運算放大器內部電晶體產生的原生直流偏移電壓 \(V_{os}\) 與低頻 1/f 閃爍雜訊<b>直接疊加在放大級輸出端，保持在直流與低頻段</b>。</li>
+      <li><b>輸出解調與濾波（Demodulation &amp; Filtering，CHOP 2）：</b> 第二組同步開關矩陣對放大後的信號進行二次換向。原本被調變至 \(f_{\text{ch}}\) 的目標微弱信號被<b>精準還原回直流（DC）基頻</b>；而放大器自身產生的 \(V_{os}\) 與 1/f 雜訊則經歷了第一次換向，被<b>搬移（Up-Modulated）到 \(f_{\text{ch}}\) 及其奇次諧波的高頻處</b>。</li>
+    </ol>
+    <p>隨後，後級的數位 Sinc³ 降採樣低通濾波器將位於 \(f_{\text{ch}}\) 處的高頻雜訊與截波紋波（Chopping Ripples）完全濾除，使得放大器整體的等效輸入偏移電壓由原始的 250 µV <b>驟降至 0.5 µV 以下（溫漂 &lt; 5 nV/°C）</b>，實現真正的微伏級零漂移感測。</p>
 
-    <div class="tblwrap"><table>
-      <tr><th>電源節點</th><th>輸入來源</th><th>輸出電壓</th><th>功能說明與車規指標</th></tr>
-      <tr><td><b>VBAT</b></td><td>汽車電瓶極柱直連</td><td>3.6V ~ 28V 額定 (耐受 42V)</td><td>具備防反接二極體（Reverse Polarity）與內部主動箝位保護</td></tr>
-      <tr><td><b>HV Regulator</b></td><td>VBAT</td><td>3.3V (VDDD / VDDA)</td><td>驅動外部 IO、LIN 收發器與內部類比電路，PSRR &gt; 65 dB @ 100 kHz</td></tr>
-      <tr><td><b>Core Active LDO</b></td><td>VDDD (3.3V)</td><td>1.8V (VCCD)</td><td>供應 Cortex-M0+ 核心高速運算、Flash 讀取與 DMA 匯流排</td></tr>
-      <tr><td><b>Core Deep Sleep LDO</b></td><td>VDDD (3.3V)</td><td>1.8V (VCCD_LP)</td><td>超微安級超低靜態電流偏壓電路，休眠時供應 SRAM 資料保留與 WDT</td></tr>
-    </table></div>
+    <!-- ==================== CIRCUIT 3 ==================== -->
+    <h2 id="delta-sigma-schematic">3. 二階切換電容 Delta-Sigma (ΔΣ) 調變器電路原理</h2>
+    <p>PSoC™ 4 HVPA PACSS 採用的類比-數位轉換器是<b>二階切換電容（Switched-Capacitor, SC）ΔΣ 調變器</b>。它由兩級全差分積分器、一個高速鎖存比較器（1-bit Quantizer）與一個 1-bit 回饋 DAC 組成。</p>
 
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 340" role="img" aria-label="二階切換電容 Delta-Sigma 調變器電路原理圖">
+        <!-- Input Vin -->
+        <text class="ts" x="20" y="75" font-weight="700">V_in(+)</text>
+        <line x1="70" y1="70" x2="110" y2="70" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="20" y="175" font-weight="700">V_in(−)</text>
+        <line x1="70" y1="170" x2="110" y2="170" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Summer 1 / SC Sampling Cap 1 -->
+        <rect x="110" y="55" width="40" height="30" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="130" y="75" text-anchor="middle">Cs1</text>
+        <rect x="110" y="155" width="40" height="30" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="130" y="175" text-anchor="middle">Cs1</text>
+
+        <!-- Integrator 1 Opamp -->
+        <polygon points="180,40 260,120 180,200" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="210" y="125" text-anchor="middle" font-weight="700">OTA 1</text>
+        <!-- Integrator 1 Feedback Cap Cint1 -->
+        <path d="M170 60h-10v-30h90v25" fill="none" stroke="var(--core)" stroke-width="1.5"/>
+        <rect x="195" y="20" width="30" height="20" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="210" y="34" text-anchor="middle" font-size="9">Cint1</text>
+
+        <!-- Output of Int 1 to Int 2 -->
+        <line x1="260" y1="100" x2="310" y2="100" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="260" y1="140" x2="310" y2="140" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Sampling Cap 2 -->
+        <rect x="310" y="85" width="35" height="25" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="327" y="102" text-anchor="middle" font-size="10">Cs2</text>
+        <rect x="310" y="130" width="35" height="25" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="327" y="147" text-anchor="middle" font-size="10">Cs2</text>
+
+        <!-- Integrator 2 Opamp -->
+        <polygon points="370,60 450,120 370,180" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="400" y="125" text-anchor="middle" font-weight="700">OTA 2</text>
+        <!-- Integrator 2 Feedback Cap Cint2 -->
+        <path d="M360 80h-10v-30h90v25" fill="none" stroke="var(--core)" stroke-width="1.5"/>
+        <rect x="385" y="40" width="30" height="20" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="400" y="54" text-anchor="middle" font-size="9">Cint2</text>
+
+        <!-- Output of Int 2 to Comparator -->
+        <line x1="450" y1="120" x2="510" y2="120" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Clocked 1-bit Latched Comparator -->
+        <rect x="510" y="90" width="80" height="60" rx="4" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="550" y="115" text-anchor="middle" font-weight="700" fill="var(--bad)">1-bit Latch</text>
+        <text class="ts t-mono" x="550" y="135" text-anchor="middle" font-size="10">Clock fs</text>
+
+        <!-- Modulator Bitstream Output -->
+        <line x1="590" y1="120" x2="710" y2="120" stroke="var(--bad)" stroke-width="3"/>
+        <circle cx="710" cy="120" r="4" fill="var(--bad)"/>
+        <text class="ts" x="715" y="110" font-weight="700" fill="var(--bad)">D_out (1-bit PDM)</text>
+        <text class="ts t-mut" x="650" y="140" text-anchor="middle">To Sinc³ Filter</text>
+
+        <!-- Feedback 1-bit DAC path -->
+        <path d="M640 120v140h-510v-100" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 3"/>
+        <rect x="290" y="240" width="160" height="50" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="370" y="262" text-anchor="middle" font-weight="700" fill="var(--warn)">1-bit Differential DAC</text>
+        <text class="ts t-mono" x="370" y="280" text-anchor="middle" font-size="10">+VREF / −VREF (1.2V Bandgap)</text>
+      </svg>
+      <figcaption>圖 2.3：二階切換電容差分 Delta-Sigma（ΔΣ）調變器完整電路拓撲與回饋回路</figcaption>
+    </div>
+
+    <h3>電荷平衡方程與二階雜訊整形數學模型</h3>
+    <p>調變器在時脈驅動下工作於兩相非重疊時脈 \(\phi_1\)（採樣相）與 \(\phi_2\)（積分相）。在每個時脈週期中，輸入電壓 \(V_{\text{in}}\) 對採樣電容 \(C_{s1}\) 充電，隨後回饋 DAC 根據前一週期的比較器輸出 \(D_{\text{out}} \in \{+1, -1\}\) 注入反向電荷：</p>
     <div class="math-block">
-      <b>ISO 7637-2 Pulse 5b（拋負載 Load Dump）耐壓耐受驗證：</b><br>
-      當發電機全力向電瓶充電時，電瓶端子突然鬆脫斷開，發電機磁場能量釋放，在電源線上產生高達 \(40\text{V} \sim 42\text{V}\) 的破壞性突波，持續時間達 \(t_d = 400\text{ ms}\)。<br>
-      PSoC 4 HVPA 內部的高壓 DMOS 功率管具備 <b>45V 崩潰電壓額定值（Breakdown Voltage $V_{BR}$）</b>，無需外部 TVS 即可直接承受拋負載衝擊而持續正常運作。
+      <b>積分節點電荷平衡方程式：</b><br>
+      \[Q_{\text{net}} = C_{s1} \cdot V_{\text{in}}[n] - D_{\text{out}}[n] \cdot C_{s1} \cdot V_{\text{REF}}\]
+      若輸入信號為正，調變器輸出位元流中 \(+1\) 的密度大於 \(-1\)；積分器將差值電荷不斷累加。
     </div>
+    <p>在 \(z\) 域中，二階調變器的輸出離散轉移方程為：</p>
+    <div class="math-block">
+      \[Y(z) = z^{-2} X(z) + (1 - z^{-1})^2 E(z)\]
+      其中 \(X(z)\) 為輸入信號，\(E(z)\) 為比較器的 1-bit 量化誤差。關鍵在於量化噪聲傳遞函數（Noise Transfer Function, NTF）：
+      \[\text{NTF}(z) = (1 - z^{-1})^2\]
+      在直流附近（\(z \to 1\)，即 \(\omega \to 0\)），\(\text{NTF}(e^{j\omega}) = (1 - e^{-j\omega})^2 \approx \omega^2\)。這意味著<b>低頻段的量化噪聲被二階微分算子強烈壓制為零</b>，大量噪聲被「推向（Shaped）」高頻。配合超採樣率 \(OSR = 256\)，基頻帶內的有效訊噪比（SNR）達到 <b>98 dB 以上，等效有效位元數 ENOB &gt; 16.0 bits</b>。</p>
+
+    <!-- ==================== CIRCUIT 4 ==================== -->
+    <h2 id="hv-pmic-schematic">4. 直連 42V 高壓 PMIC 穩壓電源與帶隙基準電路原理</h2>
+    <p>PSoC™ 4 HVPA 能在無外掛降壓晶片的情況下直接連接汽車 12V/24V 電瓶極柱，其內部高壓調節器（HV Linear Regulator）的核心在於<b>橫向雙擴散功率管（LDMOS）與曲率補償帶隙基準源（Bandgap Reference）</b>的協同設計。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 380" role="img" aria-label="42V 高壓穩壓器與帶隙基準電路原理圖">
+        <!-- VBAT In -->
+        <line x1="20" y1="80" x2="100" y2="80" stroke="#c0392b" stroke-width="3"/>
+        <circle cx="20" cy="80" r="4" fill="#c0392b"/>
+        <text class="ts" x="25" y="65" font-weight="700" fill="#c0392b">VBAT (3.6V ~ 28V, survives 42V)</text>
+
+        <!-- Reverse Polarity Protection Diode -->
+        <polygon points="100,70 120,80 100,90" fill="var(--ink)"/>
+        <line x1="120" y1="70" x2="120" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="120" y1="80" x2="180" y2="80" stroke="#c0392b" stroke-width="3"/>
+        <text class="ts" x="110" y="60" font-size="10">D_rev</text>
+
+        <!-- Power LDMOS Pass Transistor -->
+        <rect x="180" y="55" width="100" height="50" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="230" y="78" text-anchor="middle" font-weight="700" fill="var(--safety)">HV-LDMOS</text>
+        <text class="ts t-mono" x="230" y="95" text-anchor="middle" font-size="10">V_BR &gt; 45V</text>
+
+        <!-- Regulated VDDD 3.3V Output -->
+        <line x1="280" y1="80" x2="520" y2="80" stroke="var(--ok)" stroke-width="3"/>
+        <circle cx="520" cy="80" r="4" fill="var(--ok)"/>
+        <text class="ts" x="525" y="75" font-weight="700" fill="var(--ok)">VDDD / VDDA = 3.3V (Regulated)</text>
+
+        <!-- Decoupling Cap Cout -->
+        <line x1="480" y1="80" x2="480" y2="140" stroke="var(--line)" stroke-width="2"/>
+        <rect x="470" y="100" width="20" height="20" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="500" y="115">Cout = 4.7 µF</text>
+        <path d="M472 140h16M476 144h8M479 148h2" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Feedback Resistor Divider -->
+        <line x1="430" y1="80" x2="430" y2="160" stroke="var(--line)" stroke-width="2"/>
+        <rect x="420" y="160" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="450" y="180">R1 = 210 kΩ</text>
+        <circle cx="430" cy="210" r="3" fill="var(--ink)"/>
+        <line x1="430" y1="195" x2="430" y2="230" stroke="var(--line)" stroke-width="2"/>
+        <rect x="420" y="230" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="450" y="250">R2 = 120 kΩ</text>
+        <line x1="430" y1="265" x2="430" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <path d="M422 280h16M426 284h8M429 288h2" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- V_feedback line to Error Amp -->
+        <line x1="430" y1="210" x2="330" y2="210" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts" x="375" y="200" text-anchor="middle" font-size="10">V_fb = 1.2V</text>
+
+        <!-- Error Amplifier -->
+        <polygon points="260,170 330,210 260,250" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="285" y="215" text-anchor="middle" font-weight="700">Error Amp</text>
+
+        <!-- Bandgap Reference input -->
+        <rect x="60" y="220" width="140" height="60" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="130" y="245" text-anchor="middle" font-weight="700" fill="var(--analog)">Bandgap Reference</text>
+        <text class="ts t-mono" x="130" y="265" text-anchor="middle" font-size="11">V_BG = 1.200 V (±0.05%)</text>
+        <line x1="200" y1="230" x2="260" y2="230" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="225" y="222" font-size="10" fill="var(--analog)">V_ref</text>
+
+        <!-- Error Amp output to Gate Driver & Foldback -->
+        <line x1="260" y1="210" x2="230" y2="210" stroke="var(--core)" stroke-width="2"/>
+        <line x1="230" y1="210" x2="230" y2="105" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="220" y="150" text-anchor="end" font-size="10" fill="var(--core)">Gate Control</text>
+
+        <!-- Active Zener Clamp on Gate for Load Dump -->
+        <path d="M195 80v45h20M215 125l6-10h-12zM215 115v-10" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
+        <text class="ts" x="155" y="115" font-size="9" fill="var(--bad)">38V Zener Clamp</text>
+
+        <!-- Core LDO down to 1.8V -->
+        <line x1="520" y1="80" x2="570" y2="80" stroke="var(--ok)" stroke-width="2"/>
+        <rect x="570" y="55" width="130" height="50" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts" x="635" y="78" text-anchor="middle" font-weight="600">Core 1.8V LDO</text>
+        <text class="ts t-mono" x="635" y="95" text-anchor="middle" font-size="10">Active / Deep Sleep</text>
+        <line x1="700" y1="80" x2="740" y2="80" stroke="var(--core)" stroke-width="2.5"/>
+        <circle cx="740" cy="80" r="3" fill="var(--core)"/>
+        <text class="ts" x="710" y="105" font-size="10" fill="var(--core)">VCCD = 1.8V</text>
+      </svg>
+      <figcaption>圖 2.4：42V 耐受高壓 LDMOS 線性穩壓器、折疊保護回路與帶隙能隙基準源電路拓撲</figcaption>
+    </div>
+
+    <h3>電路工作機制與負載突降抗擾原理解析</h3>
+    <ul>
+      <li><b>能隙基準源（Bandgap Reference，Brokaw Cell）：</b> 利用具有正溫度係數（PTAT）的熱電壓 \(V_T = \frac{kT}{q}\) 與具有負溫度係數（CTAT）的晶體管基極-射極電壓 \(V_{BE}\) 進行加權相加：
+        \[V_{\text{BG}} = V_{BE} + K \cdot V_T \approx 1.200\text{ V}\]
+        晶片內建雷射/eFuse 修調電阻梯，將全溫區（-40°C ~ +125°C）電壓溫漂係數嚴格壓制在 <b>15 ppm/°C 以內</b>。</li>
+      <li><b>分壓閉環負回授：</b> 輸出電壓 \(V_{\text{DDD}}\) 經電阻分壓產生反饋電壓 \(V_{\text{fb}} = V_{\text{DDD}} \cdot \frac{R_2}{R_1 + R_2}\)。誤差放大器比較 \(V_{\text{fb}}\) 與 \(V_{\text{BG}}\)，動態調整功率 LDMOS 的閘極電壓。當輸出負載抽載增大導致電壓下跌時，誤差放大器拉高閘極電壓以降低 LDMOS 導通電阻，維持輸出於精確的 3.30V。</li>
+      <li><b>42V 負載突降（Load Dump）自保機制：</b> 在高達 42V 的瞬態衝擊下，功率管的漂移區（Drift Region）承受絕大部分壓降；閘極配置有 38V 主動齊納鉗位二極體，限制閘-源極跨壓 \(V_{GS} \le 12\text{V}\)，防止超薄閘極氧化層被高壓擊穿。同時，誤差放大器具備高達 <b>65 dB 的電源抑制比（PSRR @ 100 kHz）</b>，確保後端敏感的 16-bit ADC 類比電源不受電瓶突波干擾。</li>
+    </ul>
 
     <div class="pager"></div>
   </article>

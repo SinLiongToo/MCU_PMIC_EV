@@ -3,42 +3,233 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>02 Precision Analog &amp; PMIC · MCU Notes</title>
-<meta name="description" content="In-depth analysis of Infineon PSoC™ 4 HVPA precision analog subsystem (PACSS): Dual 16-bit Sigma-Delta ADCs, fast AGC look-up table, Sinc³ decimation filter, and 42V load-dump tolerant PMIC high-voltage regulator.">
+<title>02 Precision Analog &amp; Power Circuit Schematics · MCU Notes</title>
+<meta name="description" content="In-depth analysis of Infineon PSoC™ 4 HVPA precision analog circuit principles: 4-terminal Kelvin shunt filtering, chopper-stabilized instrumentation amplifier (PGA), switched-capacitor 2nd-order Delta-Sigma modulator, and 42V HV LDMOS regulator with bandgap cell.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="analog" data-ch="analog">
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
   <article>
-    <div class="eyebrow">Chapter 02 · Precision Analog &amp; PMIC Subsystem</div>
-    <h1>Precision Analog &amp; High-Voltage Power: Microvolt Sensing &amp; 42V Direct Feed</h1>
-    <p class="lead">Automotive battery monitoring poses an extreme physical challenge: current dynamic range spans over <b>1,000,000:1</b> (from a few milliamps in vehicle parking sleep to 1500 Amps during engine cranking or high-power regenerative braking), all while enduring destructive 42V load dump spikes on the battery bus.</p>
+    <div class="eyebrow">Chapter 02 · Precision Analog &amp; PMIC Circuit Schematics</div>
+    <h1>Precision Analog &amp; High-Voltage Power: Circuit Schematics &amp; Principles</h1>
+    <p class="lead">In automotive battery management systems (BMS), the microcontroller analog front-end directly interfaces with noisy, high-voltage battery rails. Grounded on the <b>Infineon PSoC™ 4 HVPA-144K</b> architecture, this chapter explores transistor-level and op-amp level circuit schematics: 4-terminal Kelvin shunt sensing, chopper-stabilized PGAs, 2nd-order switched-capacitor ΔΣ modulators, and 42V-tolerant monolithic PMIC regulators.</p>
 
-    <h2 id="pacss-overview">1. Precision Analog Subsystem (PACSS) Architecture</h2>
-    <p>The PSoC™ 4 HVPA PACSS integrates two synchronized differential converter channels: the <b>Current Channel (ISENSE)</b> and the <b>Voltage Channel (VSENSE)</b>.</p>
+    <!-- ==================== CIRCUIT 1 ==================== -->
+    <h2 id="kelvin-filter">1. 4-Terminal Kelvin Shunt Sensing &amp; Anti-Aliasing RC Filter Circuit</h2>
+    <p>Shunt resistors for automotive batteries have extremely low resistance (typically <b>100 µΩ</b>). Standard 2-terminal resistors suffer from solder contact resistance (0.5 mΩ ~ 2 mΩ) and copper trace TCR (3900 ppm/°C) that destroy accuracy. Thus, a <b>Kelvin 4-wire connection</b> with symmetric differential and common-mode RC filtering is mandatory.</p>
 
-    <h2 id="sigma-delta">2. Dual 16-bit Differential $\Delta\Sigma$ ADCs &amp; Sinc³ Decimation</h2>
-    <p>Unlike SAR ADCs that are prone to switching noise from inverters, Sigma-Delta converters oversample the input and shape quantization noise out of the band of interest.</p>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="Kelvin Shunt Sensing &amp; Differential RC Filter Schematic">
+        <line x1="30" y1="60" x2="160" y2="60" stroke="#d35400" stroke-width="8"/>
+        <text class="ts" x="90" y="45" text-anchor="middle" font-weight="700" fill="#d35400">Power Current Path (I_BMS up to 1500A)</text>
+        <line x1="280" y1="60" x2="400" y2="60" stroke="#d35400" stroke-width="8"/>
 
-    <div class="math-block">
-      <b>Sinc³ Decimation Filter Transfer Function:</b><br>
-      \[H(z) = \left( \frac{1 - z^{-D}}{1 - z^{-1}} \right)^3\]
-      By setting the modulator clock to 1.536 MHz and decimation ratio \(D = 1536\), output data rate is 1 kHz. The periodic notches fall exactly at 50 Hz, 60 Hz, and their harmonics, providing over <b>80 dB of normal-mode power grid rejection</b>.
+        <rect x="160" y="40" width="120" height="40" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts t-mono" x="220" y="65" text-anchor="middle" font-weight="700">R_shunt = 100 µΩ</text>
+        <text class="ts t-mut" x="220" y="95" text-anchor="middle">Manganin Alloy (TCR &lt; 15 ppm/°C)</text>
+
+        <circle cx="180" cy="60" r="4" fill="var(--analog)"/>
+        <circle cx="260" cy="60" r="4" fill="var(--analog)"/>
+        <line x1="180" y1="60" x2="180" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="260" y1="60" x2="260" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="165" y="110" text-anchor="end" fill="var(--analog)">Sense +</text>
+        <text class="ts" x="275" y="110" text-anchor="start" fill="var(--analog)">Sense −</text>
+
+        <rect x="220" y="140" width="50" height="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <line x1="180" y1="150" x2="220" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="270" y1="150" x2="350" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="245" y="132" text-anchor="middle">Rf = 100 Ω</text>
+
+        <rect x="220" y="210" width="50" height="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <line x1="260" y1="150" x2="260" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="260" y1="220" x2="220" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="270" y1="220" x2="350" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="245" y="248" text-anchor="middle">Rf = 100 Ω</text>
+
+        <line x1="380" y1="150" x2="380" y2="220" stroke="var(--line)" stroke-width="2"/>
+        <rect x="365" y="175" width="30" height="20" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="410" y="190" fill="var(--core)">C_diff = 100 nF</text>
+
+        <line x1="480" y1="150" x2="480" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <rect x="470" y="190" width="20" height="20" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="500" y="205">C_cm = 10 nF</text>
+        <path d="M472 280h16M476 284h8M479 288h2" stroke="var(--ink)" stroke-width="2"/>
+
+        <line x1="480" y1="220" x2="480" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <rect x="470" y="240" width="20" height="20" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+
+        <rect x="560" y="90" width="180" height="230" rx="8" fill="var(--sunk)" stroke="var(--analog)" stroke-width="2" stroke-dasharray="5 3"/>
+        <text class="ts" x="650" y="115" text-anchor="middle" font-weight="700" fill="var(--analog)">PSoC 4 HVPA IC PIN</text>
+
+        <circle cx="560" cy="150" r="5" fill="var(--analog)"/>
+        <line x1="350" y1="150" x2="560" y2="150" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="580" y="145">ISENSE_P</text>
+
+        <circle cx="560" cy="220" r="5" fill="var(--analog)"/>
+        <line x1="350" y1="220" x2="560" y2="220" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts t-mono" x="580" y="235">ISENSE_N</text>
+      </svg>
+      <figcaption>Figure 2.1: 4-Terminal Kelvin Shunt Connection &amp; Symmetric 2nd-Order Differential/Common-Mode RC Anti-Aliasing Filter</figcaption>
     </div>
 
-    <h2 id="agc-shunt">3. Fast Hardware Automatic Gain Control (AGC)</h2>
-    <p>Using a standard \(100\,\mu\Omega\) shunt, a 1500 A cranking surge yields 150 mV across the inputs, while a 15 mA standby current yields just 1.5 µV.</p>
-    <ul>
-      <li>PGA Gain 1x (±150 mV FSR) covers heavy charging and engine start.</li>
-      <li>PGA Gain 64x (±2.3 mV FSR) magnifies microvolt standby currents.</li>
-      <li><b>Fast Look-Up Table AGC:</b> Switches gain stages in <b>&lt; 5 µs</b> without CPU overhead, ensuring zero clipping and complete Coulomb tracking.</li>
-    </ul>
+    <!-- ==================== CIRCUIT 2 ==================== -->
+    <h2 id="chopper-pga">2. Chopper-Stabilized Instrumentation Amplifier (PGA) Circuit</h2>
+    <p>When measuring vehicle sleep currents (e.g. 15 mA), the voltage across a 100 µΩ shunt is only 1.5 µV. Native CMOS input offset voltages (0.5 mV ~ 2 mV) and 1/f flicker noise would obliterate this signal. The PSoC™ 4 HVPA utilizes <b>chopper stabilization</b> to eliminate offset drift.</p>
 
-    <h2 id="hv-pmic">4. Integrated 42V High-Voltage Regulator / PMIC</h2>
-    <p>Eliminating external PMIC bucks and LDOs, the integrated high-voltage linear regulator accepts direct battery connections from 3.6V to 28V, and survives 42V ISO 7637-2 load dump transients with high PSRR.</p>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 320" role="img" aria-label="Chopper-Stabilized Amplifier Circuit &amp; Frequency Spectrum">
+        <text class="ts" x="25" y="110" font-weight="700">V_in (DC ~ 1kHz)</text>
+        <line x1="30" y1="130" x2="90" y2="130" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="30" y1="190" x2="90" y2="190" stroke="var(--analog)" stroke-width="2"/>
+
+        <rect x="90" y="110" width="90" height="100" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="135" y="130" text-anchor="middle" font-weight="700" fill="var(--core)">CHOP 1</text>
+        <text class="ts t-mono" x="135" y="150" text-anchor="middle" font-size="11">Clock f_ch</text>
+        <path d="M105 140l60 40M105 180l60-40" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+        <line x1="180" y1="130" x2="240" y2="130" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="180" y1="190" x2="240" y2="190" stroke="var(--analog)" stroke-width="2"/>
+
+        <polygon points="240,90 380,160 240,230" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="280" y="165" text-anchor="middle" font-weight="700">Gm / Op-Amp</text>
+        <circle cx="270" cy="140" r="10" fill="var(--bad)" opacity=".3"/>
+        <text class="ts t-mono" x="270" y="144" text-anchor="middle" font-size="10" fill="var(--bad)">Vos</text>
+
+        <line x1="380" y1="140" x2="440" y2="140" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="380" y1="180" x2="440" y2="180" stroke="var(--analog)" stroke-width="2"/>
+
+        <rect x="440" y="110" width="90" height="100" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="485" y="130" text-anchor="middle" font-weight="700" fill="var(--core)">CHOP 2</text>
+        <text class="ts t-mono" x="485" y="150" text-anchor="middle" font-size="11">Clock f_ch</text>
+        <path d="M455 140l60 40M455 180l60-40" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+        <line x1="530" y1="130" x2="580" y2="130" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="530" y1="190" x2="580" y2="190" stroke="var(--analog)" stroke-width="2"/>
+
+        <rect x="580" y="105" width="140" height="110" rx="6" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="650" y="135" text-anchor="middle" font-weight="700" fill="var(--ok)">Sinc³ Decimation</text>
+        <text class="ts" x="650" y="155" text-anchor="middle" font-size="11">Low-Pass Filter</text>
+        <text class="ts t-mut" x="650" y="180" text-anchor="middle" font-size="10">Removes f_ch Ripples</text>
+        <line x1="720" y1="160" x2="750" y2="160" stroke="var(--ok)" stroke-width="3"/>
+        <text class="ts" x="735" y="150" font-weight="700">V_out</text>
+      </svg>
+      <figcaption>Figure 2.2: Chopper-Stabilized Programmable Gain Amplifier (PGA) Architecture &amp; Spectrum Up-Modulation</figcaption>
+    </div>
+
+    <!-- ==================== CIRCUIT 3 ==================== -->
+    <h2 id="delta-sigma-schematic">3. 2nd-Order Switched-Capacitor Delta-Sigma (ΔΣ) Modulator Circuit</h2>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 340" role="img" aria-label="2nd-Order Switched-Capacitor Delta-Sigma Modulator Schematic">
+        <text class="ts" x="20" y="75" font-weight="700">V_in(+)</text>
+        <line x1="70" y1="70" x2="110" y2="70" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="20" y="175" font-weight="700">V_in(−)</text>
+        <line x1="70" y1="170" x2="110" y2="170" stroke="var(--analog)" stroke-width="2"/>
+
+        <rect x="110" y="55" width="40" height="30" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="130" y="75" text-anchor="middle">Cs1</text>
+        <rect x="110" y="155" width="40" height="30" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="130" y="175" text-anchor="middle">Cs1</text>
+
+        <polygon points="180,40 260,120 180,200" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="210" y="125" text-anchor="middle" font-weight="700">OTA 1</text>
+        <path d="M170 60h-10v-30h90v25" fill="none" stroke="var(--core)" stroke-width="1.5"/>
+        <rect x="195" y="20" width="30" height="20" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="210" y="34" text-anchor="middle" font-size="9">Cint1</text>
+
+        <line x1="260" y1="100" x2="310" y2="100" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="260" y1="140" x2="310" y2="140" stroke="var(--analog)" stroke-width="2"/>
+
+        <rect x="310" y="85" width="35" height="25" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="327" y="102" text-anchor="middle" font-size="10">Cs2</text>
+        <rect x="310" y="130" width="35" height="25" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="327" y="147" text-anchor="middle" font-size="10">Cs2</text>
+
+        <polygon points="370,60 450,120 370,180" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="400" y="125" text-anchor="middle" font-weight="700">OTA 2</text>
+        <path d="M360 80h-10v-30h90v25" fill="none" stroke="var(--core)" stroke-width="1.5"/>
+        <rect x="385" y="40" width="30" height="20" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="400" y="54" text-anchor="middle" font-size="9">Cint2</text>
+
+        <line x1="450" y1="120" x2="510" y2="120" stroke="var(--analog)" stroke-width="2"/>
+
+        <rect x="510" y="90" width="80" height="60" rx="4" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="550" y="115" text-anchor="middle" font-weight="700" fill="var(--bad)">1-bit Latch</text>
+        <text class="ts t-mono" x="550" y="135" text-anchor="middle" font-size="10">Clock fs</text>
+
+        <line x1="590" y1="120" x2="710" y2="120" stroke="var(--bad)" stroke-width="3"/>
+        <circle cx="710" cy="120" r="4" fill="var(--bad)"/>
+        <text class="ts" x="715" y="110" font-weight="700" fill="var(--bad)">D_out (1-bit PDM)</text>
+
+        <path d="M640 120v140h-510v-100" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 3"/>
+        <rect x="290" y="240" width="160" height="50" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="370" y="262" text-anchor="middle" font-weight="700" fill="var(--warn)">1-bit Differential DAC</text>
+        <text class="ts t-mono" x="370" y="280" text-anchor="middle" font-size="10">+VREF / −VREF (1.2V Bandgap)</text>
+      </svg>
+      <figcaption>Figure 2.3: 2nd-Order Switched-Capacitor Differential Delta-Sigma (ΔΣ) Modulator Topology</figcaption>
+    </div>
+
+    <!-- ==================== CIRCUIT 4 ==================== -->
+    <h2 id="hv-pmic-schematic">4. 42V Direct Battery PMIC Regulator &amp; Bandgap Reference Circuit</h2>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 380" role="img" aria-label="42V HV Linear Regulator &amp; Bandgap Circuit Schematic">
+        <line x1="20" y1="80" x2="100" y2="80" stroke="#c0392b" stroke-width="3"/>
+        <circle cx="20" cy="80" r="4" fill="#c0392b"/>
+        <text class="ts" x="25" y="65" font-weight="700" fill="#c0392b">VBAT (3.6V ~ 28V, survives 42V)</text>
+
+        <polygon points="100,70 120,80 100,90" fill="var(--ink)"/>
+        <line x1="120" y1="70" x2="120" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="120" y1="80" x2="180" y2="80" stroke="#c0392b" stroke-width="3"/>
+
+        <rect x="180" y="55" width="100" height="50" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="230" y="78" text-anchor="middle" font-weight="700" fill="var(--safety)">HV-LDMOS</text>
+        <text class="ts t-mono" x="230" y="95" text-anchor="middle" font-size="10">V_BR &gt; 45V</text>
+
+        <line x1="280" y1="80" x2="520" y2="80" stroke="var(--ok)" stroke-width="3"/>
+        <circle cx="520" cy="80" r="4" fill="var(--ok)"/>
+        <text class="ts" x="525" y="75" font-weight="700" fill="var(--ok)">VDDD / VDDA = 3.3V (Regulated)</text>
+
+        <line x1="480" y1="80" x2="480" y2="140" stroke="var(--line)" stroke-width="2"/>
+        <rect x="470" y="100" width="20" height="20" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="500" y="115">Cout = 4.7 µF</text>
+        <path d="M472 140h16M476 144h8M479 148h2" stroke="var(--ink)" stroke-width="2"/>
+
+        <line x1="430" y1="80" x2="430" y2="160" stroke="var(--line)" stroke-width="2"/>
+        <rect x="420" y="160" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="450" y="180">R1 = 210 kΩ</text>
+        <circle cx="430" cy="210" r="3" fill="var(--ink)"/>
+        <line x1="430" y1="195" x2="430" y2="230" stroke="var(--line)" stroke-width="2"/>
+        <rect x="420" y="230" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="450" y="250">R2 = 120 kΩ</text>
+        <line x1="430" y1="265" x2="430" y2="280" stroke="var(--line)" stroke-width="2"/>
+        <path d="M422 280h16M426 284h8M429 288h2" stroke="var(--ink)" stroke-width="2"/>
+
+        <line x1="430" y1="210" x2="330" y2="210" stroke="var(--line)" stroke-width="1.5"/>
+        <polygon points="260,170 330,210 260,250" fill="var(--sunk)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="285" y="215" text-anchor="middle" font-weight="700">Error Amp</text>
+
+        <rect x="60" y="220" width="140" height="60" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="130" y="245" text-anchor="middle" font-weight="700" fill="var(--analog)">Bandgap Reference</text>
+        <text class="ts t-mono" x="130" y="265" text-anchor="middle" font-size="11">V_BG = 1.200 V (±0.05%)</text>
+        <line x1="200" y1="230" x2="260" y2="230" stroke="var(--analog)" stroke-width="2"/>
+
+        <line x1="260" y1="210" x2="230" y2="210" stroke="var(--core)" stroke-width="2"/>
+        <line x1="230" y1="210" x2="230" y2="105" stroke="var(--core)" stroke-width="2"/>
+
+        <line x1="520" y1="80" x2="570" y2="80" stroke="var(--ok)" stroke-width="2"/>
+        <rect x="570" y="55" width="130" height="50" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts" x="635" y="78" text-anchor="middle" font-weight="600">Core 1.8V LDO</text>
+        <line x1="700" y1="80" x2="740" y2="80" stroke="var(--core)" stroke-width="2.5"/>
+        <circle cx="740" cy="80" r="3" fill="var(--core)"/>
+        <text class="ts" x="710" y="105" font-size="10" fill="var(--core)">VCCD = 1.8V</text>
+      </svg>
+      <figcaption>Figure 2.4: 42V-Tolerant High-Voltage LDMOS Linear Regulator &amp; Brokaw Bandgap Reference Schematic</figcaption>
+    </div>
 
     <div class="pager"></div>
   </article>

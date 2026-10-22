@@ -7,6 +7,9 @@
 <meta name="description" content="車用微控制器量產現場真實重大失效事故全剖析：接觸器吸合地彈、嚴寒冷啟動電壓塌陷、分流電阻塞貝克熱電效應、LIN 總線短路與窗口看門狗溫漂重置，附工程排查決策樹與對策。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="lessons" data-ch="safety">
@@ -22,7 +25,7 @@
       <b>事故現象：</b> 某電動車在踩下剎車進行大功率能量回收或快充繼電器吸合瞬間，BMS 採樣晶片連續 500 ms 讀取到全 0xFFFF 的飽和電流值，隨後觸發硬體 BOD 重置，導致儀表跳出電池系統故障報警。
     </div>
     <h3>根因分析 (Root Cause)</h3>
-    <p>高壓接觸器在接通瞬間，強大的電容預充電流脈衝（高達數百安培，$dI/dt &gt; 10^7\text{ A/s}$）流經車身搭鐵點。由於搭鐵銅排與底盤螺栓存在數十毫微亨利（$\text{nH}$）的寄生電感，產生了強烈地彈電壓：</p>
+    <p>高壓接觸器在接通瞬間，強大的電容預充電流脈衝（高達數百安培，$dI/dt &gt; 10^7\text{ A/s}$）流經車身搭鐵點。由於搭鐵銅排與底盤螺栓存在數十毫微亨利（nH）的寄生電感，產生了強烈地彈電壓：</p>
     <div class="math-block">
       \[V_{\text{bounce}} = L_{\text{parasitic}} \cdot \frac{dI}{dt} \approx 25\text{ nH} \times 10^7\text{ A/s} = 250\text{ mV}\]
       分離式架構中，AFE 晶片的模擬地（AGND）與 MCU 數位地（DGND）因佈線回路過長形成電位差，導致差分輸入引腳的共模電壓瞬間被拉出晶片允許範圍（Below Ground），觸發晶片內部 ESD 保護二極體導通，寄生 NPN 晶體管進入微閂鎖狀態。
@@ -54,7 +57,7 @@
     <div class="math-block">
       根據熱電效應（Seebeck Effect），異質金屬溫差產生額外熱電勢：<br>
       \[V_{\text{Seebeck}} = S_{\text{Cu-Manganin}} \cdot \Delta T \approx 1.5\,\mu\text{V/}^\circ\text{C} \times 15^\circ\text{C} = 22.5\,\mu\text{V}\]
-      在 \(100\,\mu\Omega\) 分流電阻下，這相當於產生了 <b>225 mA 的虛假直流電流</b>！長途行駛 6 小時累計產生了 1.35 Ah 的虛假電量。
+      在 100 µΩ 分流電阻下，這相當於產生了 <b>225 mA 的虛假直流電流</b>！長途行駛 6 小時累計產生了 1.35 Ah 的虛假電量。
     </div>
     <h3>解決對策與工程防範 (Countermeasure)</h3>
     <ul>
@@ -67,7 +70,7 @@
       <b>事故現象：</b> 車輛線束在車門鉸鏈處磨損，LIN 訊號線與 12V 常電火線短路，導致感測器晶片整片燒黑。
     </div>
     <h3>根因分析與對策</h3>
-    <p>部分廠商為降低成本採用了耐壓僅 5V 的微控制器外掛未隔離收發器。當線束短路或發電機拋負載發生時，高達 40V 的電壓直接灌入 LIN 引腳。PSoC 4 HVPA 晶片內部整合了<b>車規級高壓 LIN 2.2A 收發器實體層</b>，其 LIN 引腳支援 \(-27\text{V} \sim +42\text{V}\) 的持續直流耐壓，短路至電瓶正負極均可自我保護，杜絕火災隱患。</p>
+    <p>部分廠商為降低成本採用了耐壓僅 5V 的微控制器外掛未隔離收發器。當線束短路或發電機拋負載發生時，高達 40V 的電壓直接灌入 LIN 引腳。PSoC 4 HVPA 晶片內部整合了<b>車規級高壓 LIN 2.2A 收發器實體層</b>，其 LIN 引腳支援 -27V 至 +42V 的持續直流耐壓，短路至電瓶正負極均可自我保護，杜絕火災隱患。</p>
 
     <h2 id="troubleshooting-matrix">5. 車用 MCU 系統排查決策矩陣</h2>
     <div class="tblwrap"><table>

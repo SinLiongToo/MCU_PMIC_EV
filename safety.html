@@ -3,86 +3,161 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>06 功能安全與可靠度 · MCU Notes</title>
-<meta name="description" content="深入探討車載微控制器的 ISO 26262 道路車輛功能安全標準：ASIL-C 系統安全要求、安全機制（問答式窗口看門狗、類比環迴自檢、記憶體 ECC）、隨機硬體失效率 FIT 計算與 FMEDA 定量指標（SPFM &gt; 97%, LFM &gt; 80%）。">
+<title>06 功能安全與硬體診斷電路 · MCU Notes</title>
+<meta name="description" content="深入探討車載微控制器的 ISO 26262 ASIL-C 安全電路原理：分流器焊點斷線（Wire-Break）類比自檢電流源電路、問答式窗口看門狗硬體 LFSR 密碼生成電路、時脈監視器（CSV）與 FMEDA 定量隨機硬體失效率計算。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="safety" data-ch="safety">
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
   <article>
-    <div class="eyebrow">Chapter 06 · Functional Safety &amp; ISO 26262 Reliability</div>
-    <h1>功能安全與可靠度：ISO 26262 ASIL-C 系統實踐</h1>
-    <p class="lead">在汽車高壓動力電池與電池斷路單元（BDU）中，一旦感測晶片死當或誤將短路電流判定為正常放電，極可能導致整車失控或火災。ISO 26262 標準要求微控制器從晶片架構設計起就必須防範系統性故障與隨機硬體故障。PSoC™ 4 HVPA 原生滿足 <b>ISO 26262 ASIL-C</b> 嚴格要求。</p>
+    <div class="eyebrow">Chapter 06 · Functional Safety &amp; Hardware Diagnostic Circuits</div>
+    <h1>功能安全：ISO 26262 ASIL-C 晶片硬體診斷電路原理</h1>
+    <p class="lead">在車用動力電池系統中，若分流器因機械震動發生焊點斷裂開路，或 CPU 陷入無窮死循環而持續輸出虛假電流，將引發熱失控或行駛中意外斷路。ISO 26262 ASIL-C 要求安全機制必須深入到<b>晶片硬體電路級別</b>。本章深度剖析：分流器焊點斷線微電流診斷電路、問答看門狗硬體 LFSR 檢驗電路、時脈交叉監視電路，以及 FMEDA 隨機失效率定量分析。</p>
 
-    <h2 id="asil-requirements">1. 汽車安全完整性等級 (ASIL) 與 BMS 安全目標</h2>
-    <p>ISO 26262 根據嚴重度（Severity, S）、暴露率（Exposure, E）與可控度（Controllability, C）定義了 QM 至 ASIL-A ~ ASIL-D 的安全等級。對於電池管理系統（BMS），常見的核心安全目標（Safety Goal, SG）包括：</p>
-
-    <div class="tblwrap"><table>
-      <tr><th>安全目標編號</th><th>危害場景描述 (Hazardous Event)</th><th>對應 ASIL 等級</th><th>微控制器安全功能承擔</th></tr>
-      <tr><td><b>SG-01</b></td><td>防止因過流或短路未及時切斷導致高壓電池過熱起火</td><td><b>ASIL-C / ASIL-D</b></td><td>雙通道高速類比電流感測與毫秒級獨立超流硬體比較中斷</td></tr>
-      <tr><td><b>SG-02</b></td><td>防止行駛中因感測晶片誤報故障而意外觸發接觸器斷開 (失速)</td><td><b>ASIL-C</b></td><td>雙通道類比冗餘交叉比對、演算法合理性自檢驗證</td></tr>
-      <tr><td><b>SG-03</b></td><td>防止微控制器死當、程式跑飛或無響應時持續輸出錯誤指令</td><td><b>ASIL-B / ASIL-C</b></td><td>挑戰-應答問答式窗口看門狗（Challenge-Response WDT）強制重置</td></tr>
-    </table></div>
-
-    <h2 id="safety-mechanisms">2. 晶片內五大硬體安全機制 (Safety Mechanisms)</h2>
-    <p>為了在單核 Cortex-M0+ 架構下達到 ASIL-C 等級的診斷覆蓋率（Diagnostic Coverage, DC），PSoC 4 HVPA 配備了一整套相互獨立的硬體安全診斷機制：</p>
+    <!-- ==================== CIRCUIT 1 ==================== -->
+    <h2 id="wire-break-circuit">1. 分流電阻焊點斷線 (Wire-Break) 類比診斷電路原理</h2>
+    <p>智慧電池感測器（IBS）長期承受發動機艙的劇烈振動與冷熱交替循環（-40°C ~ +125°C）。分流電阻與 PCB 之間的焊點可能產生微裂紋（Micro-crack）最終導致開路。若焊點斷開，差分輸入引腳浮空（Floating），環境干擾噪聲可能使 ADC 讀數恰好落在正常放電區間，導致系統無法察覺。PSoC™ 4 HVPA PACSS 內建了<b>硬體主動微電流斷線注入電路</b>。</p>
 
     <div class="fig">
-      <svg class="viz" viewBox="0 0 720 280" role="img" aria-label="晶片內安全機制環迴自檢方塊圖">
-        <rect x="20" y="20" width="680" height="240" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
-        <text class="ts" x="360" y="45" text-anchor="middle" font-weight="700" fill="var(--safety)">PSoC™ 4 HVPA ON-CHIP SAFETY ARCHITECTURE (ASIL-C)</text>
+      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="分流器焊點斷線診斷電路原理圖">
+        <!-- Power Rail VDDA -->
+        <line x1="100" y1="50" x2="680" y2="50" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="90" y="45" font-weight="700" fill="var(--ok)">VDDA (3.3V Analog Supply)</text>
 
-        <!-- Block 1: WDT -->
-        <rect x="40" y="70" width="180" height="80" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
-        <text class="ts" x="130" y="95" text-anchor="middle" font-weight="600">Challenge-Response WDT</text>
-        <text class="ts t-mut" x="130" y="115" text-anchor="middle">Windowed Watchdog</text>
-        <text class="ts t-mono" x="130" y="135" text-anchor="middle" fill="var(--safety)" font-size="11">Independent ILO Clock</text>
+        <!-- Current Source Pull-up -->
+        <rect x="230" y="70" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="270" y="95" text-anchor="middle" font-weight="600" fill="var(--analog)">I_diag (50nA)</text>
+        <line x1="270" y1="50" x2="270" y2="70" stroke="var(--ok)" stroke-width="2"/>
+        <line x1="270" y1="110" x2="270" y2="135" stroke="var(--analog)" stroke-width="2"/>
 
-        <!-- Block 2: Memory ECC -->
-        <rect x="260" y="70" width="190" height="80" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
-        <text class="ts" x="355" y="95" text-anchor="middle" font-weight="600">SECDED ECC Logic</text>
-        <text class="ts t-mut" x="355" y="115" text-anchor="middle">Flash &amp; SRAM Parity</text>
-        <text class="ts t-mono" x="355" y="135" text-anchor="middle" fill="var(--core)" font-size="11">Fault Injection Diagnostic</text>
+        <!-- Switch S_diag1 -->
+        <circle cx="270" cy="135" r="3" fill="var(--ink)"/>
+        <line x1="270" y1="135" x2="285" y2="150" stroke="var(--ink)" stroke-width="2"/>
+        <circle cx="285" cy="155" r="3" fill="var(--ink)"/>
+        <text class="ts" x="295" y="140" font-size="10">Diag_EN</text>
 
-        <!-- Block 3: Analog Loopback -->
-        <rect x="490" y="70" width="190" height="80" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
-        <text class="ts" x="585" y="95" text-anchor="middle" font-weight="600">Analog BIST &amp; Loopback</text>
-        <text class="ts t-mut" x="585" y="115" text-anchor="middle">VREF &amp; Shunt Open-Check</text>
-        <text class="ts t-mono" x="585" y="135" text-anchor="middle" fill="var(--analog)" font-size="11">Wire-Break Detection</text>
+        <!-- Current Sink Pull-down -->
+        <rect x="450" y="240" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="490" y="265" text-anchor="middle" font-weight="600" fill="var(--analog)">I_diag (50nA)</text>
+        <line x1="490" y1="280" x2="490" y2="300" stroke="var(--line)" stroke-width="2"/>
+        <!-- Switch S_diag2 -->
+        <circle cx="490" cy="215" r="3" fill="var(--ink)"/>
+        <line x1="490" y1="215" x2="475" y2="230" stroke="var(--ink)" stroke-width="2"/>
+        <circle cx="475" cy="235" r="3" fill="var(--ink)"/>
 
-        <!-- Lower Row: Power & Clocks -->
-        <rect x="40" y="170" width="310" height="70" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
-        <text class="ts" x="195" y="195" text-anchor="middle" font-weight="600">Voltage &amp; Temp Monitors</text>
-        <text class="ts t-mut" x="195" y="215" text-anchor="middle">BOD (Brown-Out) / OVD (Over-Voltage) / TSD</text>
+        <!-- VSSA Rail -->
+        <line x1="100" y1="300" x2="680" y2="300" stroke="var(--line)" stroke-width="2"/>
+        <text class="ts" x="90" y="320" font-weight="700">VSSA (0V Analog Ground)</text>
 
-        <rect x="370" y="170" width="310" height="70" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
-        <text class="ts" x="525" y="195" text-anchor="middle" font-weight="600">Clock Supervisor (CSV)</text>
-        <text class="ts t-mut" x="525" y="215" text-anchor="middle">Cross-Reference Monitor (IMO vs ILO vs WCO)</text>
+        <!-- Shunt and Kelvin connection -->
+        <line x1="285" y1="155" x2="160" y2="155" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="160" y1="155" x2="160" y2="200" stroke="var(--analog)" stroke-width="2"/>
+        <!-- Solder Joints with crack representation -->
+        <circle cx="160" cy="200" r="5" fill="var(--bad)"/>
+        <text class="ts" x="145" y="195" text-anchor="end" fill="var(--bad)" font-weight="700">焊點斷線開路！</text>
+
+        <!-- Shunt 100uohm -->
+        <rect x="135" y="210" width="50" height="25" fill="var(--sunk)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="160" y="227" text-anchor="middle" font-size="9">100 µΩ</text>
+
+        <circle cx="160" cy="245" r="5" fill="var(--ok)"/>
+        <line x1="160" y1="245" x2="160" y2="265" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="160" y1="265" x2="475" y2="265" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="475" y1="265" x2="475" y2="235" stroke="var(--analog)" stroke-width="2"/>
+
+        <!-- Pins into Diff Window Comparator inside MCU -->
+        <line x1="285" y1="155" x2="560" y2="155" stroke="var(--core)" stroke-width="2.5"/>
+        <line x1="475" y1="215" x2="560" y2="215" stroke="var(--core)" stroke-width="2.5"/>
+
+        <!-- Window Comparator Block -->
+        <rect x="560" y="130" width="140" height="110" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="630" y="155" text-anchor="middle" font-weight="700" fill="var(--safety)">Window Detector</text>
+        <text class="ts t-mono" x="630" y="175" text-anchor="middle" font-size="10">|V_P − V_N| &gt; 2.5V</text>
+        <text class="ts" x="630" y="200" text-anchor="middle" font-size="10" fill="var(--bad)">Fault Interrupt!</text>
+        <line x1="700" y1="185" x2="745" y2="185" stroke="var(--bad)" stroke-width="3"/>
+        <text class="ts" x="720" y="175" font-weight="700" fill="var(--bad)">NMI</text>
       </svg>
-      <figcaption>圖 6.1：ISO 26262 ASIL-C 晶片硬體安全機制與自主診斷監視環</figcaption>
+      <figcaption>圖 6.1：微電流主動注入式分流器焊點斷線（Wire-Break）診斷檢測電路原理圖</figcaption>
     </div>
 
-    <h3>1. 問答式窗口看門狗 (Challenge-Response Window Watchdog)</h3>
-    <p>傳統看門狗僅要求定時清狗（Feed Dog），如果程式陷入簡單死循環並在循環內餵狗，傳統看門狗將無法識別。窗口問答看門狗引入了兩重防護：</p>
+    <h3>電路診斷邏輯與工作物理機制</h3>
     <ul>
-      <li><b>時間窗口限制（Windowing）：</b> 餵狗時間過早（Early Feed）或過晚（Late Timeout）都被判定為嚴重故障，立即引發復位。</li>
-      <li><b>問答機制（Challenge-Response）：</b> 看門狗硬體隨機產生一個動態問題（Seed/Question），CPU 必須執行多個關鍵業務任務（如 ADC 採樣、ECC 檢查、堆疊溢位檢查），將各任務執行狀態代入多項式算出正解（Response）寫入。唯有答案正確且時間在精確窗口內，才允許重置計時器。</li>
+      <li><b>正常焊接狀態（Normal Operation）：</b> 診斷開關 <code>Diag_EN</code> 閉合，微弱的 \(50\,\text{nA}\) 電流注入 <code>ISENSE_P</code> 引腳並由 <code>ISENSE_N</code> 抽出。在焊點完好時，分流器阻值僅為 \(100\,\mu\Omega\)，微弱電流產生的附加壓降為：
+        \[\Delta V_{\text{diag}} = 50\,\text{nA} \times 100\,\mu\Omega = 5 \times 10^{-12}\text{ V} \quad (5\,\text{pV})\]
+        此皮伏級壓降對微伏級的電流正常量測完全不造成任何可觀測的誤差。</li>
+      <li><b>焊點開路故障狀態（Wire-Break Fault）：</b> 當焊點因疲勞斷開，分流電阻脫離回路，輸入端等效阻抗變為晶片引腳的漏電阻（兆歐級 \(R_{\text{leak}} &gt; 100\,\text{M}\Omega\)）。此時 \(50\,\text{nA}\) 電流迅速將 <code>ISENSE_P</code> 軌拉高至 \(V_{\text{DDA}} = 3.3\text{V}\)，同時將 <code>ISENSE_N</code> 軌拉低至 \(V_{\text{SSA}} = 0\text{V}\)。</li>
+      <li><b>硬體比較器瞬態跳脫：</b> 差分窗口比較器偵測到輸入跨壓瞬間飆升至滿量程軌電平（\(|V_P - V_N| \approx 3.3\text{V}\)），在 <b>小於 2 µs 內</b> 直接觸發專屬硬體安全中斷，通報整車 BCM 進入安全保護狀態。</li>
     </ul>
 
-    <h3>2. 類比路徑斷線與環迴自檢 (Analog Loopback &amp; Wire-Break Detection)</h3>
-    <p>車輛長年行駛震動可能導致分流電阻焊點疲勞開路。PACSS 類比前端內建微弱上拉/下拉電流源（Pull-up/Pull-down Diagnostic Currents），安全診斷週期性注入 50 nA 診斷電流：正常情況下分流電阻阻抗極小（$100\,\mu\Omega$），端電壓幾乎不變；若焊點斷線開路，端電壓將立即被拉至滿量程，晶片瞬態識別<b>斷線故障（Wire-break Fault）</b>並上報。</p>
+    <!-- ==================== CIRCUIT 2 ==================== -->
+    <h2 id="wdt-lfsr-circuit">2. 問答式窗口看門狗硬體 LFSR 密碼檢驗電路原理</h2>
+    <p>傳統看門狗僅要求軟體定時清狗（Feed Dog）。若程式陷入簡單死循環並在循環內包含餵狗代碼，傳統看門狗完全無法識別故障。ISO 26262 ASIL-C 要求採用<b>問答式窗口看門狗（Challenge-Response Window Watchdog）</b>。</p>
 
-    <h2 id="fmeda-metrics">3. FMEDA 與定量隨機硬體失效率指標</h2>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 300" role="img" aria-label="問答看門狗硬體 LFSR 檢驗電路圖">
+        <!-- ILO Clock -->
+        <rect x="30" y="40" width="120" height="50" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="90" y="62" text-anchor="middle" font-weight="700" fill="var(--safety)">Independent ILO</text>
+        <text class="ts t-mono" x="90" y="78" text-anchor="middle" font-size="10">32 kHz Clock</text>
+
+        <!-- WDT Timer Counter -->
+        <line x1="150" y1="65" x2="200" y2="65" stroke="var(--safety)" stroke-width="2"/>
+        <rect x="200" y="40" width="130" height="60" rx="4" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="265" y="65" text-anchor="middle" font-weight="600">Window Counter</text>
+        <text class="ts t-mono" x="265" y="85" text-anchor="middle" font-size="10">T_open &le; t &le; T_close</text>
+
+        <!-- Window Comparator Logic -->
+        <line x1="330" y1="70" x2="380" y2="70" stroke="var(--line)" stroke-width="2"/>
+        <rect x="380" y="40" width="120" height="60" rx="4" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="440" y="65" text-anchor="middle" font-weight="700" fill="var(--warn)">Window Gate</text>
+        <text class="ts t-mut" x="440" y="85" text-anchor="middle" font-size="10">Early / Late Check</text>
+
+        <!-- LFSR Challenge Generator -->
+        <rect x="30" y="150" width="170" height="90" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="115" y="175" text-anchor="middle" font-weight="700" fill="var(--core)">16-bit LFSR Generator</text>
+        <text class="ts t-mono" x="115" y="195" text-anchor="middle" font-size="10">x^16 + x^14 + x^13 + x^11 + 1</text>
+        <text class="ts" x="115" y="215" text-anchor="middle" font-size="10">Outputs Challenge Question</text>
+
+        <!-- CPU SafeTlib interaction -->
+        <line x1="200" y1="195" x2="260" y2="195" stroke="var(--core)" stroke-width="2"/>
+        <rect x="260" y="150" width="180" height="90" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="350" y="175" text-anchor="middle" font-weight="700" fill="var(--analog)">CPU (SafeTlib Library)</text>
+        <text class="ts" x="350" y="195" text-anchor="middle" font-size="10">1. Run ALU &amp; RAM ECC Test</text>
+        <text class="ts" x="350" y="210" text-anchor="middle" font-size="10">2. Run ADC Self-Test</text>
+        <text class="ts t-mono" x="350" y="228" text-anchor="middle" font-size="10">3. Compute Polynomial Token</text>
+
+        <!-- Hardware Token Matcher Comparator -->
+        <line x1="440" y1="195" x2="520" y2="195" stroke="var(--analog)" stroke-width="2"/>
+        <line x1="500" y1="70" x2="560" y2="70" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="560" y1="70" x2="560" y2="150" stroke="var(--warn)" stroke-width="2"/>
+
+        <rect x="520" y="150" width="130" height="90" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="585" y="175" text-anchor="middle" font-weight="700" fill="var(--safety)">Token Matcher</text>
+        <text class="ts t-mono" x="585" y="195" text-anchor="middle" font-size="10">Key_expected == Key_in</text>
+        <text class="ts t-mut" x="585" y="215" text-anchor="middle" font-size="9">&amp;&amp; Window Valid</text>
+
+        <!-- Output Reset -->
+        <line x1="650" y1="195" x2="730" y2="195" stroke="var(--bad)" stroke-width="3"/>
+        <text class="ts" x="690" y="185" font-weight="700" fill="var(--bad)">System Reset (RST)</text>
+      </svg>
+      <figcaption>圖 6.2：問答式窗口看門狗硬體 LFSR 偽隨機挑戰與多項式金鑰硬體驗證電路原理圖</figcaption>
+    </div>
+
+    <!-- ==================== FMEDA METRICS ==================== -->
+    <h2 id="fmeda-metrics-detail">3. FMEDA 定量隨機硬體失效率指標 (SPFM / LFM / FIT)</h2>
     <p>ISO 26262 Part 5 規範了隨機硬體失效的量化驗證方法——<b>失效模式、影響與診斷分析（FMEDA）</b>。其衡量標準以 <b>FIT（Failures in Time，每 \(10^9\) 工作小時的失效次數）</b> 為單位。</p>
 
     <div class="math-block">
       <b>單點故障指標 (Single-Point Fault Metric, SPFM)：</b><br>
-      \[\text{SPFM} = \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})_{\text{covered}}}{\sum \lambda} = 1 - \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})}{\sum \lambda_{\text{safety}}}\]
+      \[\text{SPFM} = \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})_{\text{covered}}}{\sum \lambda_{\text{safety}}} \ge 97\% \quad (\text{ASIL-C 規範})\]
       <b>潛伏故障指標 (Latent Fault Metric, LFM)：</b><br>
-      \[\text{LFM} = 1 - \frac{\sum \lambda_{\text{MPF, latent}}}{\sum (\lambda - \lambda_{\text{SPF}} - \lambda_{\text{RF}})}\]
+      \[\text{LFM} = \frac{\sum \lambda_{\text{MPF, detected}}}{\sum \lambda_{\text{MPF}}} \ge 80\% \quad (\text{ASIL-C 規範})\]
     </div>
 
     <div class="tblwrap"><table>
@@ -91,10 +166,6 @@
       <tr><td><b>LFM (潛伏故障指標)</b></td><td>&ge; 60%</td><td><b>&ge; 80%</b></td><td><b>&gt; 85.2%</b></td></tr>
       <tr><td><b>PMHF (隨機硬體失效機率)</b></td><td>&lt; 100 FIT</td><td><b>&lt; 100 FIT</b></td><td><b>&lt; 18 FIT (極高安全性)</b></td></tr>
     </table></div>
-
-    <div class="callout" style="--c:var(--safety)">
-      <b>安全軟體庫 SafeTlib：</b> 英飛凌為該系列晶片提供通過 TÜV 認證的 SafeTlib 軟體庫，完全符合 MISRA-C:2012 與 A-SPICE 流程。其在開機自檢（POST）與運行週期檢查（Periodic Test）中自動調度 CPU 暫存器檢測、ALU 指令集測試、Flash/SRAM ECC 錯誤注入驗證與時脈漂移交叉比對，為整車廠免去數千小時的底層安全認證開發週期。
-    </div>
 
     <div class="pager"></div>
   </article>

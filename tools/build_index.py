@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Build assets/search-index.js (Chinese) and assets/search-index-en.js (English).
 Indexes every <h2 id>/<h3 id> and provides Ctrl+K fast search.
 """
@@ -107,6 +108,10 @@ class Collector(HTMLParser):
 
 
 def clean(s):
+    # Remove raw math delimiters and clean spaces
+    s = re.sub(r"\\\([^\\]+\\\)", "", s)
+    s = re.sub(r"\$[^$]+\$", "", s)
+    s = re.sub(r"\\[a-zA-Z]+", "", s)
     return re.sub(r"\s+", " ", s).strip()
 
 

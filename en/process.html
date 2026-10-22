@@ -3,35 +3,104 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>04 HV Silicon Process · MCU Notes</title>
-<meta name="description" content="Semiconductor process integration in automotive mixed-signal MCUs: BCD (Bipolar-CMOS-DMOS) technology, Deep Trench Isolation (DTI), ISO 7637-2 load dump avalanche clamping, and thermal packaging.">
+<title>04 HV Silicon Process &amp; Clamp Circuits · MCU Notes</title>
+<meta name="description" content="Semiconductor process integration in automotive mixed-signal MCUs: BCD (Bipolar-CMOS-DMOS) technology, Deep Trench Isolation (DTI), ISO 7637-2 load dump active dynamic clamping circuits, and thermal packaging.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="process" data-ch="fab">
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
   <article>
-    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Integration</div>
-    <h1>High-Voltage Silicon Process: Harmonizing Microvolts and 42V on a Single Die</h1>
-    <p class="lead">Integrating 1.8V dense logic, microvolt-sensitive differential analog amplifiers, and 42V high-voltage power switches on one monolithic piece of silicon requires <b>BCD (Bipolar-CMOS-DMOS) smart power fabrication technology</b>.</p>
+    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Protection Circuits</div>
+    <h1>High-Voltage Silicon Process: Monolithic Integration &amp; 42V Active Clamp Circuits</h1>
+    <p class="lead">Integrating 1.8V dense logic, microvolt-sensitive differential analog amplifiers, and 42V high-voltage power devices on one monolithic piece of silicon requires <b>BCD (Bipolar-CMOS-DMOS) smart power fabrication technology</b>, paired with nanosecond-responsive <b>Active Dynamic Clamp</b> protection against automotive alternator Load Dump surges.</p>
 
-    <h2 id="bcd-technology">1. BCD Smart Power Fabrication</h2>
+    <!-- ==================== CIRCUIT 1 ==================== -->
+    <h2 id="active-clamp-circuit">1. On-Chip 42V Load Dump Active Dynamic Clamp Circuit Principles</h2>
+    <p>Under ISO 7637-2 specifications, vehicle 12V electrical systems experience alternator Load Dump (Pulse 5b) transients up to 40V ~ 42V lasting up to 400 milliseconds. Relying solely on external discrete TVS diodes introduces breakdown voltage tolerance risks (typically spanning 32V to 45V), which may allow internal thin gate oxides to rupture before external protection conducts. PSoC™ 4 HVPA monolithically integrates an expansive <b>Active Dynamic LDMOS Avalanche Clamp</b> along the silicon die periphery.</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="On-Chip 42V Active Dynamic Clamp Circuit Schematic">
+        <!-- Power Rail VBAT -->
+        <line x1="50" y1="60" x2="680" y2="60" stroke="#c0392b" stroke-width="4"/>
+        <text class="ts" x="60" y="45" font-weight="700" fill="#c0392b">VBAT Rail (Normal: 12V, Surge up to 42V)</text>
+
+        <!-- Zener Diode Stack (35V Breakdown) -->
+        <line x1="200" y1="60" x2="200" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="160" y="90" width="80" height="70" rx="4" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="200" y="115" text-anchor="middle" font-weight="700" fill="var(--bad)">Zener Stack</text>
+        <text class="ts t-mono" x="200" y="135" text-anchor="middle" font-size="11">V_Z = 36.5 V</text>
+        <text class="ts t-mut" x="200" y="150" text-anchor="middle" font-size="9">Temp-Compensated</text>
+
+        <!-- dV/dt Transient Trigger Network -->
+        <line x1="320" y1="60" x2="320" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="290" y="90" width="60" height="30" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="320" y="110" text-anchor="middle" font-size="10">C_trig</text>
+        <line x1="320" y1="120" x2="320" y2="160" stroke="var(--core)" stroke-width="2"/>
+
+        <!-- Trigger Resistor R_trig to GND -->
+        <line x1="200" y1="160" x2="200" y2="240" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="190" y="180" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="175" y="200" text-anchor="end">R_trig</text>
+        <line x1="320" y1="160" x2="200" y2="160" stroke="var(--core)" stroke-width="2"/>
+
+        <!-- Trigger Node -->
+        <circle cx="200" cy="160" r="4" fill="var(--warn)"/>
+        <line x1="200" y1="160" x2="380" y2="160" stroke="var(--warn)" stroke-width="2.5"/>
+        <text class="ts" x="290" y="150" font-weight="600" fill="var(--warn)">V_trig (Turn-on &gt; 0.7V)</text>
+
+        <!-- Pre-Driver Inverter / Level Buffer -->
+        <rect x="380" y="130" width="100" height="60" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="430" y="155" text-anchor="middle" font-weight="700" fill="var(--core)">Fast Pre-Driver</text>
+        <text class="ts t-mono" x="430" y="175" text-anchor="middle" font-size="10">Push-Pull Stage</text>
+
+        <!-- Giant Gate Drive to Main LDMOS -->
+        <line x1="480" y1="160" x2="540" y2="160" stroke="var(--core)" stroke-width="3"/>
+        <text class="ts" x="510" y="150" font-size="10">V_gate</text>
+
+        <!-- Main Giant LDMOS Clamp Transistor -->
+        <rect x="540" y="100" width="150" height="120" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.5"/>
+        <text class="ts" x="615" y="130" text-anchor="middle" font-weight="700" fill="var(--safety)">Main Power LDMOS</text>
+        <text class="ts t-mono" x="615" y="155" text-anchor="middle" font-size="11">Width W = 15,000 &mu;m</text>
+        <text class="ts t-mono" x="615" y="175" text-anchor="middle" font-size="10" fill="#c0392b">Sinks I_clamp &gt; 3.5 A</text>
+        <text class="ts t-mut" x="615" y="195" text-anchor="middle" font-size="9">V_BR = 45V Avalanche</text>
+
+        <line x1="615" y1="60" x2="615" y2="100" stroke="#c0392b" stroke-width="4"/>
+        <line x1="615" y1="220" x2="615" y2="280" stroke="var(--ink)" stroke-width="4"/>
+
+        <!-- Ground Rail -->
+        <line x1="50" y1="280" x2="680" y2="280" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M610 280h16M614 284h8M617 288h2" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="60" y="300" font-weight="700">GND (Common Substrate)</text>
+      </svg>
+      <figcaption>Figure 4.1: Monolithic 42V Load Dump Active Dynamic LDMOS Avalanche Clamp Schematic</figcaption>
+    </div>
+
+    <h3>Dual Triggering Mechanisms</h3>
     <ul>
-      <li><b>Bipolar (BJT):</b> Ultra-low 1/f flicker noise and precise temperature linearity for the on-chip bandgap reference and low-noise operational preamplifiers.</li>
-      <li><b>CMOS:</b> High gate density and minimal static leakage for the 48 MHz Cortex-M0+ core, 128KB Flash, and digital decimation filters.</li>
-      <li><b>DMOS (LDMOS):</b> Lateral double-diffused MOSFETs with breakdown voltage \(V_{BR} &gt; 45\text{ V}\) for the internal 42V regulator and LIN driver.</li>
+      <li><b>Static Overvoltage Trigger:</b> When the alternator supply rises slowly past the Zener breakdown threshold \(V_Z = 36.5\text{V}\), avalanche current flows through bias resistor \(R_{\text{trig}}\), driving the trigger node to \(V_{\text{trig}} = I_{\text{zener}} \cdot R_{\text{trig}} &gt; 0.7\text{V}\). The push-pull pre-driver quickly pulls the gate of the massive power LDMOS high, clamping the supply line <b>strictly below 38.5V</b>.</li>
+      <li><b>Transient \(dV/dt\) Fast Pre-Trigger:</b> During ultra-fast voltage spikes (e.g. contactor inductive disengagement with \(dV/dt &gt; 10\,\text{V/}\mu\text{s}\)), high-pass capacitor \(C_{\text{trig}}\) injects displacement current into the trigger node, opening the LDMOS channel <b>10 nanoseconds (ns) ahead of breakdown</b>, completely eliminating turn-on delay blind spots.</li>
     </ul>
 
-    <h2 id="isolation-dti">2. Deep Trench Isolation (DTI) &amp; Substrate Noise Immunity</h2>
-    <p>High-voltage switching injects minority carriers into the p-substrate. Deep Trench Isolation (DTI) creates vertical silicon dioxide and polysilicon insulating barriers down into the buried oxide, attenuating substrate noise by over <b>40 dB</b> and preventing CMOS latch-up.</p>
+    <!-- ==================== BCD DETAILS ==================== -->
+    <h2 id="bcd-technology">2. BCD (Bipolar-CMOS-DMOS) Smart Power Cross-Section</h2>
+    <div class="tblwrap"><table>
+      <tr><th>Device Type</th><th>Transistor Structure</th><th>Function in PSoC™ 4 HVPA</th><th>Physical Advantage</th></tr>
+      <tr><td><b>B (Bipolar)</b></td><td>Bipolar Junction Transistor (BJT)</td><td>Precision bandgap voltage reference, low-noise pre-amps</td><td>Ultra-low 1/f flicker noise, superior temperature linearity and long-term stability</td></tr>
+      <tr><td><b>C (CMOS)</b></td><td>Complementary MOS</td><td>32-bit Cortex-M0+ core, 128KB Flash, 8KB SRAM, digital Sinc filters</td><td>Extremely dense gate integration, near-zero static leakage, high energy efficiency</td></tr>
+      <tr><td><b>D (DMOS)</b></td><td>Lateral DMOS (LDMOS)</td><td>42V high-voltage linear regulator, LIN PHY driver, active ESD clamp</td><td>High voltage drift region, breakdown voltage \(V_{BR} &gt; 45\text{ V}\), low on-resistance</td></tr>
+    </table></div>
 
-    <h2 id="esd-loaddump">3. ISO 7637-2 Load Dump Pulse 5b Transient Clamping</h2>
-    <p>Active dynamic clamp circuits turn on large-area DMOS power structures when VBAT surges past 38V, safely absorbing surge energy and preventing thermal second breakdown.</p>
+    <h2 id="isolation-dti">3. Deep Trench Isolation (DTI) &amp; Substrate Noise Immunity</h2>
+    <p>High-voltage switching injects minority carriers into the p-substrate. Deep Trench Isolation (DTI) creates vertical silicon dioxide and polysilicon insulating barriers etched down to the buried oxide layer, attenuating substrate noise by over <b>40 dB</b> and completely suppressing CMOS latch-up under automotive transients.</p>
 
     <h2 id="thermal-package">4. Automotive Thermal Management (-40°C to +125°C / +150°C)</h2>
-    <p>Qualified to AEC-Q100 Grade 1, PSoC™ 4 HVPA operates reliably in engine compartments up to +125°C ambient and +150°C junction temperature with a thermal resistance \(\theta_{JC} &lt; 2.5\text{ °C/W}\) through its bottom exposed pad.</p>
+    <p>Qualified to AEC-Q100 Grade 1, PSoC™ 4 HVPA operates reliably in engine compartments up to +125°C ambient and +150°C junction temperature with a thermal resistance \(\theta_{JC} &lt; 2.5\text{ °C/W}\) through its bottom exposed pad soldered directly to PCB ground planes.</p>
 
     <div class="pager"></div>
   </article>

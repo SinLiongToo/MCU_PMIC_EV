@@ -3,98 +3,98 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>04 半導體高壓製程整合 · MCU Notes</title>
-<meta name="description" content="剖析車用混合訊號高壓微控制器的晶圓半導體製程：BCD（Bipolar-CMOS-DMOS）架構、深溝槽隔離 DTI、高低壓基板雜訊屏蔽、ISO 7637-2 拋負載崩潰防護與車載高溫散熱封裝設計。">
+<title>04 半導體高壓製程與箝位電路 · MCU Notes</title>
+<meta name="description" content="剖析車用混合訊號微控制器的晶圓半導體製程與晶片級保護電路：BCD（Bipolar-CMOS-DMOS）架構、深溝槽隔離 DTI、ISO 7637-2 拋負載主動動態箝位電路原理（Active Clamp）與 150°C 高溫封裝。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="process" data-ch="fab">
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
   <article>
-    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Integration</div>
-    <h1>高壓半導體製程：在微米級矽片上調和高低壓</h1>
-    <p class="lead">將 1.8V 的高速高密度數位處理核心、微伏（µV）級的超敏銳精密類比電路，以及直連 42V 汽車強電母線的高壓功率管整合在同一顆單晶矽晶粒（Die）上，是半導體物理學與晶圓製造工藝的巨大挑戰。解決這項矛盾的核心關鍵在於 <b>BCD（Bipolar-CMOS-DMOS）智慧功率半導體製程</b>。</p>
+    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Protection Circuits</div>
+    <h1>高壓半導體製程：晶圓整合與 42V 主動箝位電路原理</h1>
+    <p class="lead">將 1.8V 奈米級數位核心、微伏級低雜訊類比電路與 42V 功率元件集成於同一晶粒，核心在於 <b>BCD（Bipolar-CMOS-DMOS）智慧功率半導體製程</b>，並在晶片內部構建納秒級響應的<b>主動動態箝位電路（Active Dynamic Clamp）</b>，抵禦汽車發電機拋負載（Load Dump）高能量突波。</p>
 
-    <h2 id="bcd-technology">1. BCD 智慧功率半導體製程原理</h2>
-    <p>傳統標準 CMOS 製程只能承受 3.3V 或 5V 電壓，一旦遭遇車載電網數十伏特尖峰即會瞬間閘極氧化層擊穿；而純功率製程又無法製作密集的運算邏輯。BCD 製程在同一矽晶圓上巧妙結合了三種截然不同的電晶體結構：</p>
+    <!-- ==================== CIRCUIT 1 ==================== -->
+    <h2 id="active-clamp-circuit">1. 晶片內 42V 拋負載主動動態箝位電路原理 (Active Dynamic Clamp)</h2>
+    <p>根據 ISO 7637-2 規範，汽車 12V 電氣系統的拋負載（Pulse 5b）電壓可飆升至 40V ~ 42V，持續時間長達 400 毫秒。如果依賴外部傳統 TVS 二極體，由於其箝位電壓散差較大（可能在 32V 至 45V 之間波動），極易導致晶片內部較薄的閘極氧化層先於外部 TVS 擊穿損毀。PSoC™ 4 HVPA 在晶粒邊緣直接集成了大面積<b>主動動態 LDMOS 雪崩箝位電路</b>。</p>
 
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="晶片內 42V 主動動態箝位電路原理圖">
+        <!-- Power Rail VBAT -->
+        <line x1="50" y1="60" x2="680" y2="60" stroke="#c0392b" stroke-width="4"/>
+        <text class="ts" x="60" y="45" font-weight="700" fill="#c0392b">VBAT Rail (Normal: 12V, Surge up to 42V)</text>
+
+        <!-- Zener Diode Stack (35V Breakdown) -->
+        <line x1="200" y1="60" x2="200" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="160" y="90" width="80" height="70" rx="4" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="200" y="115" text-anchor="middle" font-weight="700" fill="var(--bad)">Zener Stack</text>
+        <text class="ts t-mono" x="200" y="135" text-anchor="middle" font-size="11">V_Z = 36.5 V</text>
+        <text class="ts t-mut" x="200" y="150" text-anchor="middle" font-size="9">Temp-Compensated</text>
+
+        <!-- dV/dt Transient Trigger Network -->
+        <line x1="320" y1="60" x2="320" y2="90" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="290" y="90" width="60" height="30" fill="var(--surface)" stroke="var(--core)"/>
+        <text class="ts t-mono" x="320" y="110" text-anchor="middle" font-size="10">C_trig</text>
+        <line x1="320" y1="120" x2="320" y2="160" stroke="var(--core)" stroke-width="2"/>
+
+        <!-- Trigger Resistor R_trig to GND -->
+        <line x1="200" y1="160" x2="200" y2="240" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="190" y="180" width="20" height="35" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="175" y="200" text-anchor="end">R_trig</text>
+        <line x1="320" y1="160" x2="200" y2="160" stroke="var(--core)" stroke-width="2"/>
+
+        <!-- Trigger Node -->
+        <circle cx="200" cy="160" r="4" fill="var(--warn)"/>
+        <line x1="200" y1="160" x2="380" y2="160" stroke="var(--warn)" stroke-width="2.5"/>
+        <text class="ts" x="290" y="150" font-weight="600" fill="var(--warn)">V_trig (Turn-on &gt; 0.7V)</text>
+
+        <!-- Pre-Driver Inverter / Level Buffer -->
+        <rect x="380" y="130" width="100" height="60" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="430" y="155" text-anchor="middle" font-weight="700" fill="var(--core)">Fast Pre-Driver</text>
+        <text class="ts t-mono" x="430" y="175" text-anchor="middle" font-size="10">Push-Pull Stage</text>
+
+        <!-- Giant Gate Drive to Main LDMOS -->
+        <line x1="480" y1="160" x2="540" y2="160" stroke="var(--core)" stroke-width="3"/>
+        <text class="ts" x="510" y="150" font-size="10">V_gate</text>
+
+        <!-- Main Giant LDMOS Clamp Transistor -->
+        <rect x="540" y="100" width="150" height="120" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.5"/>
+        <text class="ts" x="615" y="130" text-anchor="middle" font-weight="700" fill="var(--safety)">Main Power LDMOS</text>
+        <text class="ts t-mono" x="615" y="155" text-anchor="middle" font-size="11">Width W = 15,000 µm</text>
+        <text class="ts t-mono" x="615" y="175" text-anchor="middle" font-size="10" fill="#c0392b">Sinks I_clamp &gt; 3.5 A</text>
+        <text class="ts t-mut" x="615" y="195" text-anchor="middle" font-size="9">V_BR = 45V Avalanche</text>
+
+        <line x1="615" y1="60" x2="615" y2="100" stroke="#c0392b" stroke-width="4"/>
+        <line x1="615" y1="220" x2="615" y2="280" stroke="var(--ink)" stroke-width="4"/>
+
+        <!-- Ground Rail -->
+        <line x1="50" y1="280" x2="680" y2="280" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M610 280h16M614 284h8M617 288h2" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="60" y="300" font-weight="700">GND (Common Substrate)</text>
+      </svg>
+      <figcaption>圖 4.1：晶片內 42V 拋負載主動動態 LDMOS 雪崩箝位電路架構原理圖</figcaption>
+    </div>
+
+    <h3>主動箝位電路兩大觸發機制</h3>
+    <ul>
+      <li><b>過壓靜態觸發（Static Overvoltage Trigger）：</b> 當汽車發電機輸出電壓緩慢爬升超過齊納二極體反向擊穿電壓 \(V_Z = 36.5\text{V}\) 時，電流流過偏置電阻 \(R_{\text{trig}}\)，使觸發節點電位達到 \(V_{\text{trig}} = I_{\text{zener}} \cdot R_{\text{trig}} &gt; 0.7\text{V}\)。前置推挽驅動級迅速拉高巨型功率 LDMOS 的閘極，使電晶體均勻進入導通區，將電壓精確<b>箝制在 38.5V 以下</b>。</li>
+      <li><b>瞬態 \(dV/dt\) 快速預觸發（Transient \(dV/dt\) Pre-trigger）：</b> 當電網遭遇極端陡峭的快速瞬變（如接觸器開關火花，\(dV/dt &gt; 10\,\text{V/}\mu\text{s}\)）時，高通電容 \(C_{\text{trig}}\) 提前向觸發節點注入位移電流，在電壓尚未抵達氧化層擊穿閾值之前<b>提前 10 納秒（ns）開啟 LDMOS</b>，有效消除開關延遲盲區。</li>
+    </ul>
+
+    <!-- ==================== BCD DETAILS ==================== -->
+    <h2 id="bcd-integration">2. BCD（Bipolar-CMOS-DMOS）智慧功率製程剖面</h2>
     <div class="tblwrap"><table>
       <tr><th>元件類型</th><th>電晶體結構</th><th>在 PSoC™ 4 HVPA 中的功能擔當</th><th>物理特性優勢</th></tr>
       <tr><td><b>B (Bipolar)</b></td><td>雙極性接面電晶體 (BJT)</td><td>內部精密能隙基準源（Bandgap Reference）、低雜訊前置放大器</td><td>極低 1/f 閃爍雜訊（Flicker Noise）、優異的溫度係數線性度與穩定度</td></tr>
       <tr><td><b>C (CMOS)</b></td><td>互補式金氧半場效電晶體</td><td>32-bit Cortex-M0+ 核心、128KB Flash、8KB SRAM、數位 Sinc 濾波器</td><td>超高閘極整合密度、接近零靜態漏電流、高能效比運算</td></tr>
       <tr><td><b>D (DMOS)</b></td><td>橫向雙擴散 MOS (LDMOS)</td><td>42V 高壓穩壓管、LIN 總線實體層驅動器、ESD 箝位雪崩吸收管</td><td>漂移區（Drift Region）承受高電壓，崩潰電壓 \(V_{BR} &gt; 45\text{ V}\)，導通阻抗小</td></tr>
     </table></div>
-
-    <div class="fig">
-      <svg class="viz" viewBox="0 0 720 250" role="img" aria-label="BCD 單晶片剖面圖示意圖">
-        <!-- Substrate base -->
-        <rect x="20" y="160" width="680" height="70" fill="#2c3e50" opacity=".15"/>
-        <text class="ts t-mono" x="360" y="200" text-anchor="middle" font-weight="700">P-Type Common Silicon Substrate (P-Sub)</text>
-
-        <!-- Bipolar Region -->
-        <rect x="40" y="70" width="180" height="90" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
-        <rect x="55" y="110" width="40" height="40" fill="var(--analog)" opacity=".3"/>
-        <rect x="105" y="110" width="40" height="40" fill="var(--bad)" opacity=".3"/>
-        <rect x="155" y="110" width="40" height="40" fill="var(--analog)" opacity=".3"/>
-        <text class="ts" x="130" y="92" text-anchor="middle" font-weight="700" fill="var(--analog)">BIPOLAR (Precision)</text>
-        <text class="ts t-mono" x="75" y="135" text-anchor="middle" font-size="10">E</text>
-        <text class="ts t-mono" x="125" y="135" text-anchor="middle" font-size="10">B</text>
-        <text class="ts t-mono" x="175" y="135" text-anchor="middle" font-size="10">C</text>
-
-        <!-- Isolation Trench -->
-        <rect x="235" y="50" width="16" height="120" fill="var(--line)" stroke="var(--muted)"/>
-        <text class="ts t-mono" x="243" y="115" text-anchor="middle" font-size="9" transform="rotate(-90 243 115)">DTI</text>
-
-        <!-- CMOS Low Voltage Region -->
-        <rect x="265" y="70" width="200" height="90" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <rect x="285" y="110" width="70" height="40" fill="var(--core)" opacity=".2"/>
-        <rect x="375" y="110" width="70" height="40" fill="var(--ok)" opacity=".2"/>
-        <text class="ts" x="365" y="92" text-anchor="middle" font-weight="700" fill="var(--core)">CMOS (1.8V Logic &amp; CPU)</text>
-        <text class="ts t-mono" x="320" y="135" text-anchor="middle" font-size="10">NMOS</text>
-        <text class="ts t-mono" x="410" y="135" text-anchor="middle" font-size="10">PMOS</text>
-
-        <!-- Isolation Trench -->
-        <rect x="480" y="50" width="16" height="120" fill="var(--line)" stroke="var(--muted)"/>
-        <text class="ts t-mono" x="488" y="115" text-anchor="middle" font-size="9" transform="rotate(-90 488 115)">DTI</text>
-
-        <!-- LDMOS High Voltage Region -->
-        <rect x="510" y="70" width="170" height="90" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
-        <rect x="525" y="110" width="35" height="40" fill="var(--core)" opacity=".3"/>
-        <rect x="575" y="125" width="45" height="25" fill="var(--warn)" opacity=".3"/>
-        <rect x="635" y="110" width="35" height="40" fill="var(--safety)" opacity=".3"/>
-        <text class="ts" x="595" y="92" text-anchor="middle" font-weight="700" fill="var(--safety)">HV-DMOS (42V Power)</text>
-        <text class="ts t-mono" x="542" y="135" text-anchor="middle" font-size="10">Source</text>
-        <text class="ts t-mono" x="597" y="140" text-anchor="middle" font-size="9">Drift</text>
-        <text class="ts t-mono" x="652" y="135" text-anchor="middle" font-size="10">Drain</text>
-      </svg>
-      <figcaption>圖 4.1：BCD 智慧功率製程剖面與深溝槽隔離（DTI）橫向結構</figcaption>
-    </div>
-
-    <h2 id="isolation-dti">2. 高低壓隔離：深溝槽隔離 (DTI) 與基板噪聲抑制</h2>
-    <p>當 LIN 總線以 20 kbps 速率驅動數百毫安培電流跳變，或高壓 LDO 應對負載瞬變時，強烈的 \(dI/dt\) 與 \(dV/dt\) 會向矽基板注入少數載子。如果這些電荷擴散到鄰近的 16-bit $\Delta\Sigma$ ADC 積分電容，將產生嚴重的低頻漂移甚至引發<b>寄生晶閘管閂鎖效應（Latch-up）</b>燒毀晶片。</p>
-
-    <div class="callout" style="--c:var(--fab)">
-      <b>深溝槽隔離技術 (Deep Trench Isolation, DTI)：</b> 在晶粒中透過反應離子蝕刻（RIE）挖出深度穿透至埋層的微米級垂直窄溝，再以二氧化矽（$\text{SiO}_2$）與多晶矽填滿。DTI 如同一道實體玻璃絕緣牆，將高壓功率區與低壓精密類比區完全阻隔，將基板耦合雜訊衰減 <b>40 dB 以上</b>，並徹底消除傳統 PN 結隔離在高溫（&gt; 125°C）下的漏電劣化問題。
-    </div>
-
-    <h2 id="esd-loaddump">3. 車載拋負載 (Load Dump) 與晶片級防護物理</h2>
-    <p>根據 ISO 7637-2 與 ISO 16750-2 車規測試規範，12V 電氣系統的微控制器必須能耐受 <b>Test Pulse 5b（壓制型拋負載）</b>。在此測試中，發電機突波被外部二極體鉗位至約 35V~40V，脈衝能量可高達數焦耳，持續時間長達 400 ms。</p>
-
-    <div class="math-block">
-      <b>矽晶片瞬態雪崩吸收能力：</b><br>
-      PSoC 4 HVPA 晶片內部整合了多段式主動動態鉗位電路（Active Dynamic Clamp）：<br>
-      \[V_{\text{clamp}} = V_{Z} + V_{GS} \approx 38\text{ V} \sim 41\text{ V}\]
-      當電壓超過 38V 時，內建的高壓 ESD 偵測電路主動拉高大面積橫向 DMOS 的閘極，使電晶體均勻進入飽和區分流能量，防止局域熱點（Hot Spot）引發熱擊穿（Second Breakdown）。
-    </div>
-
-    <h2 id="thermal-package">4. 車載熱阻管理與高溫可靠度 (125°C / 150°C)</h2>
-    <p>智慧電池感測器緊貼在炎熱的引擎室蓄電池端子上，夏季最高環境溫度可能逼近 105°C~115°C。PSoC 4 HVPA 通過 <b>AEC-Q100 Grade 1</b> 認證，支援 \(-40^\circ\text{C} \sim +125^\circ\text{C}\) 的工作環境溫度，最高接面溫度（Junction Temperature $T_j$）允許達到 <b>$+150^\circ\text{C}$</b>。</p>
-    <ul>
-      <li><b>裸晶散熱焊盤 (Exposed Pad)：</b> 採用底部大面積裸露銅散熱墊的 32-pin QFN 封裝，將接面至外殼熱阻（$\theta_{JC}$）壓低至 <b>&lt; 2.5 °C/W</b>。</li>
-      <li><b>銅線/金線球焊接抗疲勞：</b> 車載發動機強烈振動與高低溫循環（Thermal Cycling -40°C ↔ +150°C）會造成不同材料熱膨脹係數（CTE）失配。採用經過特殊塗層防腐蝕的車規級合金鍵合線，通過 1000 次以上深冷熱衝擊試驗無斷裂。</li>
-    </ul>
 
     <div class="pager"></div>
   </article>

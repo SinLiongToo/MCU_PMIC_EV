@@ -3,38 +3,190 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>03 Automotive BMS · MCU Notes</title>
-<meta name="description" content="Automotive Battery Management System (BMS) implementations: Intelligent Battery Sensor (IBS), Coulomb counting for SoC, Kalman filter fusion, OCV recalibration, internal impedance for SoH, and LIN 2.2A protocol.">
+<title>03 Automotive BMS &amp; System Schematics · MCU Notes</title>
+<meta name="description" content="In-depth system-level hardware circuit principles for Intelligent Battery Sensors (IBS) and Battery Disconnect Units (BDU): shunt sensing, LIN physical layer, contactor fast demagnetization, and SoC/SoH algorithms.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="application" data-ch="app">
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
   <article>
-    <div class="eyebrow">Chapter 03 · Automotive BMS Applications</div>
-    <h1>Automotive Battery Management: From Terminal Clamp to Vehicle Network</h1>
-    <p class="lead">Whether in traditional 12V start-stop lead-acid batteries, 24V commercial haulers, 48V mild hybrids, or high-voltage electric vehicle Battery Disconnect Units (BDU), the microcontroller acts as the central hub of the <b>Intelligent Battery Sensor (IBS)</b>.</p>
+    <div class="eyebrow">Chapter 03 · Automotive BMS &amp; System Circuit Schematics</div>
+    <h1>Automotive Battery Management: Intelligent Sensor (IBS) &amp; Disconnect (BDU) Circuit Principles</h1>
+    <p class="lead">Modern automotive electrical architectures require battery sensing and disconnect modules to operate autonomously across severe thermal gradients, high-vibration chassis mounting, and harsh electromagnetic interference. This chapter explores the complete hardware schematic of an <b>Intelligent Battery Sensor (IBS)</b> clamped onto the battery terminal, LIN physical layer transceivers, high-voltage Battery Disconnect Unit (BDU) contactor drive with fast demagnetization arc suppression, and algorithmic estimation of State of Charge (SoC) and State of Health (SoH).</p>
 
-    <h2 id="ibs-bdu">1. Intelligent Battery Sensor (IBS) Hardware Architecture</h2>
-    <p>Mounted directly onto the battery's negative pole clamp, the IBS integrates the MCU, shunt resistor, and protection circuitry on a single compact substrate.</p>
+    <!-- ==================== CIRCUIT 1 ==================== -->
+    <h2 id="ibs-schematic">1. Intelligent Battery Sensor (IBS) System Circuit Schematic</h2>
+    <p>Mounted directly onto the negative pole clamp of the battery, the IBS interfaces with three external lines: battery positive feed wire (KL30), chassis ground strap (GND), and a single-wire LIN bus running to the Body Control Module (BCM).</p>
 
-    <h2 id="soc-coulomb">2. State of Charge (SoC): Coulomb Counting &amp; OCV Recalibration</h2>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 420" role="img" aria-label="Intelligent Battery Sensor Complete System Circuit Schematic">
+        <!-- Battery representation -->
+        <rect x="20" y="40" width="130" height="340" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts" x="85" y="65" text-anchor="middle" font-weight="700">12V BATTERY</text>
+        <circle cx="85" cy="100" r="14" fill="var(--bad)" opacity=".2"/>
+        <text class="ts" x="85" y="105" text-anchor="middle" font-weight="700" fill="var(--bad)">+ POS</text>
+        <circle cx="85" cy="320" r="14" fill="var(--core)" opacity=".2"/>
+        <text class="ts" x="85" y="325" text-anchor="middle" font-weight="700" fill="var(--core)">− NEG</text>
+
+        <!-- Positive Feed wire (KL30) -->
+        <line x1="85" y1="100" x2="200" y2="100" stroke="#c0392b" stroke-width="3"/>
+        <!-- Fuse & Reverse Diode & TVS -->
+        <rect x="200" y="90" width="30" height="20" fill="var(--surface)" stroke="var(--ink)"/>
+        <text class="ts t-mono" x="215" y="104" text-anchor="middle" font-size="9">Fuse</text>
+        <line x1="230" y1="100" x2="260" y2="100" stroke="#c0392b" stroke-width="2"/>
+        <!-- TVS diode to GND -->
+        <path d="M250 100v30M242 130l16-6v12zM250 136v10" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
+        <text class="ts" x="280" y="135" font-size="9" fill="var(--bad)">TVS 36V</text>
+        <!-- Reverse Diode -->
+        <polygon points="260,93 275,100 260,107" fill="var(--ink)"/>
+        <line x1="275" y1="93" x2="275" y2="107" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="275" y1="100" x2="350" y2="100" stroke="#c0392b" stroke-width="2.5"/>
+
+        <!-- Shunt on Negative pole -->
+        <line x1="85" y1="320" x2="180" y2="320" stroke="#d35400" stroke-width="8"/>
+        <rect x="180" y="305" width="80" height="30" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts t-mono" x="220" y="325" text-anchor="middle" font-weight="700">100 &mu;&Omega;</text>
+        <line x1="260" y1="320" x2="330" y2="320" stroke="#d35400" stroke-width="8"/>
+        <!-- Chassis GND Symbol -->
+        <path d="M330 310v20M336 314v12M342 318v4" stroke="var(--ink)" stroke-width="2.5"/>
+        <text class="ts" x="355" y="325" font-weight="600">Vehicle Chassis (GND)</text>
+
+        <!-- MCU SoC Box -->
+        <rect x="350" y="70" width="370" height="300" rx="10" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="535" y="95" text-anchor="middle" font-weight="700" fill="var(--core)" letter-spacing="1">INFINEON PSoC™ 4 HVPA-144K (QFN-32)</text>
+
+        <!-- VBAT Pin -->
+        <circle cx="350" cy="110" r="4" fill="#c0392b"/>
+        <text class="ts t-mono" x="360" y="115" font-weight="600">VBAT (Pin 1)</text>
+
+        <!-- NTC Thermistor circuit -->
+        <rect x="370" y="145" width="100" height="40" rx="4" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="420" y="165" text-anchor="middle" font-size="10">NTC Thermistor</text>
+        <text class="ts t-mut" x="420" y="178" text-anchor="middle" font-size="9">Terminal Temp</text>
+
+        <!-- Internal Subsystems inside MCU -->
+        <rect x="490" y="115" width="210" height="60" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="595" y="135" text-anchor="middle" font-weight="600" fill="var(--safety)">Internal 42V PMIC</text>
+        <text class="ts t-mono" x="595" y="155" text-anchor="middle" font-size="10">VDDD 3.3V / VCCD 1.8V</text>
+
+        <!-- PACSS Dual ADC Block inside MCU -->
+        <rect x="490" y="190" width="210" height="90" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
+        <text class="ts" x="595" y="215" text-anchor="middle" font-weight="600" fill="var(--analog)">PACSS Dual 16-bit &Delta;&Sigma;</text>
+        <text class="ts t-mono" x="595" y="235" text-anchor="middle" font-size="10">Current Ch (&plusmn;150mV) + AGC</text>
+        <text class="ts t-mono" x="595" y="255" text-anchor="middle" font-size="10">Voltage Ch (24:1 Divider)</text>
+
+        <!-- Shunt Kelvin Connections to Pins -->
+        <circle cx="195" cy="320" r="3" fill="var(--analog)"/>
+        <line x1="195" y1="320" x2="195" y2="240" stroke="var(--analog)" stroke-width="1.5"/>
+        <line x1="195" y1="240" x2="350" y2="240" stroke="var(--analog)" stroke-width="1.5"/>
+        <circle cx="350" cy="240" r="4" fill="var(--analog)"/>
+        <text class="ts t-mono" x="360" y="235">ISENSE_P</text>
+
+        <circle cx="245" cy="320" r="3" fill="var(--analog)"/>
+        <line x1="245" y1="320" x2="245" y2="260" stroke="var(--analog)" stroke-width="1.5"/>
+        <line x1="245" y1="260" x2="350" y2="260" stroke="var(--analog)" stroke-width="1.5"/>
+        <circle cx="350" cy="260" r="4" fill="var(--analog)"/>
+        <text class="ts t-mono" x="360" y="270">ISENSE_N</text>
+
+        <!-- LIN Pin & Transceiver -->
+        <rect x="490" y="295" width="210" height="55" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="595" y="320" text-anchor="middle" font-weight="600" fill="var(--warn)">Integrated LIN 2.2A PHY</text>
+        <text class="ts t-mono" x="595" y="338" text-anchor="middle" font-size="10">&minus;27V ~ +42V Fault Tolerant</text>
+
+        <circle cx="350" cy="325" r="4" fill="var(--warn)"/>
+        <line x1="350" y1="325" x2="300" y2="325" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="300" y1="325" x2="300" y2="390" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="300" y1="390" x2="680" y2="390" stroke="var(--warn)" stroke-width="2.5"/>
+        <circle cx="680" cy="390" r="4" fill="var(--warn)"/>
+        <text class="ts" x="690" y="395" font-weight="700" fill="var(--warn)">Single-Wire LIN Bus (To BCM)</text>
+      </svg>
+      <figcaption>Figure 3.1: Intelligent Battery Sensor (IBS) Physical Circuit Schematic (Power conditioning, Kelvin Shunt, and LIN Bus)</figcaption>
+    </div>
+
+    <!-- ==================== CIRCUIT 2 ==================== -->
+    <h2 id="bdu-circuit">2. High-Voltage Battery Disconnect Unit (BDU) Contactor &amp; Pyro-Fuse Drive Circuit</h2>
+    <p>In 400V / 800V EV traction battery packs, the Battery Disconnect Unit (BDU) energizes main positive and negative high-voltage contactors during power-up, and commands <b>pyrotechnic circuit disconnect (Pyro-fuse) within 1 ms</b> under acute short-circuit or vehicle crash scenarios. This demands dual high/low-side switches and active fast demagnetization circuits.</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 760 360" role="img" aria-label="BDU Contactor and Pyro-fuse Drive with Demagnetization Schematic">
+        <!-- 12V Power -->
+        <line x1="30" y1="60" x2="160" y2="60" stroke="#c0392b" stroke-width="3"/>
+        <circle cx="30" cy="60" r="4" fill="#c0392b"/>
+        <text class="ts" x="35" y="50" font-weight="700" fill="#c0392b">V_BAT (12V Drive Supply)</text>
+
+        <!-- High-Side Driver Switch -->
+        <rect x="160" y="40" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="200" y="65" text-anchor="middle" font-weight="600">High-Side PMOS</text>
+        <line x1="240" y1="60" x2="320" y2="60" stroke="#c0392b" stroke-width="2"/>
+
+        <!-- Contactor Coil Inductor -->
+        <rect x="320" y="45" width="90" height="30" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"/>
+        <text class="ts t-mono" x="365" y="65" text-anchor="middle" font-weight="700">Coil L_coil</text>
+        <text class="ts" x="365" y="35" text-anchor="middle" font-size="10">High-Voltage Main Contactor</text>
+        <line x1="410" y1="60" x2="480" y2="60" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Fast Demagnetization Clamp Diode Network (Flyback + 36V Zener) -->
+        <path d="M310 60v60h110v-60" fill="none" stroke="var(--bad)" stroke-width="2"/>
+        <!-- Diode 1 -->
+        <polygon points="360,115 375,120 360,125" fill="var(--bad)"/>
+        <line x1="375" y1="113" x2="375" y2="127" stroke="var(--bad)" stroke-width="2"/>
+        <!-- Zener Diode in reverse -->
+        <polygon points="395,125 380,120 395,115" fill="var(--bad)"/>
+        <path d="M380 113v14M380 113h4M380 127h-4" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="365" y="145" text-anchor="middle" font-size="10" fill="var(--bad)">36V Zener + Ultrafast Diode (Fast Demag)</text>
+
+        <!-- Low-Side NMOS Switch with PWM Economizer -->
+        <line x1="480" y1="60" x2="480" y2="170" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="440" y="170" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="480" y="195" text-anchor="middle" font-weight="600">Low-Side NMOS</text>
+        <line x1="480" y1="210" x2="480" y2="240" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M472 240h16M476 244h8M479 248h2" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- MCU PWM & Fast I/O Gate controls -->
+        <rect x="80" y="220" width="300" height="110" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="230" y="245" text-anchor="middle" font-weight="700" fill="var(--core)">PSoC 4 HVPA MCU Controller</text>
+        <line x1="200" y1="220" x2="200" y2="80" stroke="var(--safety)" stroke-width="2" stroke-dasharray="3 2"/>
+        <text class="ts" x="180" y="150" font-size="10" fill="var(--safety)">Safe Enable</text>
+
+        <line x1="330" y1="220" x2="440" y2="190" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="375" y="195" font-size="10" fill="var(--core)">PWM Economizer (20kHz)</text>
+
+        <line x1="380" y1="275" x2="550" y2="275" stroke="#d35400" stroke-width="3"/>
+        <rect x="550" y="255" width="130" height="40" rx="4" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
+        <text class="ts" x="615" y="280" text-anchor="middle" font-weight="700" fill="#d35400">Pyro-fuse Detonator</text>
+        <text class="ts t-mut" x="615" y="325" text-anchor="middle">Emergency Fire (1-cycle I/O &lt; 20ns)</text>
+      </svg>
+      <figcaption>Figure 3.2: High-Voltage Contactor High/Low-Side Drive, Fast Demagnetization Clamp, and Economizer PWM Circuit</figcaption>
+    </div>
+
+    <h3>Contactor Arc Suppression &amp; PWM Economizer Principles</h3>
+    <ul>
+      <li><b>Pull-in Phase:</b> Contactor coils require substantial magnetic force to overcome mechanical spring resistance. During the first 100 ms of closing, the low-side NMOS conducts at 100% duty cycle, applying the full 12V supply to rapidly mate the high-voltage contacts.</li>
+      <li><b>Hold Phase (PWM Economizer):</b> Once closed, the magnetic force required to hold contacts is only <b>20% to 30%</b> of the pull-in force. The MCU switches the low-side gate to a 20 kHz PWM signal (25% duty cycle), reducing continuous coil dissipation from 15W down to <b>under 1.5W</b>, avoiding thermal buildup inside sealed BDU enclosures.</li>
+      <li><b>Fast Demagnetization Zener Clamp:</b> During emergency cutoff, inductive energy \(E = \frac{1}{2} L I^2\) must discharge rapidly. A traditional freewheeling diode clamps inductive back-EMF to 0.7V, causing current decay time \(\tau = L/R\) to extend over tens of milliseconds, leading to sustained contact arcing. By placing a <b>36V Zener diode in reverse series</b>, the coil voltage spikes to -36V upon turn-off, accelerating demagnetization by over 10&times; and extinguishing contact arcing within 5 ms.</li>
+    </ul>
+
+    <!-- ==================== ALGORITHMS ==================== -->
+    <h2 id="soc-coulomb-detail">3. State of Charge (SoC): Coulomb Counting &amp; OCV Fusion</h2>
+    <p>State of Charge represents the remaining battery capacity relative to its nominal capacity. The MCU performs continuous <b>Coulomb Counting</b>:</p>
     <div class="math-block">
       \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^t \eta(I) \cdot I(\tau) \, d\tau\]
-      A tiny uncalibrated offset of \(10\,\mu\text{V}\) across a \(100\,\mu\Omega\) shunt causes a 100 mA phantom current, yielding a 24 Ah drift after 10 days! PSoC 4 HVPA eliminates this drift via auto-zero chopping (&lt; 0.5 µV offset) and Open-Circuit Voltage (OCV) table resets after prolonged vehicle parking.
+      where \(Q_n\) is nominal capacity and \(\eta(I)\) is the charge/discharge coulombic efficiency factor.
     </div>
+    <p>After vehicle shutdown and prolonged rest (> 3 hours), the electrochemical battery reaches thermodynamic equilibrium (quiescent current \(|I| &lt; 15\,\text{mA}\)). At this point, terminal voltage accurately reflects the <b>Open-Circuit Voltage (OCV)</b>. The MCU samples terminal voltage, consults a pre-calibrated OCV-SoC lookup table, and resets the baseline \(\text{SoC}(t_0)\), eliminating open-loop integration drift accumulated over days.</p>
 
-    <h2 id="soh-impedance">3. State of Health (SoH) via Cold Crank Dynamic Impedance</h2>
+    <h2 id="soh-impedance-detail">4. State of Health (SoH) via Cranking Dynamic Impedance</h2>
     <div class="math-block">
-      During engine cranking, peak current spikes by hundreds of amperes, causing terminal voltage to sag. The dual ADCs capture \(\Delta V\) and \(\Delta I\) synchronously at 1 kHz:
+      During cold engine cranking or high-inrush inverter startup, peak current spikes by hundreds of amperes, causing terminal voltage sag. The dual ADCs sample \(\Delta V\) and \(\Delta I\) synchronously at 1 kHz:
       \[R_{\text{int}}(T) = \frac{V_{\text{pre-crank}} - V_{\text{min-crank}}}{I_{\text{peak-crank}} - I_{\text{idle}}}\]
-      Tracking dynamic internal resistance over time reveals plate sulfation, dry-out, and impending battery death before stranded road calls happen.
+      Tracking dynamic internal resistance over time reveals lead plate sulfation, electrolyte dry-out, or lithium plating before roadside breakdown occurs.
     </div>
-
-    <h2 id="lin-bus">4. In-Vehicle LIN 2.2A / SAE J2602 Physical Layer</h2>
-    <p>The IBS communicates with the Body Control Module (BCM) or Engine Management Gateway via a robust single-wire LIN 2.2A bus with automatic baud-rate synchronization on byte 0x55 and enhanced checksum security.</p>
 
     <div class="pager"></div>
   </article>
