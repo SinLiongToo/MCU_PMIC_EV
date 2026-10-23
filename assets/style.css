@@ -288,3 +288,13 @@ tr:last-child td{border-bottom:none}
 .term-prop b{color:var(--ink)}
 .term-link{color:var(--accent);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px}
 .term-link:hover{text-decoration:underline}
+
+/* ---------- site footer & language switch bar ---------- */
+.site-footer{margin:64px 0 32px;padding-top:24px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.lang-switch-bar{display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:6px 18px;box-shadow:0 1px 4px rgba(0,0,0,.03);font-size:13px}
+.lang-switch-bar a{color:var(--ink);text-decoration:none;font-weight:600;padding:2px 6px;border-radius:4px;transition:all .15s}
+.lang-switch-bar a:hover{color:var(--accent);background:var(--sunk)}
+.lang-switch-bar a.active{color:var(--accent);background:rgba(41,128,185,.12);pointer-events:none}
+.lang-switch-bar .sep{opacity:.35}
+.share-pill{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--mono);color:var(--muted);background:var(--sunk);border:1px solid var(--line);padding:4px 10px;border-radius:6px;cursor:pointer;margin-top:4px}
+.share-pill:hover{color:var(--ink);border-color:var(--accent)}

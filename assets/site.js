@@ -29,9 +29,21 @@
     moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
   };
 
+  /* ---------- language switch & auto detection ---------- */
+  function store(k, v){ try{ if(v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){ return null; } }
+
+  /* Auto language routing: if on root Chinese index.html and user preference or browser is English, auto-redirect */
+  if(!EN && page === 'index'){
+    const savedLang = store('mcu-lang');
+    const browserLang = (navigator.language || (navigator.languages && navigator.languages[0]) || '').toLowerCase();
+    if(savedLang === 'en' || (!savedLang && browserLang.startsWith('en'))){
+      location.replace('en/' + location.search + location.hash);
+      return;
+    }
+  }
+
   /* ---------- theme ---------- */
   const root = document.documentElement;
-  function store(k, v){ try{ if(v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){ return null; } }
   const saved = store('mcu-theme');
   if(saved === 'light' || saved === 'dark') root.dataset.theme = saved;
   function isDark(){
@@ -55,7 +67,8 @@
   /* language switch */
   const langBtn = hdr.querySelector('#langBtn');
   function langHref(){
-    const file = location.pathname.split('/').pop() || 'index.html';
+    let file = location.pathname.split('/').pop() || 'index.html';
+    if(file === 'en' || file === 'en.html') file = 'index.html';
     return (EN ? '../' : 'en/') + file + location.search + location.hash;
   }
   langBtn.href = langHref();
