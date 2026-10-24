@@ -1,236 +1,190 @@
-/* MCU Notes · Spec Designer Scripts */
+/* MCU Notes · Spec designer (bilingual).
+   Defaults follow the PSoC 4 HVPA-144K datasheet (002-28660 Rev. *K); everything else is an editable assumption. */
 (function(){
+  const EN = (document.documentElement.lang || '').toLowerCase().startsWith('en');
+  const t = (zh, en) => EN ? en : zh;
+  const $ = s => document.querySelector(s);
   const tabBtns = document.querySelectorAll('.seg button[data-type]');
-  const selPreset = document.getElementById('ds-preset');
-  const boxInputs = document.getElementById('ds-inputs');
-  const boxMetrics = document.getElementById('ds-metrics');
-  const tblTrade = document.getElementById('ds-table-trade');
-  const boxChecks = document.getElementById('ds-checks');
-  const boxOutput = document.getElementById('ds-output');
-  const btnCopy = document.getElementById('ds-copy-btn');
-
+  const selPreset = $('#ds-preset'), boxInputs = $('#ds-inputs'), boxMetrics = $('#ds-metrics');
+  const tblTrade = $('#ds-table-trade'), boxChecks = $('#ds-checks'), boxOutput = $('#ds-output'), btnCopy = $('#ds-copy-btn');
   let currentType = 'shunt';
 
+  const ADC_FS = 1.2, AGC_MIN_G = 4, AGC_MAX_G = 512;   // V, gain range used by the datasheet AGC example
+
   const PRESETS = {
-    '12v_ibs': {
-      shunt: {i_cont: 150, i_peak: 1200, r_uohm: 100, tcr: 25, t_amb: 105, adc_vref: 1.2},
-      power: {q_nom: 70, self_disc: 3, days: 45, i_act: 4.5, t_act_ms: 10, i_ds: 15, i_other: 20},
-      memory: {flash: 128, sram: 8, boot: 8, app: 72, fusa: 16, calib: 8, stack: 3}
-    },
-    '24v_truck': {
-      shunt: {i_cont: 250, i_peak: 1800, r_uohm: 50, tcr: 20, t_amb: 115, adc_vref: 1.2},
-      power: {q_nom: 180, self_disc: 2.5, days: 60, i_act: 5.0, t_act_ms: 20, i_ds: 18, i_other: 35},
-      memory: {flash: 128, sram: 8, boot: 12, app: 80, fusa: 18, calib: 10, stack: 3.5}
-    },
-    '48v_mild': {
-      shunt: {i_cont: 200, i_peak: 900, r_uohm: 100, tcr: 15, t_amb: 95, adc_vref: 1.2},
-      power: {q_nom: 15, self_disc: 1.5, days: 30, i_act: 4.0, t_act_ms: 15, i_ds: 12, i_other: 15},
-      memory: {flash: 128, sram: 8, boot: 8, app: 65, fusa: 16, calib: 8, stack: 3}
-    },
-    'ev_bdu': {
-      shunt: {i_cont: 400, i_peak: 1500, r_uohm: 30, tcr: 10, t_amb: 85, adc_vref: 1.2},
-      power: {q_nom: 100, self_disc: 1.0, days: 90, i_act: 5.5, t_act_ms: 5, i_ds: 10, i_other: 5},
-      memory: {flash: 128, sram: 8, boot: 16, app: 75, fusa: 22, calib: 6, stack: 3.5}
-    }
+    '12v_ibs': {name: t('12 V 啟停鉛酸 IBS', '12 V start-stop lead-acid IBS'),
+      shunt: {i_cont: 150, i_peak: 1200, r_uohm: 100, tcr: 20, rth: 18, t_amb: 105},
+      power: {q_nom: 70, self_disc: 3, days: 30, i_ds: 35, i_wake: 8, t_wake: 5, p_wake: 1, i_other: 20},
+      memory: {flash: 128, dflash: 8, sram: 8, boot: 8, app: 72, fusa: 16, calib: 6, stack: 2, data: 3}},
+    '24v_truck': {name: t('24 V 商用車 IBS', '24 V commercial-vehicle IBS'),
+      shunt: {i_cont: 250, i_peak: 1800, r_uohm: 50, tcr: 20, rth: 12, t_amb: 105},
+      power: {q_nom: 180, self_disc: 2.5, days: 60, i_ds: 35, i_wake: 8, t_wake: 10, p_wake: 1, i_other: 35},
+      memory: {flash: 128, dflash: 8, sram: 8, boot: 12, app: 80, fusa: 18, calib: 8, stack: 2.5, data: 3.5}},
+    '12v_ss_hi': {name: t('12 V 高電流（大排量／商用）', '12 V high-current (large engine)'),
+      shunt: {i_cont: 300, i_peak: 2500, r_uohm: 50, tcr: 10, rth: 10, t_amb: 105},
+      power: {q_nom: 95, self_disc: 3, days: 45, i_ds: 35, i_wake: 8, t_wake: 5, p_wake: 2, i_other: 30},
+      memory: {flash: 128, dflash: 8, sram: 8, boot: 8, app: 76, fusa: 16, calib: 6, stack: 2, data: 3}}
   };
 
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach(b => b.setAttribute('aria-selected', b === btn));
-      currentType = btn.dataset.type;
-      buildInputs();
-    });
-  });
+  const FIELDS = {
+    shunt: [
+      ['i_cont', t('連續電流 (A)', 'Continuous current (A)'), 10, 600, 1],
+      ['i_peak', t('峰值電流（啟動）(A)', 'Peak current, cranking (A)'), 100, 3000, 10],
+      ['r_uohm', t('分流電阻 (µΩ)', 'Shunt resistance (µΩ)'), 20, 500, 5],
+      ['tcr', t('電阻溫度係數 TCR (ppm/°C)', 'Shunt TCR (ppm/°C)'), 5, 100, 1],
+      ['rth', t('分流器熱阻 (°C/W)', 'Shunt thermal resistance (°C/W)'), 2, 60, 1],
+      ['t_amb', t('最高環境溫度 (°C)', 'Max ambient (°C)'), 60, 125, 1]],
+    power: [
+      ['q_nom', t('電瓶容量 (Ah)', 'Battery capacity (Ah)'), 10, 300, 1],
+      ['self_disc', t('自放電 (%/月)', 'Self-discharge (%/month)'), 0.5, 10, 0.5],
+      ['days', t('停放天數', 'Parking days'), 7, 180, 1],
+      ['i_ds', t('IBS Deep Sleep 電流 (µA)', 'IBS Deep Sleep current (µA)'), 10, 200, 1],
+      ['i_wake', t('喚醒時平均電流 (mA)', 'Average current while awake (mA)'), 1, 20, 0.5],
+      ['t_wake', t('每次喚醒時間 (ms)', 'Awake time per wake-up (ms)'), 1, 100, 1],
+      ['p_wake', t('喚醒週期 (s)', 'Wake-up period (s)'), 0.1, 60, 0.1],
+      ['i_other', t('其他 ECU 暗電流 (mA)', 'Other ECUs quiescent (mA)'), 0, 100, 1]],
+    memory: [
+      ['flash', t('Code Flash (KB)', 'Code flash (KB)'), 64, 128, 1],
+      ['dflash', t('Data Flash (KB)', 'Data flash (KB)'), 0, 8, 1],
+      ['sram', t('SRAM (KB)', 'SRAM (KB)'), 4, 8, 1],
+      ['boot', t('Bootloader (KB)', 'Bootloader (KB)'), 0, 32, 1],
+      ['app', t('應用程式 (KB)', 'Application (KB)'), 16, 120, 1],
+      ['fusa', t('安全函式庫 (KB)', 'Safety library (KB)'), 0, 40, 1],
+      ['calib', t('校準表／OCV 表 (KB)', 'Calibration / OCV tables (KB)'), 1, 16, 1],
+      ['stack', t('堆疊 Stack (KB)', 'Stack (KB)'), 0.5, 4, 0.25],
+      ['data', t('.data + .bss (KB)', '.data + .bss (KB)'), 0.5, 7, 0.25]]
+  };
 
+  selPreset.innerHTML = Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join('');
+
+  tabBtns.forEach(btn => btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.setAttribute('aria-selected', b === btn));
+    currentType = btn.dataset.type;
+    buildInputs();
+  }));
   selPreset.addEventListener('change', buildInputs);
-
-  function getActiveValues(){
-    const preset = PRESETS[selPreset.value][currentType];
-    const vals = {};
-    for(const k in preset){
-      const el = document.getElementById('inp-' + k);
-      vals[k] = el ? +el.value : preset[k];
-    }
-    return vals;
-  }
 
   function buildInputs(){
     const preset = PRESETS[selPreset.value][currentType];
-    let html = '';
-
-    if(currentType === 'shunt'){
-      html = `
-        <div class="ctl"><label>額定連續電流 (A)</label><input id="inp-i_cont" type="number" min="10" max="600" value="${preset.i_cont}"></div>
-        <div class="ctl"><label>峰值脈衝電流 (A)</label><input id="inp-i_peak" type="number" min="100" max="2500" value="${preset.i_peak}"></div>
-        <div class="ctl"><label>分流器阻值 (µΩ)</label><input id="inp-r_uohm" type="number" min="20" max="1000" step="5" value="${preset.r_uohm}"></div>
-        <div class="ctl"><label>分流電阻溫漂 TCR (ppm/°C)</label><input id="inp-tcr" type="number" min="5" max="100" value="${preset.tcr}"></div>
-        <div class="ctl"><label>環境最高溫度 (°C)</label><input id="inp-t_amb" type="number" min="60" max="125" value="${preset.t_amb}"></div>
-        <div class="ctl"><label>ADC 基準電壓 VREF (V)</label><input id="inp-adc_vref" type="number" step="0.05" min="1.0" max="1.5" value="${preset.adc_vref}"></div>
-      `;
-    } else if(currentType === 'power'){
-      html = `
-        <div class="ctl"><label>電瓶額定容量 Q_nom (Ah)</label><input id="inp-q_nom" type="number" min="10" max="300" value="${preset.q_nom}"></div>
-        <div class="ctl"><label>電瓶月自放電率 (%/月)</label><input id="inp-self_disc" type="number" step="0.5" min="0.5" max="10" value="${preset.self_disc}"></div>
-        <div class="ctl"><label>預計停車靜置天數 (Days)</label><input id="inp-days" type="number" min="7" max="180" value="${preset.days}"></div>
-        <div class="ctl"><label>MCU Active 工作電流 (mA)</label><input id="inp-i_act" type="number" step="0.5" min="2" max="15" value="${preset.i_act}"></div>
-        <div class="ctl"><label>週期喚醒持續時間 (ms/sec)</label><input id="inp-t_act_ms" type="number" min="1" max="100" value="${preset.t_act_ms}"></div>
-        <div class="ctl"><label>MCU Deep Sleep 暗電流 (µA)</label><input id="inp-i_ds" type="number" min="5" max="50" value="${preset.i_ds}"></div>
-        <div class="ctl"><label>其餘車載 ECU 待機暗電流 (µA)</label><input id="inp-i_other" type="number" min="0" max="200" value="${preset.i_other}"></div>
-      `;
-    } else if(currentType === 'memory'){
-      html = `
-        <div class="ctl"><label>總 Flash 容量 (KB)</label><input id="inp-flash" type="number" min="64" max="256" value="${preset.flash}"></div>
-        <div class="ctl"><label>總 SRAM 容量 (KB)</label><input id="inp-sram" type="number" min="4" max="32" value="${preset.sram}"></div>
-        <div class="ctl"><label>Bootloader 佔用 (KB)</label><input id="inp-boot" type="number" min="4" max="32" value="${preset.boot}"></div>
-        <div class="ctl"><label>BMS 應用程式碼 (KB)</label><input id="inp-app" type="number" min="20" max="160" value="${preset.app}"></div>
-        <div class="ctl"><label>SafeTlib 安全自檢庫 (KB)</label><input id="inp-fusa" type="number" min="8" max="40" value="${preset.fusa}"></div>
-        <div class="ctl"><label>校準表與 OCV 曲線 (KB)</label><input id="inp-calib" type="number" min="2" max="16" value="${preset.calib}"></div>
-        <div class="ctl"><label>SRAM 堆疊與中斷 Stack (KB)</label><input id="inp-stack" type="number" step="0.5" min="1" max="6" value="${preset.stack}"></div>
-      `;
-    }
-
-    boxInputs.innerHTML = html;
+    boxInputs.innerHTML = FIELDS[currentType].map(([k, label, min, max, step]) =>
+      `<div class="ctl"><label for="inp-${k}">${label}</label><input id="inp-${k}" type="number" min="${min}" max="${max}" step="${step}" value="${preset[k]}"></div>`).join('');
     boxInputs.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calculate));
     calculate();
   }
+  function values(){
+    const v = {};
+    FIELDS[currentType].forEach(([k]) => { const el = $('#inp-' + k); v[k] = el && el.value !== '' ? +el.value : PRESETS[selPreset.value][currentType][k]; });
+    return v;
+  }
+  const metric = (lbl, val, unit, cls) => `<div class="metric"><span class="lbl">${lbl}</span><div class="val ${cls || ''}">${val}<span class="unit">${unit || ''}</span></div></div>`;
+  const row = cells => '<tr>' + cells.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+  const head = cells => '<tr>' + cells.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const ok = s => `<div>✅ ${s}</div>`, warn = s => `<div>⚠️ ${s}</div>`, bad = s => `<div>❌ ${s}</div>`;
 
   function calculate(){
-    const v = getActiveValues();
-
+    const v = values();
     if(currentType === 'shunt'){
-      const R = v.r_uohm * 1e-6; // ohm
-      const p_cont = v.i_cont * v.i_cont * R;
-      const v_peak_mv = v.i_peak * R * 1e3;
-      const delta_t = p_cont * 18; // approx 18 degC/W for chassis mounted shunt
-      const t_shunt_peak = v.t_amb + delta_t;
-      const tcr_err_pct = (delta_t + (v.t_amb - 25)) * v.tcr * 1e-4; // percent
-      const fsr_mv = (v.adc_vref / 8) * 1e3; // 150 mV at gain=1
-      const isClipping = v_peak_mv > fsr_mv;
-      const lsb_gain64_ma = (((v.adc_vref / 8) / 32768) / 64 / R) * 1e3; // mA
-
-      boxMetrics.innerHTML = `
-        <div class="metric"><span class="lbl">額定連續熱功耗</span><div class="val ${p_cont > 5 ? 'warn' : 'good'}">${p_cont.toFixed(2)}<span class="unit">W</span></div></div>
-        <div class="metric"><span class="lbl">峰值跨壓 (Peak Vdiff)</span><div class="val ${isClipping ? 'bad' : 'good'}">${v_peak_mv.toFixed(1)}<span class="unit">mV</span></div></div>
-        <div class="metric"><span class="lbl">極限溫升熱點溫度</span><div class="val ${t_shunt_peak > 130 ? 'bad' : 'good'}">${t_shunt_peak.toFixed(0)}<span class="unit">°C</span></div></div>
-        <div class="metric"><span class="lbl">最小辨識電流 (Gain 64x)</span><div class="val good">${lsb_gain64_ma.toFixed(2)}<span class="unit">mA</span></div></div>
-      `;
-
-      tblTrade.innerHTML = `
-        <tr><th>指標項目</th><th>計算數值</th><th>設計建議</th></tr>
-        <tr><td>ADC 滿量程裕度 (FSR)</td><td>±${fsr_mv.toFixed(0)} mV</td><td>${isClipping ? '<span style="color:var(--bad)">超出滿量程！需縮小分流阻值</span>' : '<span style="color:var(--ok)">在量程範圍內 ✓</span>'}</td></tr>
-        <tr><td>高溫溫漂引起的累積偏差</td><td>±${tcr_err_pct.toFixed(3)}%</td><td>${tcr_err_pct > 0.3 ? '建議選用 10 ppm 合金分流電阻' : '符合 OEM 0.5% 總精度要求 ✓'}</td></tr>
-        <tr><td>低端微安級辨識極限</td><td>${lsb_gain64_ma.toFixed(1)} mA/LSB</td><td>完全滿足鎖車 15mA 暗電流精確計量</td></tr>
-      `;
-
-      boxChecks.innerHTML = `
-        <div style="margin-bottom:8px"><b>驗證結論：</b></div>
-        <div>${isClipping ? '❌ <b>警告：</b> 峰值電流跨壓超量程截波，啟動時將遺失安時累計！' : '✅ <b>通過：</b> 峰值跨壓小於 150mV，PGA 1x~64x 動態覆蓋完整。'}</div>
-        <div>${t_shunt_peak < 125 ? '✅ <b>通過：</b> 最高接面熱點溫度低於 AEC-Q100 125°C 閥值。' : '⚠️ <b>警示：</b> 連續重載溫升逼近 130°C，需強化銅排散熱。'}</div>
-      `;
-
-      boxOutput.textContent = `/* Auto-Generated Shunt & PACSS Config for PSoC 4 HVPA */
-#define BMS_SHUNT_RESISTANCE_UOHM   (${v.r_uohm}U)
-#define BMS_SHUNT_R_FLOAT          (${R.toFixed(8)}f)
-#define BMS_MAX_CONTINUOUS_AMPS    (${v.i_cont}U)
-#define BMS_PEAK_SURGE_AMPS        (${v.i_peak}U)
-
-// ADC PACSS Configuration
-#define PACSS_VREF_VOLTS           (${v.adc_vref.toFixed(2)}f)
-#define PACSS_GAIN_AUTO_SWITCH     (1) // Enable Fast AGC LUT
-#define PACSS_CHOPPING_ENABLED     (1) // Auto-Zero Drift Elimination
-#define PACSS_MIN_LSB_CURRENT_MA   (${lsb_gain64_ma.toFixed(2)}f)
+      const R = v.r_uohm * 1e-6;
+      const p = v.i_cont * v.i_cont * R;
+      const vpk = v.i_peak * R;
+      const fsMax = ADC_FS / AGC_MIN_G;                       // 300 mV at G = 4
+      const tShunt = v.t_amb + p * v.rth;
+      const tcrErr = (tShunt - 25) * v.tcr * 1e-4;           // %
+      const lsb = ADC_FS / AGC_MAX_G / 32768 / R;            // A per normalised LSB
+      const iFsMin = ADC_FS / AGC_MAX_G / R;                 // full scale at the highest gain
+      const clip = vpk > 0.9 * fsMax;
+      boxMetrics.innerHTML =
+        metric(t('連續功耗', 'Continuous dissipation'), p.toFixed(2), 'W', p > 5 ? 'warn' : 'good') +
+        metric(t('峰值跨壓', 'Peak shunt voltage'), (vpk * 1e3).toFixed(1), 'mV', clip ? 'bad' : 'good') +
+        metric(t('分流器熱點', 'Shunt hotspot'), tShunt.toFixed(0), '°C', tShunt > 150 ? 'bad' : 'good') +
+        metric(t('1 LSB（正規化）', '1 LSB (normalised)'), (lsb * 1e3).toFixed(3), 'mA');
+      tblTrade.innerHTML = head([t('項目', 'Item'), t('數值', 'Value'), t('說明', 'Note')]) +
+        row([t('AGC 最大輸入（G = 4）', 'AGC max input (G = 4)'), '±' + (fsMax * 1e3).toFixed(0) + ' mV = ±' + (fsMax / R).toFixed(0) + ' A', clip ? `<span style="color:var(--bad)">${t('峰值超過 90% 量程，降低 R 或改用 G = 1/2 固定增益', 'Peak above 90% of range: lower R or use fixed G = 1/2')}</span>` : `<span style="color:var(--ok)">${t('峰值在量程內 ✓', 'Peak within range ✓')}</span>`]) +
+        row([t('最高增益量程（G = 512）', 'Range at max gain (G = 512)'), '±' + (iFsMin).toFixed(2) + ' A', t('小電流（暗電流）以最高增益量測', 'Small currents measured at the highest gain')]) +
+        row([t('TCR 造成的增益誤差', 'Gain error from TCR'), '±' + tcrErr.toFixed(3) + ' %', tcrErr > 0.5 ? t('建議低 TCR 合金或溫度補償', 'Use a low-TCR alloy or temperature compensation') : t('可接受，仍建議溫度補償', 'Acceptable; temperature compensation still recommended')]);
+      boxChecks.innerHTML =
+        (clip ? bad(t('峰值電流會使 AGC 最低增益飽和。', 'Peak current saturates the lowest AGC gain.')) : ok(t('峰值電流在 AGC 量程內。', 'Peak current stays within the AGC range.'))) +
+        (tShunt > 150 ? bad(t('分流器熱點過高，需加強散熱或降低 R。', 'Shunt hotspot too high: improve heat sinking or lower R.')) : ok(t('分流器熱點溫度可接受。', 'Shunt hotspot temperature is acceptable.'))) +
+        (v.t_amb > 125 ? bad(t('環境溫度超過 AEC-Q100 Grade 1（125 °C）。', 'Ambient exceeds AEC-Q100 Grade 1 (125 °C).')) : ok(t('環境溫度在 Grade 1 範圍（−40 ~ 125 °C）。', 'Ambient within Grade 1 (−40 to 125 °C).'))) +
+        `<p class="note">${t('LSB 依資料手冊：scaler 將結果正規化為最高增益（512）時的權重；100 µΩ 時為 0.715 mA。', 'LSB per datasheet: the scaler normalises results to the weight at the highest gain (512); 0.715 mA at 100 µΩ.')}</p>`;
+      boxOutput.textContent =
+`/* Shunt front-end constants (generated by MCU Notes). Verify against your PDL/TRM before use. */
+#define SHUNT_RESISTANCE_UOHM      (${v.r_uohm}u)
+#define SHUNT_I_CONT_A             (${v.i_cont}u)
+#define SHUNT_I_PEAK_A             (${v.i_peak}u)
+#define ADC_FULL_SCALE_V           (1.2f)
+#define AGC_GAIN_MIN               (${AGC_MIN_G}u)
+#define AGC_GAIN_MAX               (${AGC_MAX_G}u)
+#define CURRENT_LSB_UA             (${(lsb * 1e6).toFixed(1)}f)   /* normalised LSB */
+#define SHUNT_TCR_PPM_PER_C        (${v.tcr}u)
 `;
     } else if(currentType === 'power'){
-      const duty = v.t_act_ms / 1000;
-      const i_mcu_avg_ua = (v.i_act * 1000 * duty) + (v.i_ds * (1 - duty));
-      const i_total_avg_ua = i_mcu_avg_ua + v.i_other;
-      const total_days_drain_ah = (i_total_avg_ua * 1e-6 * 24 * v.days);
-      const self_disc_ah = (v.q_nom * (v.self_disc / 100) * (v.days / 30));
-      const total_loss_ah = total_days_drain_ah + self_disc_ah;
-      const remain_ah = Math.max(0, v.q_nom - total_loss_ah);
-      const remain_soc = (remain_ah / v.q_nom) * 100;
-      const days_to_50pct = (v.q_nom * 0.5) / ((i_total_avg_ua * 1e-6 * 24) + (v.q_nom * (v.self_disc / 100) / 30));
-
-      boxMetrics.innerHTML = `
-        <div class="metric"><span class="lbl">MCU 平均待機暗電流</span><div class="val good">${i_mcu_avg_ua.toFixed(1)}<span class="unit">µA</span></div></div>
-        <div class="metric"><span class="lbl">整車總平均待機電流</span><div class="val">${i_total_avg_ua.toFixed(1)}<span class="unit">µA</span></div></div>
-        <div class="metric"><span class="lbl">${v.days} 天總耗電量</span><div class="val">${total_loss_ah.toFixed(2)}<span class="unit">Ah</span></div></div>
-        <div class="metric"><span class="lbl">停放後剩餘電量 SoC</span><div class="val ${remain_soc < 60 ? 'warn' : 'good'}">${remain_soc.toFixed(1)}<span class="unit">%</span></div></div>
-      `;
-
-      tblTrade.innerHTML = `
-        <tr><th>評估項目</th><th>計算結果</th><th>車規門檻要求</th></tr>
-        <tr><td>MCU 模組休眠暗電流</td><td>${i_mcu_avg_ua.toFixed(1)} µA</td><td>${i_mcu_avg_ua < 50 ? '<span style="color:var(--ok)">符合德國車廠嚴苛標準 (&lt;50µA) ✓</span>' : '超出感測器分配預算'}</td></tr>
-        <tr><td>50% 啟動安全臨界停放天數</td><td>約 ${days_to_50pct.toFixed(0)} 天</td><td>大於 90 天可滿足長途海運存放</td></tr>
-        <tr><td>電瓶化學自放電佔比</td><td>${(self_disc_ah / total_loss_ah * 100).toFixed(0)}%</td><td>自放電為主要流失源，電路損耗已最佳化</td></tr>
-      `;
-
-      boxChecks.innerHTML = `
-        <div>✅ <b>通過：</b> MCU 平均靜態耗電極低，深睡模式下僅消耗 ${v.i_ds} µA。</div>
-        <div>${remain_soc > 55 ? '✅ <b>通過：</b> 停放結束後電瓶剩餘電量充足，可順利啟動引擎。' : '⚠️ <b>警告：</b> 剩餘容量低於 55%，冬天冷啟動存在失靈風險！'}</div>
-      `;
-
-      boxOutput.textContent = `/* Low Power & Standby Budget Constants */
-#define MCU_ACTIVE_CURRENT_MA      (${v.i_act.toFixed(2)}f)
-#define MCU_DEEP_SLEEP_CURRENT_UA  (${v.i_ds.toFixed(1)}f)
-#define MCU_WAKEUP_PERIOD_MS       (1000U)
-#define MCU_ACTIVE_WINDOW_MS       (${v.t_act_ms}U)
-
-// Standby Assessment
-#define ESTIMATED_AVERAGE_UA       (${i_mcu_avg_ua.toFixed(2)}f)
-#define ESTIMATED_MONTHLY_DRAIN_AH (${(i_mcu_avg_ua * 1e-6 * 24 * 30).toFixed(4)}f)
+      const duty = Math.min(1, v.t_wake / 1000 / v.p_wake);
+      const iIbs = v.i_ds * (1 - duty) + v.i_wake * 1000 * duty;   // µA
+      const iTot = iIbs / 1000 + v.i_other;                          // mA
+      const drainAh = iTot / 1000 * 24 * v.days;
+      const selfAh = v.q_nom * v.self_disc / 100 * v.days / 30;
+      const remain = Math.max(0, 100 * (1 - (drainAh + selfAh) / v.q_nom));
+      const perDay = iTot / 1000 * 24 + v.q_nom * v.self_disc / 100 / 30;
+      const to50 = v.q_nom * 0.5 / perDay;
+      boxMetrics.innerHTML =
+        metric(t('IBS 平均電流', 'IBS average current'), iIbs.toFixed(0), 'µA', iIbs > 200 ? 'warn' : 'good') +
+        metric(t('整車暗電流', 'Vehicle quiescent'), iTot.toFixed(2), 'mA') +
+        metric(t(`${v.days} 天後 SoC`, `SoC after ${v.days} d`), remain.toFixed(1), '%', remain < 60 ? 'warn' : 'good') +
+        metric(t('到 50% SoC', 'Days to 50% SoC'), to50.toFixed(0), t('天', 'd'), to50 < 30 ? 'warn' : 'good');
+      tblTrade.innerHTML = head([t('項目', 'Item'), t('數值', 'Value'), t('說明', 'Note')]) +
+        row([t('喚醒佔空比', 'Wake duty cycle'), (duty * 100).toFixed(2) + ' %', t('喚醒期間電流主導 IBS 平均值', 'Wake-up current dominates the IBS average')]) +
+        row([t('IBS 佔整車暗電流', 'IBS share of quiescent'), (iIbs / 1000 / iTot * 100).toFixed(1) + ' %', t('多數停放耗電來自其他 ECU 與自放電', 'Most parked drain comes from other ECUs and self-discharge')]) +
+        row([t('自放電佔總損失', 'Self-discharge share'), (selfAh / (drainAh + selfAh) * 100).toFixed(0) + ' %', t('鉛酸電池溫度越高自放電越大', 'Lead-acid self-discharge rises with temperature')]);
+      boxChecks.innerHTML =
+        (v.i_ds < 35 ? warn(t('Deep Sleep 低於資料手冊典型值 35 µA，請確認量測條件。', 'Deep Sleep below the 35 µA datasheet typical — check the assumption.')) : ok(t('Deep Sleep 電流不低於資料手冊典型值。', 'Deep Sleep current is not below the datasheet typical.'))) +
+        (remain < 50 ? bad(t('停放後 SoC 低於 50%，低溫冷啟動有風險。', 'SoC below 50% after parking: cold-crank risk.')) : ok(t('停放後 SoC 足以啟動。', 'SoC after parking is sufficient to crank.'))) +
+        `<p class="note">${t('資料手冊：Deep Sleep 35 µA typ / 60 µA max（無週期喚醒）；含每秒喚醒量測 85 µA typ / 100 µA max（TA ≤ 85 °C）。Active 6–12 mA（24/48 MHz）。', 'Datasheet: Deep Sleep 35 µA typ / 60 µA max (no periodic wake-up); 85 µA typ / 100 µA max with once-per-second measurement (TA ≤ 85 °C). Active 6–12 mA (24/48 MHz).')}</p>`;
+      boxOutput.textContent =
+`/* Low-power budget (generated by MCU Notes) */
+#define WAKEUP_PERIOD_MS           (${Math.round(v.p_wake * 1000)}u)
+#define WAKEUP_ACTIVE_MS           (${v.t_wake}u)
+#define EST_IBS_AVG_CURRENT_UA     (${iIbs.toFixed(1)}f)
+#define EST_VEHICLE_QUIESCENT_MA   (${iTot.toFixed(2)}f)
+#define EST_DAYS_TO_50PCT_SOC      (${to50.toFixed(0)}u)
 `;
-    } else if(currentType === 'memory'){
-      const used_flash = v.boot + v.app + v.fusa + v.calib;
-      const free_flash = v.flash - used_flash;
-      const flash_pct = (used_flash / v.flash) * 100;
-
-      const used_sram = v.stack + (v.app * 0.05); // approx 5% RAM of code
-      const free_sram = v.sram - used_sram;
-      const sram_pct = (used_sram / v.sram) * 100;
-
-      boxMetrics.innerHTML = `
-        <div class="metric"><span class="lbl">Flash 總佔用空間</span><div class="val">${used_flash.toFixed(1)}<span class="unit">/ ${v.flash} KB</span></div></div>
-        <div class="metric"><span class="lbl">Flash 使用率</span><div class="val ${flash_pct > 90 ? 'bad' : 'good'}">${flash_pct.toFixed(1)}<span class="unit">%</span></div></div>
-        <div class="metric"><span class="lbl">SRAM 總佔用空間</span><div class="val">${used_sram.toFixed(1)}<span class="unit">/ ${v.sram} KB</span></div></div>
-        <div class="metric"><span class="lbl">SRAM 使用率</span><div class="val ${sram_pct > 85 ? 'bad' : 'good'}">${sram_pct.toFixed(1)}<span class="unit">%</span></div></div>
-      `;
-
-      tblTrade.innerHTML = `
-        <tr><th>記憶體分區</th><th>分配大小</th><th>功能與安全性質</th></tr>
-        <tr><td>BOOTLOADER</td><td>${v.boot} KB</td><td>唯讀保護，支援 LIN UDS 安全韌體升級 (FOTA)</td></tr>
-        <tr><td>APPLICATION</td><td>${v.app} KB</td><td>BMS 核心卡爾曼濾波、庫倫計、通訊協議棧</td></tr>
-        <tr><td>SAFETLIB (FuSa)</td><td>${v.fusa} KB</td><td>ISO 26262 ASIL-C 安全庫，執行 CPU 與類比自檢</td></tr>
-        <tr><td>CALIBRATION / NV</td><td>${v.calib} KB</td><td>Flash 模擬 EEPROM，儲存分流器修調值與 OCV 表</td></tr>
-        <tr><td>FREE FLASH MARGIN</td><td>${free_flash.toFixed(1)} KB</td><td>${free_flash > 10 ? '餘裕充足，利於後續擴展 ✓' : '餘裕不足，需精簡代碼'}</td></tr>
-      `;
-
-      boxChecks.innerHTML = `
-        <div>${free_flash >= 0 ? '✅ <b>Flash 空間校驗通過：</b> 未溢位。' : '❌ <b>嚴重錯誤：Flash 超出可用容量！</b>'}</div>
-        <div>${free_sram >= 1.0 ? '✅ <b>SRAM 堆疊裕度充足：</b> 預留 &gt; 1KB 防止 Stack Overflow。' : '⚠️ <b>警告：</b> SRAM 餘量過緊，中斷巢狀可能導致棧溢位！'}</div>
-      `;
-
-      boxOutput.textContent = `/* GCC Linker Script Memory Map Snippet (psoc4_hvpa.ld) */
+    } else {
+      const usedF = v.boot + v.app + v.fusa + (v.calib > v.dflash ? v.calib : 0);
+      const freeF = v.flash - usedF;
+      const calibInData = v.calib <= v.dflash;
+      const usedR = v.stack + v.data, freeR = v.sram - usedR;
+      boxMetrics.innerHTML =
+        metric(t('Code Flash 使用', 'Code flash used'), usedF.toFixed(1), '/ ' + v.flash + ' KB', freeF < 0 ? 'bad' : usedF / v.flash > .9 ? 'warn' : 'good') +
+        metric(t('Flash 剩餘', 'Flash free'), freeF.toFixed(1), 'KB', freeF < 0 ? 'bad' : '') +
+        metric(t('SRAM 使用', 'SRAM used'), usedR.toFixed(2), '/ ' + v.sram + ' KB', freeR < 0 ? 'bad' : usedR / v.sram > .85 ? 'warn' : 'good') +
+        metric(t('SRAM 剩餘（heap）', 'SRAM free (heap)'), freeR.toFixed(2), 'KB', freeR < 0.5 ? 'warn' : '');
+      tblTrade.innerHTML = head([t('分區', 'Region'), t('大小', 'Size'), t('用途', 'Purpose')]) +
+        row(['BOOT', v.boot + ' KB', t('開機載入與更新（如 LIN 診斷刷寫）', 'Boot + update (e.g. LIN diagnostic flashing)')]) +
+        row(['APP', v.app + ' KB', t('量測、SoC/SoH 演算法、LIN 協定棧', 'Measurement, SoC/SoH algorithms, LIN stack')]) +
+        row(['SAFETY', v.fusa + ' KB', t('啟動與週期性自測（CPU、RAM、類比診斷）', 'Start-up and periodic self-tests (CPU, RAM, analog diagnostics)')]) +
+        row(['CALIB', v.calib + ' KB', calibInData ? t('放在 Data Flash（含 ECC）', 'Placed in data flash (ECC-protected)') : t('Data Flash 不足，放入 Code Flash', 'Too large for data flash; placed in code flash')]);
+      boxChecks.innerHTML =
+        (freeF < 0 ? bad(t('Code Flash 溢位。', 'Code flash overflow.')) : freeF < 8 ? warn(t('Code Flash 餘裕 < 8 KB，後續更新受限。', 'Less than 8 KB flash headroom for updates.')) : ok(t('Code Flash 餘裕充足。', 'Code flash headroom is fine.'))) +
+        (freeR < 0 ? bad(t('SRAM 溢位。', 'SRAM overflow.')) : freeR < 0.5 ? warn(t('SRAM 剩餘不足 0.5 KB。', 'Less than 0.5 KB SRAM left.')) : ok(t('SRAM 有餘裕。', 'SRAM has headroom.'))) +
+        `<p class="note">${t('資料手冊：最高 128 KB Code Flash、8 KB Data Flash、8 KB SRAM，全部具 ECC；另有 1 KB SFlash。Data Flash 位址請查 TRM。', 'Datasheet: up to 128 KB code flash, 8 KB data flash and 8 KB SRAM, all with ECC, plus 1 KB SFlash. Look up the data-flash address in the TRM.')}</p>`;
+      boxOutput.textContent =
+`/* GCC linker MEMORY snippet (generated by MCU Notes; check addresses against the device TRM) */
 MEMORY
 {
-  FLASH_BOOT (rx)   : ORIGIN = 0x00000000, LENGTH = ${v.boot}K
-  FLASH_APP  (rx)   : ORIGIN = 0x00000000 + ${v.boot}K, LENGTH = ${v.app}K
-  FLASH_FUSA (rx)   : ORIGIN = 0x00000000 + ${(v.boot+v.app)}K, LENGTH = ${v.fusa}K
-  FLASH_DATA (r)    : ORIGIN = 0x00000000 + ${(v.boot+v.app+v.fusa)}K, LENGTH = ${v.calib}K
-  RAM        (rwx)  : ORIGIN = 0x20000000, LENGTH = ${v.sram}K
+  FLASH_BOOT (rx)  : ORIGIN = 0x00000000,           LENGTH = ${v.boot}K
+  FLASH_APP  (rx)  : ORIGIN = 0x00000000 + ${v.boot}K,    LENGTH = ${v.app}K
+  FLASH_SAFE (rx)  : ORIGIN = 0x00000000 + ${v.boot + v.app}K,   LENGTH = ${v.fusa}K
+${calibInData ? '  /* calibration tables live in data flash (see TRM for its address) */' : `  FLASH_CAL  (r)   : ORIGIN = 0x00000000 + ${v.boot + v.app + v.fusa}K,   LENGTH = ${v.calib}K`}
+  RAM        (rwx) : ORIGIN = 0x20000000,           LENGTH = ${v.sram}K
 }
-
 __stack_size = ${Math.round(v.stack * 1024)};
-__heap_size  = ${Math.round(free_sram * 512)};
 `;
     }
   }
 
   btnCopy.addEventListener('click', () => {
-    navigator.clipboard.writeText(boxOutput.textContent).then(() => {
-      btnCopy.textContent = '已複製！';
-      setTimeout(() => { btnCopy.textContent = '一鍵複製'; }, 1500);
-    });
+    const done = () => { btnCopy.textContent = t('已複製！', 'Copied!'); setTimeout(() => { btnCopy.textContent = t('複製', 'Copy'); }, 1500); };
+    if(navigator.clipboard) navigator.clipboard.writeText(boxOutput.textContent).then(done, () => {});
   });
 
   buildInputs();

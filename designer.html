@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/designer.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="MCU 規格設計器 · MCU Notes">
+<meta property="og:description" content="車用微控制器與電池管理系統（BMS）規格推導設計器：BMS 分流電阻與類比前端選型計算、車載暗電流休眠功耗預算評估、Flash 與 SRAM 韌體安全記憶體分區配置，並自動生成 C 語言硬體驅動配置標頭檔。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>MCU 規格設計器 · MCU Notes</title>
 <meta name="description" content="車用微控制器與電池管理系統（BMS）規格推導設計器：BMS 分流電阻與類比前端選型計算、車載暗電流休眠功耗預算評估、Flash 與 SRAM 韌體安全記憶體分區配置，並自動生成 C 語言硬體驅動配置標頭檔。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,11 +25,12 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="designer">
-<main class="app-wrap">
+<a class="skip" href="#main">跳到主要內容</a>
+<main id="main" class="app-wrap">
 <div class="app-head">
   <div class="eyebrow">Spec Designer · 規格設計器</div>
   <h1>從系統規格推導分流器、ADC 裕度、待機功耗與記憶體佈局</h1>
-  <p class="lead">選擇上方設計器模組，輸入電池與硬體參數，即時估算熱損耗、微伏量測解析度、長達數月的電瓶待機極限，並生成可直接複製至工程專案的 Linker Script 與 C 標頭檔。</p>
+  <p class="lead">選擇上方設計器模組，輸入電池與硬體參數，即時估算分流器功耗與溫升、AGC 量程與 LSB、停車待機耗電，以及 Flash/SRAM 配置，並產生可複製的 C 標頭與 linker 片段。預設值取自 PSoC™ 4 HVPA-144K 資料手冊，其餘為可修改的假設。</p>
 </div>
 
 <div class="seg" role="tablist" aria-label="設計器選單">
@@ -27,10 +43,7 @@
   <div class="panel">
     <div class="ctl"><label for="ds-preset">常用車規參考範本</label>
       <select id="ds-preset">
-        <option value="12v_ibs" selected>12V 啟停鉛酸 IBS (標準 PSoC 4 HVPA-144K)</option>
-        <option value="24v_truck">24V 商用重卡智慧電瓶感測器</option>
-        <option value="48v_mild">48V 輕油電 (MHEV) 鋰電池雙向分流器</option>
-        <option value="ev_bdu">400V/800V EV 高壓電池斷路單元 (BDU)</option>
+        
       </select>
     </div>
     <div id="ds-inputs"></div>
@@ -43,7 +56,7 @@
     </div>
     <div class="panel">
       <h3>工程代碼與規格配置生成
-        <small><button class="btn" id="ds-copy-btn" type="button" style="padding:3px 10px">一鍵複製</button></small>
+        <small><button class="btn" id="ds-copy-btn" type="button" style="padding:3px 10px">複製</button></small>
       </h3>
       <pre class="code" id="ds-output"></pre>
     </div>

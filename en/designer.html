@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/designer.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/designer.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="MCU Spec Designer · MCU Notes">
+<meta property="og:description" content="Automotive MCU & BMS specification designer: Shunt resistor dimensioning, battery standby sleep budget, firmware memory mapping, and auto-generated C header configuration files.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/designer.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>MCU Spec Designer · MCU Notes</title>
 <meta name="description" content="Automotive MCU & BMS specification designer: Shunt resistor dimensioning, battery standby sleep budget, firmware memory mapping, and auto-generated C header configuration files.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,11 +25,12 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="designer">
-<main class="app-wrap">
+<a class="skip" href="#main">Skip to content</a>
+<main id="main" class="app-wrap">
 <div class="app-head">
   <div class="eyebrow">Spec Designer · Specification &amp; Dimensioning</div>
   <h1>Derive Shunt Resistors, ADC Margins, Standby Power &amp; Memory Layout</h1>
-  <p class="lead">Select a dimensioning tool, tune battery and silicon parameters, observe real-time thermal and resolution trade-offs, and generate ready-to-use C headers and linker scripts.</p>
+  <p class="lead">Select a dimensioning tool, tune battery and silicon parameters, and see shunt dissipation and temperature rise, AGC range and LSB, parked standby drain, and flash/SRAM layout, with copyable C header and linker snippets. Defaults come from the PSoC™ 4 HVPA-144K datasheet; everything else is an editable assumption.</p>
 </div>
 
 <div class="seg" role="tablist" aria-label="Tools">
@@ -27,10 +43,7 @@
   <div class="panel">
     <div class="ctl"><label for="ds-preset">Automotive Reference Presets</label>
       <select id="ds-preset">
-        <option value="12v_ibs" selected>12V Start-Stop Lead-Acid IBS (PSoC 4 HVPA)</option>
-        <option value="24v_truck">24V Commercial Hauler Heavy-Duty IBS</option>
-        <option value="48v_mild">48V Mild Hybrid (MHEV) Dual-Shunt Pack</option>
-        <option value="ev_bdu">400V/800V EV Battery Disconnect Unit (BDU)</option>
+        
       </select>
     </div>
     <div id="ds-inputs"></div>

@@ -3,232 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/lab.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/lab.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/lab.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/lab.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="MCU 互動實驗室 · MCU Notes">
+<meta property="og:description" content="八個互動模擬：分流器與 AGC（增益 4–512）、庫倫積分 SoC 漂移、ISO 16750-2 拋負載與 42 V 絕對最大額定、問答窗口看門狗、Sinc³/Sinc² 抽取濾波、SECDED(39,32) ECC 錯誤注入、LIN 訊框，以及晶圓修調良率 Monte Carlo。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/lab.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>MCU 互動實驗室 · MCU Notes</title>
-<meta name="description" content="互動模擬：車用分流器電流感測與快速 AGC、庫倫積分 SoC 漂移、ISO 7637-2 42V 負載突降、問答窗口看門狗時序、Sinc³ 濾波器頻譜、SECDED ECC 錯誤注入、LIN 總線協定與晶圓類比修調良率。">
+<meta name="description" content="八個互動模擬：分流器與 AGC（增益 4–512）、庫倫積分 SoC 漂移、ISO 16750-2 拋負載與 42 V 絕對最大額定、問答窗口看門狗、Sinc³/Sinc² 抽取濾波、SECDED(39,32) ECC 錯誤注入、LIN 訊框，以及晶圓修調良率 Monte Carlo。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="lab">
-<main class="app-wrap">
+<a class="skip" href="#main">跳到主要內容</a>
+<main id="main" class="app-wrap">
 <div class="app-head">
   <div class="eyebrow">MCU Lab · 互動實驗室</div>
   <h1>動手調整參數，直觀掌握車規微控制器運作與失效機理</h1>
-  <p class="lead">所有模擬器皆基於真實車用微控制器與類比前端物理模型運行。點擊切換上方實驗標籤，調整左側參數旋鈕，右側即時繪製向量圖表與系統狀態指標。</p>
+  <p class="lead">每個模擬器都以 PSoC™ 4 HVPA-144K 資料手冊數值或明確標示的簡化模型運算。切換上方標籤、調整左側參數，右側即時更新指標與圖表；每個實驗下方列出模型假設與資料來源。</p>
 </div>
 
-<div class="seg" role="tablist" aria-label="實驗列表">
-  <button role="tab" data-tab="shunt" aria-selected="true">分流器與 AGC</button>
-  <button role="tab" data-tab="coulomb" aria-selected="false">庫倫積分 SoC 漂移</button>
-  <button role="tab" data-tab="loaddump" aria-selected="false">42V 拋負載突降</button>
-  <button role="tab" data-tab="wdt" aria-selected="false">問答窗口看門狗</button>
-  <button role="tab" data-tab="sinc" aria-selected="false">Sinc³ 數位濾波</button>
-  <button role="tab" data-tab="ecc" aria-selected="false">SECDED ECC 注入</button>
-  <button role="tab" data-tab="lin" aria-selected="false">LIN 匯流排傳輸</button>
-  <button role="tab" data-tab="trim" aria-selected="false">類比修調與良率</button>
-</div>
-
-<!-- ============ 1. SHUNT & AGC ============ -->
-<section class="tabp" id="tab-shunt" role="tabpanel">
-<div class="bench">
-  <div class="panel">
-    <h3>參數設定 <small>分流電流與 PGA 增益</small></h3>
-    <div class="ctl"><label for="sh-shunt">分流電阻 \(R_{\text{shunt}}\) <output id="sh-shunt-o"></output></label>
-      <select id="sh-shunt"><option value="50">50 µΩ (大功率 EV 專用)</option><option value="100" selected>100 µΩ (標準 12V IBS 規格)</option><option value="200">200 µΩ (高精度小電流型)</option><option value="500">500 µΩ (小容量電瓶)</option></select></div>
-    <div class="ctl"><label for="sh-curr">負載電流 \(I_{\text{load}}\) <output id="sh-curr-o"></output></label>
-      <input id="sh-curr" type="range" min="-1200" max="1500" step="10" value="12"></div>
-    <div class="ctl"><label>工作情境預設</label>
-      <div class="btnrow" id="sh-presets">
-        <button class="btn" type="button" data-val="0.015">鎖車暗電流 (15mA)</button>
-        <button class="btn" type="button" data-val="12">大燈啟動 (12A)</button>
-        <button class="btn" type="button" data-val="250">發電機快充 (250A)</button>
-        <button class="btn" type="button" data-val="1100">引擎冷啟動 (1100A)</button>
-      </div>
-    </div>
-    <div class="ctl"><label for="sh-mode">增益控制模式</label>
-      <select id="sh-mode"><option value="auto" selected>硬體快速查表 AGC (自動換檔 &lt;5µs)</option><option value="1">固定增益 Gain = 1x (滿量程 ±150mV)</option><option value="8">固定增益 Gain = 8x</option><option value="64">固定增益 Gain = 64x (高敏度 ±2.3mV)</option></select></div>
-    <div class="ctl"><label for="sh-vref">ADC 基準電壓 \(V_{\text{REF}}\) <output id="sh-vref-o"></output></label>
-      <input id="sh-vref" type="range" min="1.0" max="1.5" step="0.05" value="1.2"></div>
-    <p class="note">PSoC 4 HVPA 包含 Gain 1x ~ 64x 雙級 PGA，能在毫安培與千安培之間無縫切換且不截波。</p>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="sh-metrics"></div>
-    <div class="two">
-      <div class="panel"><h3>輸入跨壓與動態量程 <small>PGA 增益切換點</small></h3><svg class="viz" id="sh-plot-in" role="img"></svg></div>
-      <div class="panel"><h3>ADC 輸出碼與滿量程利用率 <small>16-bit 數位結果</small></h3><svg class="viz" id="sh-plot-out" role="img"></svg></div>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 2. COULOMB COUNTING & SOC ============ -->
-<section class="tabp" id="tab-coulomb" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>參數設定 <small>積分誤差與溫漂</small></h3>
-    <div class="ctl"><label for="cc-cap">電瓶額定容量 \(Q_n\) <output id="cc-cap-o"></output></label>
-      <input id="cc-cap" type="range" min="20" max="120" step="5" value="60"></div>
-    <div class="ctl"><label for="cc-days">車輛停放天數 <output id="cc-days-o"></output></label>
-      <input id="cc-days" type="range" min="1" max="60" step="1" value="14"></div>
-    <div class="ctl"><label for="cc-offset">未校正 ADC Offset 電壓 <output id="cc-offset-o"></output></label>
-      <input id="cc-offset" type="range" min="0" max="50" step="1" value="12"></div>
-    <div class="ctl"><label for="cc-shunt">分流阻值 \(R_{\text{shunt}}\) <output id="cc-shunt-o"></output></label>
-      <select id="cc-shunt"><option value="100" selected>100 µΩ (標準)</option><option value="200">200 µΩ</option></select></div>
-    <div class="ctl"><label for="cc-chop">晶片內自動斬波歸零 (Chopping)</label>
-      <select id="cc-chop"><option value="on" selected>開啟 (殘餘 Offset &lt; 0.5 µV)</option><option value="off">關閉 (承受完整原始 Offset)</option></select></div>
-    <div class="ctl"><label for="cc-ocv">啟用靜置 OCV 校正點</label>
-      <select id="cc-ocv"><option value="yes" selected>有 (每停放 7 天進行靜置平衡重置)</option><option value="no">無 (純開迴路安時積分發散)</option></select></div>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="cc-metrics"></div>
-    <div class="panel"><h3>電瓶荷電狀態 (SoC) 與累積漂移曲線 <small>真實電量 vs 估計電量</small></h3>
-      <svg class="viz" id="cc-plot" role="img"></svg>
-      <div class="legend"><span><i style="background:var(--ok)"></i>真實電量 True SoC</span><span><i style="background:var(--bad)"></i>庫倫估計 Estimated SoC</span><span><i style="background:var(--warn)"></i>OCV 校正點</span></div>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 3. LOAD DUMP ============ -->
-<section class="tabp" id="tab-loaddump" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>突波注入設定 <small>ISO 7637-2 Pulse 5b</small></h3>
-    <div class="ctl"><label for="ld-vp">拋負載峰值電壓 \(V_{\text{peak}}\) <output id="ld-vp-o"></output></label>
-      <input id="ld-vp" type="range" min="28" max="50" step="1" value="42"></div>
-    <div class="ctl"><label for="ld-td">脈衝持續時間 \(t_d\) <output id="ld-td-o"></output></label>
-      <input id="ld-td" type="range" min="100" max="600" step="50" value="400"></div>
-    <div class="ctl"><label for="ld-clamp">晶片內部主動箝位電路</label>
-      <select id="ld-clamp"><option value="on" selected>啟用 38V 主動動態雪崩箝位 (PSoC 4 HVPA)</option><option value="off">未啟用 (普通 30V 晶片直面擊穿)</option></select></div>
-    <div class="btnrow"><button class="btn pri" id="ld-fire" type="button">觸發拋負載脈衝注入</button></div>
-    <p class="note">測試發電機突發斷開電瓶時，車載微控制器內部高壓穩壓器與 3.3V/1.8V 軌的瞬態抗擾響應。</p>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="ld-metrics"></div>
-    <div class="panel"><h3>電源軌瞬態波形 <small>0 ~ 600 ms 實時捕捉</small></h3>
-      <svg class="viz" id="ld-plot" role="img"></svg>
-      <div class="legend"><span><i style="background:var(--bad)"></i>VBAT 輸入母線</span><span><i style="background:var(--accent)"></i>VDDD (3.3V 穩壓軌)</span><span><i style="background:var(--ok)"></i>VCCD (1.8V 核心核心軌)</span></div>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 4. WDT ============ -->
-<section class="tabp" id="tab-wdt" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>看門狗配置 <small>時間窗口與問答機制</small></h3>
-    <div class="ctl"><label for="wdt-open">窗口開啟時間 \(T_{\text{open}}\) <output id="wdt-open-o"></output></label>
-      <input id="wdt-open" type="range" min="10" max="60" step="5" value="30"></div>
-    <div class="ctl"><label for="wdt-close">窗口超時時間 \(T_{\text{close}}\) <output id="wdt-close-o"></output></label>
-      <input id="wdt-close" type="range" min="70" max="150" step="10" value="100"></div>
-    <div class="ctl"><label for="wdt-ans">問答解算狀態 (Challenge-Response)</label>
-      <select id="wdt-ans"><option value="valid" selected>正確算得金鑰 (SafeTlib 檢測通過)</option><option value="invalid">計算錯誤 (模擬記憶體或邏輯異常)</option></select></div>
-    <div class="btnrow">
-      <button class="btn pri" id="wdt-feed" type="button">即刻執行餵狗 (Feed WDT)</button>
-      <button class="btn" id="wdt-reset" type="button">重新計時</button>
-    </div>
-    <p class="note">過早餵狗（&lt; 30ms）或過晚餵狗（&gt; 100ms）或金鑰算錯皆會觸發 ASIL 安全復位！</p>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="wdt-metrics"></div>
-    <div class="panel"><h3>計時器時間窗口與餵狗檢驗時序</h3>
-      <svg class="viz" id="wdt-plot" role="img"></svg>
-      <div id="wdt-log" class="callout" style="--c:var(--safety);margin-top:10px">狀態：計時中…</div>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 5. SINC3 FILTER ============ -->
-<section class="tabp" id="tab-sinc" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>數位濾波設定 <small>Decimation &amp; OSR</small></h3>
-    <div class="ctl"><label for="sc-osr">超採樣抽取比 (OSR) <output id="sc-osr-o"></output></label>
-      <select id="sc-osr"><option value="64">OSR = 64 (高速低延遲)</option><option value="256" selected>OSR = 256 (標準平衡模式)</option><option value="512">OSR = 512 (高精度模式)</option><option value="1536">OSR = 1536 (專用工頻陷波)</option></select></div>
-    <div class="ctl"><label for="sc-order">濾波器階數</label>
-      <select id="sc-order"><option value="1">Sinc¹ (一階)</option><option value="2">Sinc² (二階)</option><option value="3" selected>Sinc³ (三階 - PSoC 4 標配)</option><option value="4">Sinc⁴ (四階)</option></select></div>
-    <div class="ctl"><label for="sc-fmod">調變器時脈 \(f_{\text{mod}}\) <output id="sc-fmod-o"></output></label>
-      <select id="sc-fmod"><option value="1000000">1.000 MHz</option><option value="1536000" selected>1.536 MHz (可產生精確 50/60Hz 凹陷)</option><option value="2000000">2.000 MHz</option></select></div>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="sc-metrics"></div>
-    <div class="panel"><h3>濾波器幅頻響應 (Bode Plot) <small>工頻 50Hz/60Hz 與 PWM 抑制比</small></h3>
-      <svg class="viz" id="sc-plot" role="img"></svg>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 6. ECC INJECTION ============ -->
-<section class="tabp" id="tab-ecc" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>SECDED 漢明碼測試器 <small>32-bit 資料 + 7-bit ECC</small></h3>
-    <p>點擊下方任一資料位元以手動注入單粒子翻轉（SEU）：</p>
-    <div id="ecc-bits" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:14px"></div>
-    <div class="btnrow">
-      <button class="btn" id="ecc-flip1" type="button">隨機翻轉 1 位元</button>
-      <button class="btn" id="ecc-flip2" type="button">隨機翻轉 2 位元</button>
-      <button class="btn" id="ecc-clean" type="button">清空全部錯誤</button>
-    </div>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="ecc-metrics"></div>
-    <div class="panel"><h3>硬體糾錯邏輯判定狀態</h3>
-      <div id="ecc-report" class="callout" style="--c:var(--core);font-size:14px">當前資料完整無損。</div>
-      <div class="code" id="ecc-code" style="margin-top:14px"></div>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 7. LIN BUS ============ -->
-<section class="tabp" id="tab-lin" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>LIN 2.2A 封包配置</h3>
-    <div class="ctl"><label for="lin-id">訊框 ID (Frame ID) <output id="lin-id-o"></output></label>
-      <input id="lin-id" type="range" min="0" max="63" step="1" value="34"></div>
-    <div class="ctl"><label for="lin-baud">通訊鮑率 (Baudrate)</label>
-      <select id="lin-baud"><option value="9600">9.6 kbps</option><option value="19200" selected>19.2 kbps (標準車載 LIN)</option><option value="20000">20.0 kbps</option></select></div>
-    <div class="ctl"><label for="lin-d0">電壓資料 Byte 0 (V_BAT LSB)</label><input id="lin-d0" type="number" min="0" max="255" value="216"></div>
-    <div class="ctl"><label for="lin-d1">電壓資料 Byte 1 (V_BAT MSB)</label><input id="lin-d1" type="number" min="0" max="255" value="48"></div>
-    <div class="ctl"><label for="lin-d2">電流資料 Byte 2 (I_BMS LSB)</label><input id="lin-d2" type="number" min="0" max="255" value="120"></div>
-    <div class="ctl"><label for="lin-d3">SoC 資料 Byte 3 (0-100%)</label><input id="lin-d3" type="number" min="0" max="100" value="85"></div>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="lin-metrics"></div>
-    <div class="panel"><h3>LIN 單線實體層波形 <small>斜率控制 (Slew-Rate) 與電磁相容</small></h3>
-      <svg class="viz" id="lin-plot" role="img"></svg>
-      <div class="legend"><span><i style="background:var(--warn)"></i>LIN 總線電平 (0V ~ 12V)</span><span><i style="background:var(--core)"></i>採樣取樣點</span></div>
-    </div>
-  </div>
-</div>
-</section>
-
-<!-- ============ 8. ANALOG TRIMMING & YIELD ============ -->
-<section class="tabp" id="tab-trim" role="tabpanel" hidden>
-<div class="bench">
-  <div class="panel">
-    <h3>晶圓測試修調設定 <small>Offset &amp; Bandgap Trim</small></h3>
-    <div class="ctl"><label for="tr-sigma">製程原始標準差 \(\sigma_{\text{raw}}\) <output id="tr-sigma-o"></output></label>
-      <input id="tr-sigma" type="range" min="50" max="300" step="10" value="150"></div>
-    <div class="ctl"><label for="tr-bits">eFuse 修調位元數 (Trim Resolution)</label>
-      <select id="tr-bits"><option value="0">0-bit (未修調)</option><option value="4">4-bit (粗調 16 檔)</option><option value="6" selected>6-bit (精調 64 檔 - PSoC 4 標配)</option><option value="8">8-bit (超精修 256 檔)</option></select></div>
-    <div class="ctl"><label for="tr-spec">車規合格門檻規格 (Spec Limit) <output id="tr-spec-o"></output></label>
-      <input id="tr-spec" type="range" min="10" max="60" step="5" value="25"></div>
-  </div>
-  <div class="stack">
-    <div class="metrics" id="tr-metrics"></div>
-    <div class="panel"><h3>晶粒 Offset 常態分佈對比 <small>修調前 vs 修調後</small></h3>
-      <svg class="viz" id="tr-plot" role="img"></svg>
-      <div class="legend"><span><i style="background:var(--bad)"></i>修調前原始分佈 Raw</span><span><i style="background:var(--ok)"></i>修調後成品分佈 Trimmed</span><span><i style="background:var(--muted)"></i>規格門檻 Spec Limit</span></div>
-    </div>
-  </div>
-</div>
-</section>
+<div class="seg" role="tablist" id="labTabs" aria-label="實驗列表"></div>
+<div id="labRoot"></div>
+<noscript><p class="callout">此互動實驗室需要啟用 JavaScript。</p></noscript>
 
 </main>
 <script src="assets/search-index.js"></script>
