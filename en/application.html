@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/application.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/application.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/application.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/application.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="03 Automotive BMS &amp; System Schematics · MCU Notes">
+<meta property="og:description" content="In-depth system-level hardware circuit principles for Intelligent Battery Sensors (IBS) and Battery Disconnect Units (BDU): shunt sensing, LIN physical layer, contactor fast demagnetization, and SoC/SoH algorithms.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/application.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>03 Automotive BMS &amp; System Schematics · MCU Notes</title>
 <meta name="description" content="In-depth system-level hardware circuit principles for Intelligent Battery Sensors (IBS) and Battery Disconnect Units (BDU): shunt sensing, LIN physical layer, contactor fast demagnetization, and SoC/SoH algorithms.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,9 +28,10 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="application" data-ch="app">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
+  <article id="main">
     <div class="eyebrow">Chapter 03 · Automotive BMS &amp; System Circuit Schematics</div>
     <h1>Automotive Battery Management: Intelligent Sensor (IBS) &amp; Disconnect (BDU) Circuit Principles</h1>
     <p class="lead">Modern automotive electrical architectures require battery sensing and disconnect modules to operate autonomously across severe thermal gradients, high-vibration chassis mounting, and harsh electromagnetic interference. This chapter explores the complete hardware schematic of an <b>Intelligent Battery Sensor (IBS)</b> clamped onto the battery terminal, LIN physical layer transceivers, high-voltage Battery Disconnect Unit (BDU) contactor drive with fast demagnetization arc suppression, and algorithmic estimation of State of Charge (SoC) and State of Health (SoH).</p>
@@ -23,6 +39,7 @@
     <!-- ==================== CIRCUIT 1 ==================== -->
     <h2 id="ibs-schematic">1. Intelligent Battery Sensor (IBS) System Circuit Schematic</h2>
     <p>Mounted directly onto the negative pole clamp of the battery, the IBS interfaces with three external lines: battery positive feed wire (KL30), chassis ground strap (GND), and a single-wire LIN bus running to the Body Control Module (BCM).</p>
+    <p class="src">Device source: PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K (“DS”). External component values in the figure are typical design examples.</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 430" role="img" aria-label="Intelligent Battery Sensor Complete System Circuit Schematic">
@@ -76,7 +93,7 @@
 
         <!-- VBAT Pin -->
         <circle cx="360" cy="105" r="5" fill="#c0392b"/>
-        <text class="ts t-mono" x="375" y="102" font-size="11" font-weight="700" fill="#c0392b">VBAT (Pin 1)</text>
+        <text class="ts t-mono" x="375" y="102" font-size="11" font-weight="700" fill="#c0392b">VBAT</text>
 
         <!-- Internal Subsystem 1: 42V PMIC -->
         <rect x="390" y="115" width="185" height="65" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="1.5"/>
@@ -88,7 +105,7 @@
         <rect x="600" y="115" width="195" height="135" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
         <text class="ts" x="697" y="137" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">PACSS Dual 16-bit &Delta;&Sigma;</text>
         <rect x="612" y="148" width="170" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="697" y="164" text-anchor="middle" font-size="10">Current Ch (&plusmn;150mV) + PGA</text>
+        <text class="ts t-mono" x="697" y="164" text-anchor="middle" font-size="10">Current ch. G 1–512 (AGC)</text>
         <rect x="612" y="180" width="170" height="24" rx="3" fill="var(--sunk)"/>
         <text class="ts t-mono" x="697" y="196" text-anchor="middle" font-size="10">Voltage Ch (24:1 Divider)</text>
         <text class="ts t-mut" x="697" y="228" text-anchor="middle" font-size="9">Synchronous Sampling</text>
@@ -128,10 +145,16 @@
       </svg>
       <figcaption>Figure 3.1: Intelligent Battery Sensor (IBS) Physical Circuit Schematic (Power conditioning, Kelvin Shunt, and LIN Bus)</figcaption>
     </div>
+    <ul>
+      <li><b>Voltage channel:</b> an internal HV divider of 24× (28.8 V full scale) or 16× (19.2 V); measuring 12 V draws about 6 µA through it (DS).</li>
+      <li><b>Temperature:</b> internal and external sensing are supported; an external NTC near the terminal helps estimate electrolyte temperature.</li>
+      <li><b>Protection:</b> the TVS and reverse diode on the KL30 feed are external parts; the DS recommends external protection against high-voltage pulses.</li>
+    </ul>
 
     <!-- ==================== CIRCUIT 2 ==================== -->
     <h2 id="bdu-circuit">2. High-Voltage Battery Disconnect Unit (BDU) Contactor &amp; Pyro-Fuse Drive Circuit</h2>
     <p>In 400V / 800V EV traction battery packs, the Battery Disconnect Unit (BDU) energizes main positive and negative high-voltage contactors during power-up, and commands <b>pyrotechnic circuit disconnect (Pyro-fuse) within 1 ms</b> under acute short-circuit or vehicle crash scenarios. This demands dual high/low-side switches and active fast demagnetization circuits.</p>
+    <div class="callout" style="--c:var(--warn)"><b>Scope:</b> the HVPA targets 12 V / 24 V lead-acid battery sensing (VBAT absolute maximum 42 V); it is not a BDU controller for 400/800 V packs. This section explains generic BDU drive concepts; real BDUs control contactors and pyro-fuses from a low-voltage MCU through isolated or dedicated drivers.</div>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="BDU Contactor and Pyro-fuse Drive with Demagnetization Schematic">
@@ -155,7 +178,7 @@
         <!-- Fast Demagnetization Clamp Diode Network (Flyback + 36V Zener) -->
         <path d="M285 65v65h165v-65" fill="none" stroke="var(--bad)" stroke-width="2"/>
         <polygon points="340,125 355,130 340,135" fill="var(--bad)"/>
-        <line x1="355,123" x2="355" y2="137" stroke="var(--bad)" stroke-width="2"/>
+        <line x1="355" y1="123" x2="355" y2="137" stroke="var(--bad)" stroke-width="2"/>
         <polygon points="385,135 370,130 385,125" fill="var(--bad)"/>
         <path d="M370 123v14M370 123h4M370 137h-4" stroke="var(--bad)" stroke-width="2"/>
         <text class="ts" x="367" y="154" text-anchor="middle" font-size="10" font-weight="600" fill="var(--bad)">36V Zener + Ultrafast Diode (Fast Demag Arc Suppression)</text>
@@ -185,7 +208,7 @@
         <line x1="390" y1="285" x2="580" y2="285" stroke="#d35400" stroke-width="3"/>
         <rect x="580" y="255" width="220" height="70" rx="6" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
         <text class="ts" x="690" y="280" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">Pyro-fuse Detonator</text>
-        <text class="ts t-mono" x="690" y="302" text-anchor="middle" font-size="10" fill="var(--ink)">Emergency Firing (1-cycle I/O &lt; 20ns)</text>
+        <text class="ts t-mono" x="690" y="302" text-anchor="middle" font-size="10" fill="var(--ink)">Fired via external driver (ms range)</text>
       </svg>
       <figcaption>Figure 3.2: High-Voltage Contactor High/Low-Side Drive, Fast Demagnetization Clamp, and Economizer PWM Circuit</figcaption>
     </div>
@@ -199,19 +222,60 @@
 
     <!-- ==================== ALGORITHMS ==================== -->
     <h2 id="soc-coulomb-detail">3. State of Charge (SoC): Coulomb Counting &amp; OCV Fusion</h2>
-    <p>State of Charge represents the remaining battery capacity relative to its nominal capacity. The MCU performs continuous <b>Coulomb Counting</b>:</p>
+    <p>SoC is the remaining usable charge as a fraction of nominal capacity. The MCU tracks it continuously by <b>Coulomb counting</b>:</p>
     <div class="math-block">
-      \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^t \eta(I) \cdot I(\tau) \, d\tau\]
-      where \(Q_n\) is nominal capacity and \(\eta(I)\) is the charge/discharge coulombic efficiency factor.
+      \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^{t} \eta(I) \cdot I(\tau) \, d\tau\]
+      where \(Q_n\) is nominal capacity and \(\eta(I)\) the coulombic efficiency.
     </div>
-    <p>After vehicle shutdown and prolonged rest (> 3 hours), the electrochemical battery reaches thermodynamic equilibrium (quiescent current \(|I| &lt; 15\,\text{mA}\)). At this point, terminal voltage accurately reflects the <b>Open-Circuit Voltage (OCV)</b>. The MCU samples terminal voltage, consults a pre-calibrated OCV-SoC lookup table, and resets the baseline \(\text{SoC}(t_0)\), eliminating open-loop integration drift accumulated over days.</p>
+    <p>The weakness of integration is that <b>offset accumulates</b>: 10 µV across 100 µΩ is a 100 mA phantom current, or 72 Ah over 30 parked days. So once the vehicle has rested long enough (hours for lead-acid) and the current is near zero, the MCU reads the terminal voltage as the <b>open-circuit voltage (OCV)</b>, looks up the OCV–SoC table and resets \(\text{SoC}(t_0)\), stopping the drift. OCV itself depends on temperature and residual polarisation and carries a few percent of error.</p>
+    <p>Compare drift with and without chopping and OCV anchoring in the <a href="lab.html#coulomb">MCU Lab</a>.</p>
 
-    <h2 id="soh-impedance-detail">4. State of Health (SoH) via Cranking Dynamic Impedance</h2>
+    <h2 id="soh-impedance-detail">4. State of Health (SoH) via Cranking Impedance</h2>
     <div class="math-block">
-      During cold engine cranking or high-inrush inverter startup, peak current spikes by hundreds of amperes, causing terminal voltage sag. The dual ADCs sample \(\Delta V\) and \(\Delta I\) synchronously at 1 kHz:
+      During engine cranking the starter draws a step of hundreds of amps and the terminal voltage sags. The two ADCs sample \(\Delta V\) and \(\Delta I\) synchronously:
       \[R_{\text{int}}(T) = \frac{V_{\text{pre-crank}} - V_{\text{min-crank}}}{I_{\text{peak-crank}} - I_{\text{idle}}}\]
-      Tracking dynamic internal resistance over time reveals lead plate sulfation, electrolyte dry-out, or lithium plating before roadside breakdown occurs.
     </div>
+    <ul>
+      <li><b>Synchronous sampling matters:</b> if voltage and current are sampled at different instants, ΔV/ΔI picks up the current slope as error. The HVPA’s two ADCs convert simultaneously.</li>
+      <li><b>Temperature compensation:</b> lead-acid internal resistance varies strongly with temperature, so normalise to a reference temperature before comparing.</li>
+      <li><b>Trend:</b> a steadily rising resistance indicates sulfation or water loss, so a replacement warning can be raised before a no-start.</li>
+    </ul>
+
+    <h2 id="lin-bus">5. LIN Bus: the IBS-to-Body-Controller Link</h2>
+    <p>The HVPA integrates a LIN transceiver compliant with <b>LIN 2.2A / 2.1 / 2.0 / 1.3, SAE J2602 and ISO 17987</b>; the LIN pin is rated <b>−27 V to +42 V</b> (DS). An IBS running from an internal RC oscillator calibrates its baud rate from the master’s sync field.</p>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 210" role="img" aria-label="LIN frame structure">
+        <text class="ts" x="20" y="30" font-weight="700" font-size="12" fill="var(--warn)">Header (sent by master)</text>
+        <text class="ts" x="560" y="30" font-weight="700" font-size="12" fill="var(--app)">Response (sent by IBS)</text>
+        <rect x="20" y="50" width="200" height="60" rx="4" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="120" y="76" text-anchor="middle" font-size="12" font-weight="700">Break</text>
+        <text class="ts t-mut" x="120" y="96" text-anchor="middle" font-size="10">≥ 13 bit dominant + delimiter</text>
+        <rect x="225" y="50" width="130" height="60" rx="4" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="290" y="76" text-anchor="middle" font-size="12" font-weight="700">Sync 0x55</text>
+        <text class="ts t-mut" x="290" y="96" text-anchor="middle" font-size="10">slave measures bit time</text>
+        <rect x="360" y="50" width="150" height="60" rx="4" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="435" y="76" text-anchor="middle" font-size="12" font-weight="700">PID</text>
+        <text class="ts t-mut" x="435" y="96" text-anchor="middle" font-size="10">ID[5:0] + P0 + P1</text>
+        <rect x="560" y="50" width="160" height="60" rx="4" fill="var(--surface)" stroke="var(--app)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="640" y="76" text-anchor="middle" font-size="12" font-weight="700">Data 1–8 B</text>
+        <text class="ts t-mut" x="640" y="96" text-anchor="middle" font-size="10">current / voltage / SoC</text>
+        <rect x="725" y="50" width="95" height="60" rx="4" fill="var(--surface)" stroke="var(--app)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="772" y="76" text-anchor="middle" font-size="12" font-weight="700">Checksum</text>
+        <text class="ts t-mut" x="772" y="96" text-anchor="middle" font-size="10">enhanced incl. PID</text>
+        <line x1="20" y1="140" x2="510" y2="140" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts t-mut" x="265" y="160" text-anchor="middle" font-size="11">Master (BCM / gateway)</text>
+        <line x1="560" y1="140" x2="820" y2="140" stroke="var(--app)" stroke-width="2"/>
+        <text class="ts t-mut" x="690" y="160" text-anchor="middle" font-size="11">Slave (IBS)</text>
+        <text class="ts t-mut" x="420" y="195" text-anchor="middle" font-size="11">Nominal time = 34 + 10·(N+1) bits; up to 1.4× allowed</text>
+      </svg>
+      <figcaption>Figure 3.3: A LIN frame is the master’s header followed by the slave’s response.</figcaption>
+    </div>
+    <ul>
+      <li><b>PID:</b> 6-bit ID plus 2 parity bits: P0 = ID0⊕ID1⊕ID2⊕ID4, P1 = ¬(ID1⊕ID3⊕ID4⊕ID5).</li>
+      <li><b>Checksum:</b> LIN 2.x uses the enhanced checksum (includes PID) for normal frames and the classic checksum for diagnostic frames 0x3C/0x3D. Both are inverted carry sums.</li>
+      <li><b>EMC:</b> slew-rate control limits emissions; the DS also offers a non-LIN fast mode (100 kbit/s) for uses such as reprogramming.</li>
+    </ul>
+    <p>Change the ID and data in the <a href="lab.html#lin">MCU Lab</a> to see the PID, checksum and waveform.</p>
 
     <div class="pager"></div>
   </article>

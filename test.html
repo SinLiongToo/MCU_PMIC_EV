@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/test.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/test.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/test.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/test.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="05 測試校準與車規認證 · MCU Notes">
+<meta property="og:description" content="剖析車用微控制器的嚴苛測試與車規認證流程：晶圓探針 CP 與最終測試 FT、晶片內 eFuse / 雷射類比精度修調（Trim）、全溫區溫漂校準、AEC-Q100 Grade 1 規範與車載側邊可潤濕側翼 QFN 封裝 AOI 檢測。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/test.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>05 測試校準與車規認證 · MCU Notes</title>
 <meta name="description" content="剖析車用微控制器的嚴苛測試與車規認證流程：晶圓探針 CP 與最終測試 FT、晶片內 eFuse / 雷射類比精度修調（Trim）、全溫區溫漂校準、AEC-Q100 Grade 1 規範與車載側邊可潤濕側翼 QFN 封裝 AOI 檢測。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,53 +28,111 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="test" data-ch="test">
+<a class="skip" href="#main">跳到主要內容</a>
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
-  <article>
-    <div class="eyebrow">Chapter 05 · Test, Calibration &amp; Automotive Qualification</div>
-    <h1>測試校準與車規：達成零缺陷的工業實踐</h1>
-    <p class="lead">消費級晶片允許少數不良品透過售後退換，但車用微控制器要求<b>百萬分之零缺陷（Zero PPM）</b>。在極端溫差與數十年震動下，一個錯誤的電壓讀數可能引發動力中斷或電池起火。本章探討微控制器如何從晶圓探針測試、類比修調（Trimming）走向 AEC-Q100 車規量產認證。</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 05 · Test, Calibration &amp; Qualification</div>
+    <h1>測試校準與車規：從晶圓到零缺陷</h1>
+    <p class="lead">車用晶片的目標是<b>百萬分之零缺陷（zero ppm）</b>。本章依生產流程說明：晶圓探針測試與類比修調、封裝後多溫度最終測試、AEC-Q100 可靠度驗證，以及讓產線能光學檢查焊點的 wettable-flank 封裝。</p>
+    <p class="src">晶片數值出處：PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K（DS）；可靠度條件出處：AEC-Q100 Rev. J。</p>
 
-    <h2 id="ate-trimming">1. 晶圓測試 (CP) 與晶片內 eFuse 類比精密修調 (Trimming)</h2>
-    <p>半導體晶圓製造過程中，受微影對焦誤差與摻雜濃度分佈不均影響，即使最頂尖的製程，晶片內部電阻與電容匹配誤差也難以低於 1%。未經修調的 ADC 初始偏移電壓（Offset）可能高達數百微伏，無法滿足車用 ±0.1% 精度指標。</p>
-
-    <div class="math-block">
-      <b>類比多點修調（Multi-Point Trim）演算法：</b><br>
-      在晶圓探針測試（Circuit Probe, CP）階段，自動化測試機台（ATE）施加精密基準電流源，量測原始 ADC 讀數並計算校正矩陣：<br>
-      \[V_{\text{corrected}} = \text{Gain\_Trim} \times (V_{\text{raw}} - \text{Offset\_Trim}) + T_{\text{coeff}} \times (T - T_0)\]
-      計算出的修正參數被燒錄進晶片內部一次性可編程非揮發性記憶體（Anti-fuse eFuse 或 Flash Trim Sector）。晶片每次上電復位時，硬體自動將這些參數加載至類比前置暫存器，直接調校晶片內數位可調電阻網路（R-2R Ladder）。
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 200" role="img" aria-label="車用晶片生產測試流程">
+        <rect x="15" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="90" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--fab)">晶圓製造</text>
+        <text class="ts t-mut" x="90" y="108" text-anchor="middle" font-size="11">製程變異</text>
+        <text class="ts t-mut" x="90" y="128" text-anchor="middle" font-size="11">元件不匹配</text>
+        <line x1="165" y1="100" x2="183" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M177 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="183" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--test)" stroke-width="2"/>
+        <text class="ts" x="258" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--test)">CP 探針測試</text>
+        <text class="ts t-mut" x="258" y="108" text-anchor="middle" font-size="11">量測 + 修調</text>
+        <text class="ts t-mut" x="258" y="128" text-anchor="middle" font-size="11">寫入校正碼</text>
+        <line x1="333" y1="100" x2="351" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M345 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="351" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="426" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">封裝</text>
+        <text class="ts t-mut" x="426" y="108" text-anchor="middle" font-size="11">32-QFN</text>
+        <text class="ts t-mut" x="426" y="128" text-anchor="middle" font-size="11">wettable flank</text>
+        <line x1="501" y1="100" x2="519" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M513 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="519" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--test)" stroke-width="2"/>
+        <text class="ts" x="594" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--test)">FT 最終測試</text>
+        <text class="ts t-mut" x="594" y="108" text-anchor="middle" font-size="11">多溫度</text>
+        <text class="ts t-mut" x="594" y="128" text-anchor="middle" font-size="11">參數全測</text>
+        <line x1="669" y1="100" x2="687" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M681 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="687" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="762" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">出貨 / AOI</text>
+        <text class="ts t-mut" x="762" y="108" text-anchor="middle" font-size="11">車廠 SMT</text>
+        <text class="ts t-mut" x="762" y="128" text-anchor="middle" font-size="11">焊點光學檢查</text>
+      </svg>
+      <figcaption>圖 5.1：車用晶片從晶圓到上板的測試流程。</figcaption>
     </div>
 
+    <h2 id="ate-trimming">1. 晶圓探針測試（CP）與類比修調</h2>
+    <p>製程變異讓電阻比例、電晶體匹配與能隙電壓在每顆晶粒都略有不同。未修調時，ADC 偏移與增益誤差遠超過電池感測需要的精度。CP 階段由 ATE 量測每顆晶粒，計算校正碼並寫入非揮發性記憶體；上電時硬體或開機程式把校正碼載入類比暫存器。</p>
+    <div class="math-block">
+      一般的校正模型（偏移、增益、溫度係數）：
+      \[V_{\text{corr}} = G_{\text{trim}} \cdot (V_{\text{raw}} - V_{\text{off,trim}}) + k_T \cdot (T - T_0)\]
+      \(N\) 位元、範圍 \(\pm R\) 的修調步階 \(\Delta = 2R/2^N\)，量化殘餘 \(\sigma \approx \Delta/\sqrt{12}\)；ATE 量測雜訊與超出範圍的尾端晶粒會再增加殘餘誤差。
+    </div>
     <div class="tblwrap"><table>
-      <tr><th>修調項目 (Trim Target)</th><th>修調前原始偏差</th><th>eFuse 修調後精度</th><th>對 BMS 系統的實際意義</th></tr>
-      <tr><td><b>Bandgap 基準電壓 (V_REF = 1.2V)</b></td><td>±2.5%</td><td><b>±0.05% (500 ppm)</b></td><td>為所有 ADC 與 LDO 提供絕對電壓真值基準</td></tr>
-      <tr><td><b>電流通道 PGA Offset</b></td><td>±250 µV</td><td><b>&lt; 1 µV (搭配 Chopping)</b></td><td>杜絕長達 30 天停放時的虛假庫倫積分電量漂移</td></tr>
-      <tr><td><b>高壓分壓電阻比 (24:1)</b></td><td>±1.8%</td><td><b>±0.1%</b></td><td>保證 12V/24V 電池端電壓在過充防護閥值前精確跳脫</td></tr>
-      <tr><td><b>內部高頻振盪器 IMO (48 MHz)</b></td><td>±4.0%</td><td><b>±0.5% 全溫區</b></td><td>確保無外部晶振時，LIN / UART 通訊波特率零丟包</td></tr>
+      <tr><th>修調／校準對象</th><th>為什麼需要</th><th>資料手冊可查到的結果</th></tr>
+      <tr><td><b>IMO 主振盪器</b></td><td>LIN 鮑率與取樣時序</td><td>±2%；以 HPOSC 軟體校準後 ±1% 或 ±1.5%</td></tr>
+      <tr><td><b>PILO 低功耗振盪器</b></td><td>看門狗與喚醒計時</td><td>±5% 或 ±7%；校準後可達 ±1% 等級（依料號）</td></tr>
+      <tr><td><b>電流通道偏移／增益</b></td><td>庫倫積分的長期漂移</td><td>以斬波＋補償區塊（乘法增益、加法偏移）處理</td></tr>
+      <tr><td><b>高壓分壓器比例</b></td><td>電瓶電壓準確度</td><td>24× / 16×；外部 2.2 kΩ 只佔分壓 0.1%</td></tr>
     </table></div>
+    <p>到 <a href="lab.html#trim">互動實驗室</a> 用 Monte Carlo 觀察修調位元數、修調範圍與量測雜訊如何影響良率。</p>
 
-    <h2 id="multi-temp">2. 全溫區三溫測試篩選 (Tri-Temp Screening)</h2>
-    <p>車用電子必須在極冷與極熱環境下無縫運作。車規級 MCU 測試流程要求在封裝後的最終測試（Final Test, FT）實施<b>三溫測試（Tri-Temp Testing）</b>：</p>
+    <h2 id="multi-temp">2. 多溫度最終測試（FT）</h2>
+    <p>封裝後的最終測試會在多個溫度重複參數量測。只在常溫測試會漏掉兩端才出現的缺陷：</p>
     <ul>
-      <li><b>低溫測試 (-40°C)：</b> 篩選低溫臨界啟動延遲、MOSFET 載子遷移率提高導致的時序競爭（Race Condition）、以及電晶體低溫關斷漏電特徵。</li>
-      <li><b>室溫測試 (+25°C)：</b> 建立標準基準線，完成基本功能向量與周邊 I/O 驗證。</li>
-      <li><b>高溫測試 (+125°C ~ +150°C)：</b> 篩選高溫高壓漏電、PN 結熱電載子注入、Flash 資料高溫保存壽命，以及熱關斷（Thermal Shutdown）電路觸發閾值。</li>
+      <li><b>低溫（−40 °C）：</b>啟動時序、振盪器起振、比較器與時序邊界問題。</li>
+      <li><b>常溫（+25 °C）：</b>建立基準、完整功能向量測試。</li>
+      <li><b>高溫（+125 °C，Grade 1）：</b>漏電流、資料保存、類比參數溫漂。</li>
     </ul>
+    <p>類比參數的溫度係數也在此確認，必要時寫入溫度補償係數。</p>
 
-    <h2 id="aec-q100">3. AEC-Q100 車用可靠度驗證標準</h2>
-    <p>消費級晶片主要依賴 JEDEC 標準，而車載微控制器必須強制通過汽車電子協會（Automotive Electronics Council）的 <b>AEC-Q100</b> 應力驗證規範。PSoC™ 4 HVPA 符合 <b>Grade 1</b> 嚴苛要求：</p>
-
+    <h2 id="aec-q100">3. AEC-Q100 可靠度驗證</h2>
+    <p>車用 IC 需通過汽車電子協會的 <b>AEC-Q100</b> 應力測試。HVPA 為 AEC-Q100 qualified，環境溫度 −40 至 +125 °C，對應 <b>Grade 1</b>（DS）。主要項目：</p>
     <div class="tblwrap"><table>
-      <tr><th>試驗代碼</th><th>試驗項目與環境條件</th><th>樣品數量與失效率門檻</th><th>工程防範目的</th></tr>
-      <tr><td><b>HTOL</b></td><td>高溫工作壽命試驗：125°C 下施加最大工作電壓持續 <b>1000 小時</b></td><td>3 批次 × 77 顆 = 231 顆，<b>0 失效 (Zero Fail)</b></td><td>加速激發晶片早期薄氧擊穿、金屬遷移與熱載子老化</td></tr>
-      <tr><td><b>HAST</b></td><td>高加速溫濕度偏壓：130°C / 85% RH / 2.3 大氣壓持續 96 小時</td><td>3 批次 × 77 顆，0 失效</td><td>檢驗封裝膠體水氣滲透與引腳金屬電偶腐蝕</td></tr>
-      <tr><td><b>TC</b></td><td>溫度循環衝擊：-55°C 至 +150°C 極限高低溫切換 <b>1000 次</b></td><td>3 批次 × 77 顆，0 失效</td><td>評估不同材料熱膨脹係數失配引起的晶粒開裂或鍵合線斷裂</td></tr>
-      <tr><td><b>ESD</b></td><td>人體模型 (HBM) ≥ ±2 kV；充電器件模型 (CDM) ≥ ±750 V；LIN 引腳 ≥ ±8 kV</td><td>全引腳標準放電</td><td>防止裝配與修車拔插時靜電擊穿</td></tr>
-      <tr><td><b>Latch-up</b></td><td>高溫 125°C 觸發電流脈衝 ≥ ±100 mA，過壓 1.5 倍</td><td>0 觸發持續短路</td><td>杜絕基板噪聲引發的寄生可控矽導通自毀</td></tr>
+      <tr><th>項目</th><th>典型條件（Grade 1）</th><th>樣品</th><th>目的</th></tr>
+      <tr><td><b>HTOL</b></td><td>125 °C、最大偏壓、1000 小時</td><td>3 批 × 77 顆，0 失效</td><td>加速氧化層、電遷移等老化</td></tr>
+      <tr><td><b>HAST / THB</b></td><td>130 °C / 85% RH 偏壓 96 小時（或 85/85 1000 小時）</td><td>3 批 × 77 顆，0 失效</td><td>濕氣滲透與腐蝕</td></tr>
+      <tr><td><b>TC</b></td><td>−55 至 +150 °C，1000 循環</td><td>3 批 × 77 顆，0 失效</td><td>熱膨脹失配造成的開裂與打線斷裂</td></tr>
+      <tr><td><b>ESD</b></td><td>HBM、CDM</td><td>依標準</td><td>DS：所有腳 HBM ±2 kV；CDM 角落腳 ±750 V、其他 ±500 V；LIN、VBAT 等 ±8 kV（ISO 10605，需外部保護）</td></tr>
+      <tr><td><b>Latch-up</b></td><td>±100 mA 注入、1.5 倍最大電壓、最高溫度</td><td>依 JESD78</td><td>寄生閂鎖</td></tr>
     </table></div>
 
-    <h2 id="wettable-flanks">4. 側邊可潤濕側翼 (Wettable Flanks) QFN 車規封裝</h2>
-    <p>傳統無引腳 QFN 封裝焊錫只能在底面附著，側面無法爬錫。PSoC™ 4 HVPA 採用具備<b>鍍錫台階（Plated Step Cut）</b>的 Wettable Flank 封裝，焊錫能形成飽滿側向焊角，使車廠產線上的<b>自動光學檢驗機（AOI）</b>能以視覺相機 100% 精確識別虛焊、空焊，滿足零缺陷標準。</p>
+    <h2 id="wettable-flanks">4. Wettable-flank QFN 封裝</h2>
+    <p>HVPA 採用 <b>32-QFN（6 × 6 mm）wettable flanks</b>（DS）。一般 QFN 切割後側面是裸銅，焊錫只在底部，焊點被封裝本體擋住，自動光學檢查（AOI）看不到。Wettable flank 在引腳側面做出電鍍凹階，焊錫會沿側面爬升形成焊角，AOI 從上方就能判斷焊接是否完整。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 240" role="img" aria-label="一般 QFN 與 wettable flank QFN 焊點剖面">
+        <text class="ts" x="200" y="28" text-anchor="middle" font-weight="700" font-size="13">一般 QFN</text>
+        <rect x="60" y="60" width="200" height="90" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mut" x="160" y="108" text-anchor="middle" font-size="11">封裝本體</text>
+        <rect x="200" y="150" width="60" height="12" fill="#b0b8c0"/>
+        <rect x="40" y="162" width="300" height="10" fill="var(--ok)" opacity=".35"/>
+        <path d="M200 162 h80 v-2 h-80z" fill="#9aa0a6"/>
+        <text class="ts t-mut" x="190" y="200" text-anchor="middle" font-size="11">焊點藏在底下</text>
+        <path d="M262 150 v12" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="300" y="140" font-size="11" fill="var(--bad)">側面無焊角</text>
+        <text class="ts" x="620" y="28" text-anchor="middle" font-weight="700" font-size="13">Wettable-flank QFN</text>
+        <rect x="480" y="60" width="200" height="90" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mut" x="580" y="108" text-anchor="middle" font-size="11">封裝本體</text>
+        <path d="M620 150 h60 v-14 h-8 v6 h-52z" fill="#b0b8c0"/>
+        <rect x="460" y="162" width="300" height="10" fill="var(--ok)" opacity=".35"/>
+        <path d="M620 162 L690 162 L680 134 Q676 148 660 150 Z" fill="#9aa0a6"/>
+        <text class="ts t-mut" x="610" y="200" text-anchor="middle" font-size="11">焊錫爬上側面凹階</text>
+        <text class="ts" x="700" y="128" font-size="11" fill="var(--ok)">可見焊角</text>
+        <text class="ts t-mut" x="420" y="228" text-anchor="middle" font-size="10">綠色：PCB 焊墊　灰色：焊錫</text>
+      </svg>
+      <figcaption>圖 5.2：Wettable flank 讓焊角出現在封裝側面，AOI 可直接檢查。</figcaption>
+    </div>
 
     <div class="pager"></div>
   </article>

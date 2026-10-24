@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/safety.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/safety.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/safety.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/safety.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="06 Functional Safety &amp; Diagnostic Circuits · MCU Notes">
+<meta property="og:description" content="In-depth exploration of automotive MCU ISO 26262 ASIL-C safety circuit principles: shunt wire-break current-injection diagnostics, Challenge-Response Window Watchdog LFSR hardware matcher, and FMEDA metrics.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/safety.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>06 Functional Safety &amp; Diagnostic Circuits · MCU Notes</title>
 <meta name="description" content="In-depth exploration of automotive MCU ISO 26262 ASIL-C safety circuit principles: shunt wire-break current-injection diagnostics, Challenge-Response Window Watchdog LFSR hardware matcher, and FMEDA metrics.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,16 +28,28 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="safety" data-ch="safety">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
-    <div class="eyebrow">Chapter 06 · Functional Safety &amp; Hardware Diagnostic Circuits</div>
-    <h1>Functional Safety: ISO 26262 ASIL-C On-Chip Diagnostic Circuits</h1>
-    <p class="lead">In automotive traction battery systems, if an open-circuit fracture develops in shunt solder joints due to chassis vibration, or if the CPU enters an infinite loop while falsely reporting safe currents, catastrophic thermal runaway or unexpected vehicle shutdown can ensue. ISO 26262 ASIL-C requires safety mechanisms to be implemented down to the <b>silicon circuit level</b>. This chapter examines shunt wire-break micro-current injection circuits, challenge-response LFSR watchdog matchers, and FMEDA random hardware failure metrics.</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 06 · Functional Safety</div>
+    <h1>Functional Safety: ISO 26262, On-Chip Safety Mechanisms &amp; FMEDA Metrics</h1>
+    <p class="lead">Functional safety means that when a random hardware fault occurs, the system detects it and reaches a safe state. This chapter first lists the safety mechanisms and the formal safety claim in the HVPA datasheet, then explains shunt open-wire diagnosis and the challenge-response window watchdog, and finally the ISO 26262 SPFM, LFM and PMHF metrics.</p>
+    <p class="src">Device figures: PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K (“DS”); metric targets: ISO 26262-5:2018. Figures 6.1 and 6.2 illustrate principles; currents, thresholds and the polynomial are examples, not HVPA specifications.</p>
 
-    <!-- ==================== CIRCUIT 1 ==================== -->
-    <h2 id="wire-break-circuit">1. Shunt Resistor Solder Joint Wire-Break Diagnostic Circuit Principles</h2>
-    <p>The Intelligent Battery Sensor (IBS) is exposed to harsh engine-bay vibrations and aggressive thermal cycling (-40°C ~ +125°C). Micro-cracks can develop between the low-ohmic shunt and PCB pads, eventually leading to an open circuit. Without load, floating ADC input pins pick up ambient EMI that may mimic valid discharge current, masking the fault. PSoC™ 4 HVPA PACSS integrates <b>Active Micro-Current Injection Diagnostic Circuitry</b>.</p>
+    <h2 id="safety-mechanisms">1. HVPA Safety Claim &amp; Safety Mechanisms</h2>
+    <div class="callout" style="--c:var(--safety)"><b>Datasheet wording:</b> “The device is developed compliant to ISO 26262, meeting all process requirements for ASIL C and hardware architectural metrics for ASIL B.”<br>In other words, the development <b>process</b> meets ASIL C, and the chip’s own <b>hardware architectural metrics</b> reach ASIL B. Claiming ASIL C for a system needs additional system-level safety mechanisms and use of the chip according to its safety manual.</div>
+    <div class="tblwrap"><table>
+      <tr><th>Safety mechanism (DS)</th><th>Faults detected</th></tr>
+      <tr><td>Memory protection unit (MPU)</td><td>Illegal software memory access</td></tr>
+      <tr><td>Challenge-response window watchdog (CRWDT)</td><td>Runaway or stuck code, skipped safety tasks</td></tr>
+      <tr><td>Supply monitoring</td><td>Over-voltage and brown-out on the 3.3 V and 1.8 V supplies</td></tr>
+      <tr><td>SECDED ECC (SRAM, flash)</td><td>Memory bit flips</td></tr>
+      <tr><td>Analog diagnostics</td><td>Backup reference; redundant voltage, current and temperature paths</td></tr>
+    </table></div>
+
+    <h2 id="wire-break-circuit">2. Shunt Open-Wire Diagnosis (Principle)</h2>
+    <p>An IBS sees years of vibration and thermal cycling, so a shunt solder joint or sense wire can go open. An open input floats, and noise may land right in the “normal” reading range. A common detection method injects a tiny diagnostic current into the sense lines: with the shunt connected (tens of µΩ) the resulting drop is negligible; with an open circuit the inputs are pulled to the rails and a comparator flags the fault at once. The HVPA can also cross-check the measurement path with its two ADCs and the diagnostic channel (VDIAG).</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="Shunt Wire-Break Diagnostic Circuit Schematic">
@@ -33,7 +60,7 @@
         <!-- Current Source Pull-up -->
         <rect x="250" y="68" width="95" height="46" rx="5" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts" x="297" y="90" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">Current Source</text>
-        <text class="ts t-mono" x="297" y="105" text-anchor="middle" font-size="11" font-weight="700">I_diag (50nA)</text>
+        <text class="ts t-mono" x="297" y="105" text-anchor="middle" font-size="11" font-weight="700">I_diag</text>
         <line x1="297" y1="50" x2="297" y2="68" stroke="var(--ok)" stroke-width="2"/>
         <line x1="297" y1="114" x2="297" y2="140" stroke="var(--analog)" stroke-width="2"/>
 
@@ -47,7 +74,7 @@
         <!-- Current Sink Pull-down -->
         <rect x="470" y="240" width="95" height="46" rx="5" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts" x="517" y="262" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">Current Sink</text>
-        <text class="ts t-mono" x="517" y="277" text-anchor="middle" font-size="11" font-weight="700">I_diag (50nA)</text>
+        <text class="ts t-mono" x="517" y="277" text-anchor="middle" font-size="11" font-weight="700">I_diag</text>
         <line x1="517" y1="286" x2="517" y2="310" stroke="var(--line)" stroke-width="2"/>
 
         <!-- Switch S_diag2 -->
@@ -85,33 +112,29 @@
         <rect x="600" y="125" width="195" height="135" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
         <text class="ts" x="697" y="152" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">Window Comparator</text>
         <rect x="615" y="165" width="165" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="697" y="181" text-anchor="middle" font-size="11" font-weight="600">|V_P &minus; V_N| &gt; 2.5V</text>
+        <text class="ts t-mono" x="697" y="181" text-anchor="middle" font-size="11" font-weight="600">|V_P &minus; V_N| &gt; V_th</text>
         <rect x="615" y="195" width="165" height="24" rx="3" fill="var(--surface)" stroke="var(--bad)" stroke-width="1.5"/>
-        <text class="ts" x="697" y="211" text-anchor="middle" font-size="11" font-weight="700" fill="var(--bad)">Fault Interrupt (&lt; 2&mu;s)</text>
+        <text class="ts" x="697" y="211" text-anchor="middle" font-size="11" font-weight="700" fill="var(--bad)">Fault interrupt</text>
         <text class="ts t-mut" x="697" y="245" text-anchor="middle" font-size="9">Alerts Vehicle BCM Gateway</text>
       </svg>
       <figcaption>Figure 6.1: Active Micro-Current Injection Diagnostic Circuit for Shunt Joint Wire-Break Detection</figcaption>
     </div>
 
-    <h3>Operating Physics &amp; Detection Mechanics</h3>
     <ul>
-      <li><b>Normal Soldered State:</b> Diagnostic switches <code>Diag_EN</code> close, injecting a minute \(50\,\text{nA}\) current into <code>ISENSE_P</code> while pulling \(50\,\text{nA}\) from <code>ISENSE_N</code>. With intact solder joints and a \(100\,\mu\Omega\) shunt, the induced offset voltage is negligible:
-        \[\Delta V_{\text{diag}} = 50\,\text{nA} \times 100\,\mu\Omega = 5 \times 10^{-12}\text{ V} \quad (5\,\text{pV})\]
-        This picovolt-level perturbation has zero measurable impact on microvolt shunt measurements.</li>
-      <li><b>Wire-Break Fault State:</b> When a fatigue fracture opens the circuit, the shunt is disconnected, leaving input impedance determined solely by pin leakage (\(R_{\text{leak}} &gt; 100\,\text{M}\Omega\)). The \(50\,\text{nA}\) current immediately charges <code>ISENSE_P</code> up to \(V_{\text{DDA}} = 3.3\text{V}\) and discharges <code>ISENSE_N</code> to \(V_{\text{SSA}} = 0\text{V}\).</li>
-      <li><b>Hardware Intercept:</b> The differential window comparator detects rail saturation (\(|V_P - V_N| \approx 3.3\text{V}\)), firing an NMI interrupt in <b>under 2 &mu;s</b> to alert the vehicle gateway.</li>
+      <li><b>Normal:</b> e.g. \(I_{\text{diag}} = 50\,\text{nA}\) through \(100\,\mu\Omega\) gives \(5\,\text{pV}\), far below one LSB.</li>
+      <li><b>Open:</b> the input becomes megaohm leakage, so \(I_{\text{diag}}\) pulls the positive input up and the negative input down, far beyond full scale.</li>
+      <li><b>Decision:</b> a comparator or the ADC window compare detects the out-of-range value, raises a fault interrupt and reports to the BCM.</li>
     </ul>
 
-    <!-- ==================== CIRCUIT 2 ==================== -->
-    <h2 id="wdt-lfsr-circuit">2. Challenge-Response Window Watchdog Hardware LFSR Architecture</h2>
-    <p>Standard watchdogs simply require periodic timer resets ("dog feeding"). If software locks into an erroneous loop that happens to contain the feed command, standard watchdogs fail to detect CPU malfunction. ISO 26262 ASIL-C requires a <b>Challenge-Response Window Watchdog</b> architecture.</p>
+    <h2 id="wdt-lfsr-circuit">3. Challenge-Response Window Watchdog (CRWDT)</h2>
+    <p>A basic watchdog only asks to be serviced in time, so code stuck in a small loop that contains the service instruction keeps succeeding. The HVPA has two watchdogs: one that runs in Deep Sleep, and a <b>challenge-response watchdog (CRWDT)</b>. The CRWDT raises a timeout when serviced too soon, too late or with the wrong key, configurable as a reset or an interrupt, and the cause is recorded in the Reset Cause register (DS §1.2.4).</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 340" role="img" aria-label="Challenge-Response Window Watchdog Hardware Schematic">
         <!-- ILO Clock -->
         <rect x="25" y="35" width="145" height="55" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
-        <text class="ts" x="97" y="58" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">Independent ILO</text>
-        <text class="ts t-mono" x="97" y="75" text-anchor="middle" font-size="11">32 kHz Clock</text>
+        <text class="ts" x="97" y="58" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">Independent low-power osc.</text>
+        <text class="ts t-mono" x="97" y="75" text-anchor="middle" font-size="11">32 kHz PILO</text>
 
         <!-- WDT Timer Counter -->
         <line x1="170" y1="62" x2="215" y2="62" stroke="var(--safety)" stroke-width="2"/>
@@ -127,9 +150,9 @@
 
         <!-- LFSR Challenge Generator -->
         <rect x="25" y="140" width="225" height="110" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="137" y="165" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">16-bit LFSR Generator</text>
+        <text class="ts" x="137" y="165" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Challenge generator (concept)</text>
         <rect x="35" y="176" width="205" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="137" y="192" text-anchor="middle" font-size="11">x^16 + x^14 + x^13 + x^11 + 1</text>
+        <text class="ts t-mono" x="137" y="192" text-anchor="middle" font-size="11">e.g. x^16+x^14+x^13+x^11+1</text>
         <text class="ts t-mut" x="137" y="222" text-anchor="middle" font-size="10">Pseudo-Random Challenge</text>
         <text class="ts t-mono" x="137" y="238" text-anchor="middle" font-size="10" font-weight="600" fill="var(--core)">Challenge Token</text>
 
@@ -162,23 +185,29 @@
       <figcaption>Figure 6.2: Challenge-Response Window Watchdog 16-bit LFSR Question Generator and Token Matching Schematic</figcaption>
     </div>
 
-    <!-- ==================== FMEDA METRICS ==================== -->
-    <h2 id="fmeda-metrics-detail">3. FMEDA Quantitative Random Hardware Metrics (SPFM / LFM / FIT)</h2>
-    <p>ISO 26262 Part 5 mandates quantitative verification of random hardware failures using <b>Failure Modes, Effects, and Diagnostic Analysis (FMEDA)</b>, measured in <b>FIT (Failures in Time, failures per \(10^9\) operating hours)</b>.</p>
+    <ul>
+      <li><b>Lower window bound:</b> catches a runaway loop servicing too often.</li>
+      <li><b>Upper bound:</b> catches stuck code or overrunning tasks.</li>
+      <li><b>Keys:</b> firmware must present the expected keys in order, often folding in self-test results to prove the tasks actually ran. The key format is in the TRM.</li>
+    </ul>
+    <p>Try early, late and wrong-key service in the <a href="lab.html#wdt">MCU Lab</a>.</p>
 
+    <h2 id="fmeda-metrics-detail">4. FMEDA &amp; Hardware Architectural Metrics</h2>
+    <p>ISO 26262-5 quantifies random hardware failures with an <b>FMEDA</b> (failure modes, effects and diagnostic analysis). Failure rates are expressed in <b>FIT</b>: one failure per \(10^9\) device-hours.</p>
     <div class="math-block">
-      <b>Single-Point Fault Metric (SPFM):</b><br>
-      \[\text{SPFM} = \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})_{\text{covered}}}{\sum \lambda_{\text{safety}}} \ge 97\% \quad (\text{ASIL-C Specification})\]
-      <b>Latent Fault Metric (LFM):</b><br>
-      \[\text{LFM} = \frac{\sum \lambda_{\text{MPF, detected}}}{\sum \lambda_{\text{MPF}}} \ge 80\% \quad (\text{ASIL-C Specification})\]
+      <b>Single-point fault metric (SPFM):</b>
+      \[\text{SPFM} = 1 - \frac{\sum(\lambda_{\text{SPF}} + \lambda_{\text{RF}})}{\sum \lambda}\]
+      <b>Latent fault metric (LFM):</b>
+      \[\text{LFM} = 1 - \frac{\sum \lambda_{\text{MPF,latent}}}{\sum \lambda - \sum(\lambda_{\text{SPF}} + \lambda_{\text{RF}})}\]
+      Here \(\lambda\) is the safety-related hardware failure rate; SPF are single-point faults, RF residual faults (the part not covered by a safety mechanism), and MPF,latent undetected latent multi-point faults.
     </div>
-
     <div class="tblwrap"><table>
-      <tr><th>Metric</th><th>ASIL-B Threshold</th><th>ASIL-C Threshold</th><th>PSoC™ 4 HVPA Typical Metric</th></tr>
-      <tr><td><b>SPFM (Single-Point Fault Metric)</b></td><td>&ge; 90%</td><td><b>&ge; 97%</b></td><td><b>&gt; 98.4%</b></td></tr>
-      <tr><td><b>LFM (Latent Fault Metric)</b></td><td>&ge; 60%</td><td><b>&ge; 80%</b></td><td><b>&gt; 85.2%</b></td></tr>
-      <tr><td><b>PMHF (Random Hardware Failures)</b></td><td>&lt; 100 FIT</td><td><b>&lt; 100 FIT</b></td><td><b>&lt; 18 FIT (Failures in 10^9 hours)</b></td></tr>
+      <tr><th>Metric (ISO 26262-5)</th><th>ASIL B</th><th>ASIL C</th><th>ASIL D</th></tr>
+      <tr><td><b>SPFM</b></td><td>≥ 90%</td><td>≥ 97%</td><td>≥ 99%</td></tr>
+      <tr><td><b>LFM</b></td><td>≥ 60%</td><td>≥ 80%</td><td>≥ 90%</td></tr>
+      <tr><td><b>PMHF</b></td><td>&lt; 100 FIT</td><td>&lt; 100 FIT</td><td>&lt; 10 FIT</td></tr>
     </table></div>
+    <div class="callout" style="--c:var(--safety)"><b>Worked example:</b> a current-measurement path totals 50 FIT. 40 FIT is covered 99% by ECC, redundant measurement and the watchdog; the other 10 FIT is covered 90%. Residual faults = 40×1% + 10×10% = 1.4 FIT, so SPFM = 1 − 1.4/50 = <b>97.2%</b>, just meeting ASIL C. Raising the level depends mostly on better diagnostic coverage of the blocks with the largest failure rates.</div>
 
     <div class="pager"></div>
   </article>

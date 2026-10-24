@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/process.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/process.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/process.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/process.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="04 半導體高壓製程與箝位電路 · MCU Notes">
+<meta property="og:description" content="剖析車用混合訊號微控制器的晶圓半導體製程與晶片級保護電路：BCD（Bipolar-CMOS-DMOS）架構、深溝槽隔離 DTI、ISO 7637-2 拋負載主動動態箝位電路原理（Active Clamp）與 150°C 高溫封裝。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/process.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>04 半導體高壓製程與箝位電路 · MCU Notes</title>
 <meta name="description" content="剖析車用混合訊號微控制器的晶圓半導體製程與晶片級保護電路：BCD（Bipolar-CMOS-DMOS）架構、深溝槽隔離 DTI、ISO 7637-2 拋負載主動動態箝位電路原理（Active Clamp）與 150°C 高溫封裝。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,30 +28,65 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="process" data-ch="fab">
+<a class="skip" href="#main">跳到主要內容</a>
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
-  <article>
-    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Protection Circuits</div>
-    <h1>高壓半導體製程：晶圓整合與 42V 主動箝位電路原理</h1>
-    <p class="lead">將 1.8V 奈米級數位核心、微伏級低雜訊類比電路與 42V 功率元件集成於同一晶粒，核心在於 <b>BCD（Bipolar-CMOS-DMOS）智慧功率半導體製程</b>，並在晶片內部構建納秒級響應的<b>主動動態箝位電路（Active Dynamic Clamp）</b>，抵禦汽車發電機拋負載（Load Dump）高能量突波。</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Protection</div>
+    <h1>高壓半導體製程：單晶片整合與過壓保護</h1>
+    <p class="lead">要把 1.8 V 數位核心、微伏級類比與可承受 42 V 的高壓元件放在同一顆晶片上，需要支援高壓元件的混合訊號製程（例如 <b>BCD：Bipolar-CMOS-DMOS</b>），並在系統層規劃完整的過壓保護。本章說明拋負載的來源、測試標準、保護分層，以及製程上的隔離與散熱。</p>
+    <p class="src">晶片數值出處：PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K（DS）。Infineon 並未公開 HVPA 使用的製程節點與內部箝位設計，本章的電晶體級內容為通用原理。</p>
 
-    <!-- ==================== CIRCUIT 1 ==================== -->
-    <h2 id="active-clamp-circuit">1. 晶片內 42V 拋負載主動動態箝位電路原理 (Active Dynamic Clamp)</h2>
-    <p>根據 ISO 7637-2 規範，汽車 12V 電氣系統的拋負載（Pulse 5b）電壓可飆升至 40V ~ 42V，持續時間長達 400 毫秒。如果依賴外部傳統 TVS 二極體，由於其箝位電壓散差較大（可能在 32V 至 45V 之間波動），極易導致晶片內部較薄的閘極氧化層先於外部 TVS 擊穿損毀。PSoC™ 4 HVPA 在晶粒邊緣直接集成了大面積<b>主動動態 LDMOS 雪崩箝位電路</b>。</p>
+    <h2 id="active-clamp-circuit">1. 拋負載與過壓保護分層</h2>
+    <p>拋負載（load dump）發生在發電機正在充電時電瓶被突然斷開：發電機勵磁無法瞬間降下，輸出電壓在數百毫秒內大幅上升。現行標準是 <b>ISO 16750-2</b>（舊版 ISO 7637-2:2004 的 Pulse 5a/5b 已移入此標準）。</p>
+    <div class="tblwrap"><table>
+      <tr><th>12 V 系統</th><th>Test A（未抑制）</th><th>Test B（中央抑制）</th></tr>
+      <tr><td>峰值</td><td>U<sub>s</sub> 79–101 V</td><td>U<sub>s</sub>* 由發電機內抑制，常見 35 V（依 OEM 規範）</td></tr>
+      <tr><td>持續時間 t<sub>d</sub></td><td>40–400 ms</td><td>同 Test A</td></tr>
+      <tr><td>源內阻 R<sub>i</sub></td><td>0.5–4 Ω</td><td>同 Test A</td></tr>
+    </table></div>
+    <p>HVPA 的 VBAT 工作範圍 3.6–28 V，可運作至 42 V，<b>絕對最大額定 42 V</b>（DS SIDA5）；LIN 腳 −27 V 至 +42 V。資料手冊在絕對最大額定的註 2 寫道：<b>「為防止高壓脈衝造成損壞，可能需要外部保護（串聯電阻、二極體、TVS）」</b>。因此正確的設計觀念是分層保護，而不是依賴晶片內部箝位取代 TVS：</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 250" role="img" aria-label="過壓保護分層示意">
+        <rect x="20" y="60" width="180" height="110" rx="8" fill="var(--surface)" stroke="var(--app)" stroke-width="2"/>
+        <text class="ts" x="110" y="88" text-anchor="middle" font-weight="700" font-size="13" fill="var(--app)">① 發電機抑制</text>
+        <text class="ts t-mut" x="110" y="112" text-anchor="middle" font-size="11">Test B 中央箝位</text>
+        <text class="ts t-mono" x="110" y="138" text-anchor="middle" font-size="11">Uₛ* ≈ 35 V</text>
+        <line x1="200" y1="115" x2="250" y2="115" stroke="#c0392b" stroke-width="3"/>
+        <rect x="250" y="60" width="200" height="110" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="350" y="88" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">② 模組端保護</text>
+        <text class="ts t-mut" x="350" y="112" text-anchor="middle" font-size="11">TVS + R1/C1 + 防反接</text>
+        <text class="ts t-mono" x="350" y="138" text-anchor="middle" font-size="11">DS：R1 10–15 Ω, C1 2.2 µF</text>
+        <line x1="450" y1="115" x2="500" y2="115" stroke="#c0392b" stroke-width="3"/>
+        <rect x="500" y="60" width="160" height="110" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="580" y="88" text-anchor="middle" font-weight="700" font-size="13" fill="var(--fab)">③ 晶片 VBAT</text>
+        <text class="ts t-mut" x="580" y="112" text-anchor="middle" font-size="11">工作 3.6–28 V</text>
+        <text class="ts t-mono" x="580" y="138" text-anchor="middle" font-size="11">絕對最大 42 V</text>
+        <line x1="660" y1="115" x2="700" y2="115" stroke="var(--ok)" stroke-width="3"/>
+        <rect x="700" y="80" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="760" y="110" text-anchor="middle" font-weight="700" font-size="12" fill="var(--ok)">VDDD 3.3 V</text>
+        <text class="ts t-mono" x="760" y="130" text-anchor="middle" font-size="11">VCCD 1.8 V</text>
+        <text class="ts t-mut" x="420" y="210" text-anchor="middle" font-size="11">每一層都必須讓下一層看到的電壓低於其額定值</text>
+      </svg>
+      <figcaption>圖 4.2：拋負載保護的三個層次。</figcaption>
+    </div>
+
+    <p>晶片內部仍會有 ESD 與暫態箝位結構，下圖是業界常見的 RC／齊納觸發主動箝位概念：齊納或 RC 網路偵測過壓或快速 dV/dt，驅動大面積電晶體把能量導到地。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="晶片內 42V 主動動態箝位電路原理圖">
         <!-- Power Rail VBAT -->
         <line x1="30" y1="60" x2="800" y2="60" stroke="#c0392b" stroke-width="4"/>
-        <text class="ts t-mono" x="35" y="45" font-weight="700" font-size="12" fill="#c0392b">VBAT 供電母線 (正常 12V，ISO 7637-2 拋負載浪湧高達 42V)</text>
+        <text class="ts t-mono" x="35" y="45" font-weight="700" font-size="12" fill="#c0392b">VBAT（正常 12–14 V；暫態源見下表）</text>
 
         <!-- Zener Diode Stack (36.5V Breakdown) -->
         <line x1="190" y1="60" x2="190" y2="90" stroke="var(--ink)" stroke-width="2"/>
         <rect x="135" y="90" width="110" height="75" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="190" y="115" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">齊納二極體堆疊</text>
+        <text class="ts" x="190" y="115" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">齊納／崩潰觸發</text>
         <rect x="145" y="125" width="90" height="22" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="190" y="140" text-anchor="middle" font-size="11">V_Z = 36.5 V</text>
-        <text class="ts t-mut" x="190" y="157" text-anchor="middle" font-size="9">溫度補償微調</text>
+        <text class="ts t-mono" x="190" y="140" text-anchor="middle" font-size="11">V_Z ≈ 觸發點</text>
+        <text class="ts t-mut" x="190" y="157" text-anchor="middle" font-size="9">靜態過壓觸發</text>
 
         <!-- dV/dt Transient Trigger Network -->
         <line x1="320" y1="60" x2="320" y2="95" stroke="var(--ink)" stroke-width="2"/>
@@ -58,7 +108,7 @@
         <circle cx="190" cy="185" r="4" fill="var(--warn)"/>
         <line x1="190" y1="185" x2="400" y2="185" stroke="var(--warn)" stroke-width="2.5"/>
         <rect x="235" y="168" width="130" height="22" rx="3" fill="var(--surface)" stroke="var(--line)"/>
-        <text class="ts" x="300" y="183" text-anchor="middle" font-weight="700" font-size="10" fill="var(--warn)">V_trig (導通 &gt; 0.7V)</text>
+        <text class="ts" x="300" y="183" text-anchor="middle" font-weight="700" font-size="10" fill="var(--warn)">V_trig</text>
 
         <!-- Pre-Driver Inverter / Level Buffer -->
         <rect x="400" y="145" width="140" height="80" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
@@ -73,12 +123,12 @@
 
         <!-- Main Giant LDMOS Clamp Transistor -->
         <rect x="600" y="105" width="200" height="150" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.5"/>
-        <text class="ts" x="700" y="135" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">主功率 LDMOS 箝位管</text>
+        <text class="ts" x="700" y="135" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">大面積箝位電晶體</text>
         <rect x="615" y="148" width="170" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="700" y="164" text-anchor="middle" font-size="11">溝道寬度 W = 15,000 &mu;m</text>
+        <text class="ts t-mono" x="700" y="164" text-anchor="middle" font-size="11">依能量需求設計面積</text>
         <rect x="615" y="178" width="170" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="700" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#c0392b">洩放電流 I_clamp &gt; 3.5 A</text>
-        <text class="ts t-mut" x="700" y="222" text-anchor="middle" font-size="10">V_BR = 45V 雪崩耐受</text>
+        <text class="ts t-mono" x="700" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#c0392b">洩放暫態電流</text>
+        <text class="ts t-mut" x="700" y="222" text-anchor="middle" font-size="10">崩潰電壓 &gt; 箝位點</text>
 
         <line x1="700" y1="60" x2="700" y2="105" stroke="#c0392b" stroke-width="4"/>
         <line x1="700" y1="255" x2="700" y2="300" stroke="var(--ink)" stroke-width="4"/>
@@ -88,23 +138,37 @@
         <path d="M692 300h16M696 304h8M699 308h2" stroke="var(--ink)" stroke-width="2"/>
         <text class="ts" x="35" y="322" font-weight="700" font-size="12">GND (晶圓公共矽襯底 P-Substrate)</text>
       </svg>
-      <figcaption>圖 4.1：晶片內 42V 拋負載主動動態 LDMOS 雪崩箝位電路架構原理圖</figcaption>
+      <figcaption>圖 4.1：RC／齊納觸發主動箝位的通用概念（常見於 ESD 與暫態保護；HVPA 內部實際結構未公開）</figcaption>
     </div>
 
-    <h3>主動箝位電路兩大觸發機制</h3>
     <ul>
-      <li><b>過壓靜態觸發（Static Overvoltage Trigger）：</b> 當汽車發電機輸出電壓緩慢爬升超過齊納二極體反向擊穿電壓 \(V_Z = 36.5\text{V}\) 時，電流流過偏置電阻 \(R_{\text{trig}}\)，使觸發節點電位達到 \(V_{\text{trig}} = I_{\text{zener}} \cdot R_{\text{trig}} &gt; 0.7\text{V}\)。前置推挽驅動級迅速拉高巨型功率 LDMOS 的閘極，使電晶體均勻進入導通區，將電壓精確<b>箝制在 38.5V 以下</b>。</li>
-      <li><b>瞬態 \(dV/dt\) 快速預觸發（Transient \(dV/dt\) Pre-trigger）：</b> 當電網遭遇極端陡峭的快速瞬變（如接觸器開關火花，\(dV/dt &gt; 10\,\text{V/}\mu\text{s}\)）時，高通電容 \(C_{\text{trig}}\) 提前向觸發節點注入位移電流，在電壓尚未抵達氧化層擊穿閾值之前<b>提前 10 納秒（ns）開啟 LDMOS</b>，有效消除開關延遲盲區。</li>
+      <li><b>靜態觸發：</b>電壓緩慢上升超過觸發點時，齊納電流在 \(R_{\text{trig}}\) 上建立電壓，打開箝位電晶體。</li>
+      <li><b>dV/dt 觸發：</b>極快的暫態經 \(C_{\text{trig}}\) 注入位移電流，在電壓到達元件極限前提前導通。</li>
+      <li><b>能量限制：</b>晶片內箝位的面積與能量有限，適合 ESD 與短暫態；數百毫秒、數十焦耳等級的拋負載能量必須由外部元件吸收。到 <a href="lab.html#loaddump">互動實驗室</a> 試算 TVS 能量。</li>
     </ul>
 
-    <!-- ==================== BCD DETAILS ==================== -->
-    <h2 id="bcd-integration">2. BCD（Bipolar-CMOS-DMOS）智慧功率製程剖面</h2>
+    <h2 id="bcd-technology">2. BCD（Bipolar-CMOS-DMOS）製程</h2>
     <div class="tblwrap"><table>
-      <tr><th>元件類型</th><th>電晶體結構</th><th>在 PSoC™ 4 HVPA 中的功能擔當</th><th>物理特性優勢</th></tr>
-      <tr><td><b>B (Bipolar)</b></td><td>雙極性接面電晶體 (BJT)</td><td>內部精密能隙基準源（Bandgap Reference）、低雜訊前置放大器</td><td>極低 1/f 閃爍雜訊（Flicker Noise）、優異的溫度係數線性度與穩定度</td></tr>
-      <tr><td><b>C (CMOS)</b></td><td>互補式金氧半場效電晶體</td><td>32-bit Cortex-M0+ 核心、128KB Flash、8KB SRAM、數位 Sinc 濾波器</td><td>超高閘極整合密度、接近零靜態漏電流、高能效比運算</td></tr>
-      <tr><td><b>D (DMOS)</b></td><td>橫向雙擴散 MOS (LDMOS)</td><td>42V 高壓穩壓管、LIN 總線實體層驅動器、ESD 箝位雪崩吸收管</td><td>漂移區（Drift Region）承受高電壓，崩潰電壓 \(V_{BR} &gt; 45\text{ V}\)，導通阻抗小</td></tr>
+      <tr><th>元件</th><th>結構</th><th>在高壓混合訊號 MCU 中的典型角色</th><th>特性</th></tr>
+      <tr><td><b>B（Bipolar）</b></td><td>雙極電晶體</td><td>能隙基準、低雜訊輸入級</td><td>低 1/f 雜訊、V<sub>BE</sub> 溫度特性可預測</td></tr>
+      <tr><td><b>C（CMOS）</b></td><td>互補 MOS</td><td>CPU、Flash、SRAM、數位濾波器</td><td>高密度、低靜態漏電</td></tr>
+      <tr><td><b>D（DMOS）</b></td><td>橫向雙擴散 MOS（LDMOS）</td><td>高壓穩壓器、LIN 驅動、高壓分壓開關</td><td>漂移區承受高汲極電壓</td></tr>
     </table></div>
+    <p>LDMOS 以較長、輕摻雜的<b>漂移區</b>分攤電場以提高崩潰電壓；代價是導通電阻與面積增加。HVPA 的 VBAT、LIN、VSENSE 等腳必須承受 42 V，代表這些路徑使用了高壓元件。</p>
+
+    <h2 id="isolation-dti">3. 隔離：深溝槽隔離（DTI）與基板雜訊</h2>
+    <p>高壓切換會把少數載子與位移電流注入共用基板，沿基板傳到微伏級類比電路，也可能觸發寄生閂鎖（latch-up）。常見對策包括<b>深溝槽隔離（DTI）</b>、保護環（guard ring）、埋層，以及把高壓區與類比區分開佈局、分開接地回流。HVPA 要求在 VSENSE／VDIAG 高壓量測輸入串聯外部 2.2 kΩ 電阻以限制 ESD 與暫態電流（DS），也是同樣的思路。</p>
+
+    <h2 id="thermal-package">4. 溫度範圍與封裝</h2>
+    <div class="tblwrap"><table>
+      <tr><th>項目（DS）</th><th>數值</th></tr>
+      <tr><td>環境溫度 T<sub>A</sub></td><td>−40 至 +125 °C（AEC-Q100 Grade 1）</td></tr>
+      <tr><td>接面溫度 T<sub>J</sub></td><td>−40 至 +150 °C</td></tr>
+      <tr><td>儲存溫度</td><td>−55 至 +125 °C</td></tr>
+      <tr><td>封裝</td><td>32-QFN（6 × 6 mm），wettable flanks</td></tr>
+      <tr><td>VBAT 長期平均電流上限</td><td>40 mA（暫態 160 mA）</td></tr>
+    </table></div>
+    <p>IBS 裝在電瓶端子上，熱主要由端子與分流器銅排傳入。晶片自身功耗只有毫瓦等級，接面溫升主要來自環境，而非自熱。</p>
 
     <div class="pager"></div>
   </article>

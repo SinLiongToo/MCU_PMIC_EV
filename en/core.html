@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/core.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/core.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/core.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/core.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="01 Core Architecture · MCU Notes">
+<meta property="og:description" content="Detailed analysis of the 32-bit Arm Cortex-M0+ core pipeline, fast single-cycle I/O ports, NVIC interrupt controller, AHB-Lite bus matrix, DMA, and Flash/SRAM SECDED ECC protection.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/core.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>01 Core Architecture · MCU Notes</title>
 <meta name="description" content="Detailed analysis of the 32-bit Arm Cortex-M0+ core pipeline, fast single-cycle I/O ports, NVIC interrupt controller, AHB-Lite bus matrix, DMA, and Flash/SRAM SECDED ECC protection.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,16 +28,19 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="core" data-ch="core">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
+  <article id="main">
     <div class="eyebrow">Chapter 01 · Core &amp; Microarchitecture</div>
     <h1>Core Microarchitecture: Computation, Bus &amp; Hardware Safety Circuits</h1>
-    <p class="lead">In automotive battery management systems (BMS), microcontrollers must balance ultra-low standby quiescent power with deterministic, hard real-time interrupt responsiveness. Taking the Infineon PSoC™ 4 HVPA-144K as a baseline, this chapter explores the 32-bit Arm® Cortex®-M0+ core, single-cycle Fast I/O level shifter drive circuit, single-layer AHB-Lite interconnect matrix, and SECDED hardware ECC protected memory subsystem.</p>
+    <p class="lead">In automotive battery management systems (BMS), microcontrollers must balance ultra-low standby quiescent power with deterministic, hard real-time interrupt responsiveness. Taking the Infineon PSoC™ 4 HVPA-144K as a baseline, this chapter covers the Arm® Cortex®-M0+ core, the single-cycle I/O concept with an external drive circuit, the 8-channel DMA, SECDED ECC logic, and the power modes with datasheet current figures.</p>
+    <p class="src">Device figures: Infineon PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K (“DS”). Core figures: Arm Cortex-M0+ Technical Reference Manual.</p>
 
     <!-- ==================== CIRCUIT 1 ==================== -->
     <h2 id="fast-io-circuit">1. Single-Cycle Fast I/O Bus &amp; Level Shifter Pyro-Fuse Drive Circuit</h2>
-    <p>When legacy microcontrollers manipulate GPIO pins via CPU instructions, access must pass through standard system buses (AHB/APB) and peripheral bridge arbiters, incurring 2 to 4 clock cycles of latency. In battery short-circuit events, actuating a Pyro-fuse (pyrotechnic circuit breaker) must occur within tens of microseconds. Cortex-M0+ introduces a dedicated <b>Single-Cycle Fast I/O Port Bus</b> directly coupling core CPU registers to I/O output latches, paired with an integrated 1.8V to 12V high-voltage level-shifter pre-driver stage.</p>
+    <p>When legacy microcontrollers manipulate GPIO pins via CPU instructions, access must pass through standard system buses (AHB/APB) and peripheral bridge arbiters, incurring 2 to 4 clock cycles of latency. In battery short-circuit events, actuating a Pyro-fuse (pyrotechnic circuit breaker) must occur within tens of microseconds. The Cortex-M0+ architecture offers an <b>optional single-cycle I/O port (IOPORT)</b> that lets the core reach GPIO registers without AHB arbitration. Whether a device implements it, and where it is mapped, is the silicon vendor’s choice — check the device TRM.</p>
+    <div class="callout" style="--c:var(--warn)"><b>Note:</b> HVPA GPIOs run from the 3.3 V VDDD rail (DS: up to 9 GPIOs, ±20 mA per pin). The 12 V firing loop on the right is an <b>external</b> gate driver and MOSFET example, not part of the HVPA. Real disconnect time is dominated by fault detection, the driver and the pyro device itself (milliseconds); single-cycle I/O saves only tens of nanoseconds.</div>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 820 340" role="img" aria-label="Single-Cycle Fast I/O with Level Shifter and Pyro-fuse Loop Schematic">
@@ -35,7 +53,7 @@
         <!-- Fast I/O Register inside CPU -->
         <rect x="40" y="125" width="170" height="65" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="1.5"/>
         <text class="ts" x="125" y="150" text-anchor="middle" font-weight="600" font-size="12">Fast I/O Port Reg</text>
-        <text class="ts t-mono" x="125" y="172" text-anchor="middle" font-size="11" fill="var(--core)">Addr: 0xF0000000</text>
+        <text class="ts t-mono" x="125" y="172" text-anchor="middle" font-size="11" fill="var(--core)">IOPORT (optional)</text>
 
         <text class="ts t-mut" x="125" y="240" text-anchor="middle" font-size="11">Zero Bus Latency</text>
         <text class="ts t-mut" x="125" y="260" text-anchor="middle" font-size="11">Direct Core Bus Coupling</text>
@@ -47,7 +65,7 @@
 
         <!-- Level Shifter Block (1.8V to 12V) -->
         <rect x="285" y="65" width="195" height="200" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="382" y="95" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">Level Shifter &amp; Pre-Driver</text>
+        <text class="ts" x="382" y="95" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">External Gate Driver</text>
         <rect x="305" y="108" width="155" height="22" rx="4" fill="var(--sunk)"/>
         <text class="ts t-mono" x="382" y="123" text-anchor="middle" font-size="11">1.8V Logic &rarr; 12V Gate</text>
 
@@ -55,7 +73,7 @@
         <rect x="325" y="145" width="115" height="48" rx="4" fill="var(--surface)" stroke="var(--line)"/>
         <path d="M345 160h25v18h-25zM390 160h25v18h-25z" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
         <text class="ts t-mono" x="382" y="215" text-anchor="middle" font-size="10" fill="var(--muted)">Cross-Coupled PMOS</text>
-        <text class="ts t-mut" x="382" y="235" text-anchor="middle" font-size="10">Nanosecond Propagation</text>
+        <text class="ts t-mut" x="382" y="235" text-anchor="middle" font-size="10">(outside the MCU)</text>
 
         <!-- Output Gate signals to Detonator Stage -->
         <line x1="480" y1="165" x2="525" y2="165" stroke="#c0392b" stroke-width="2.5"/>
@@ -101,12 +119,12 @@
         <line x1="570" y1="236" x2="550" y2="236" stroke="var(--ink)" stroke-width="2"/>
         <path d="M545 236h10M547 240h6M549 244h2" stroke="var(--ink)" stroke-width="2"/>
       </svg>
-      <figcaption>Figure 1.1: Single-Cycle Fast I/O Bus with 1.8V to 12V Level-Shifting Pyro-fuse Actuation Circuit</figcaption>
+      <figcaption>Figure 1.1: Single-cycle I/O concept with an external 12 V pyro-fuse drive example (right-hand parts are outside the MCU)</figcaption>
     </div>
 
     <!-- ==================== CIRCUIT 2 ==================== -->
     <h2 id="ecc-logic-circuit">2. SRAM SECDED Hamming Code Hardware XOR Error-Correction Architecture</h2>
-    <p>High-energy atmospheric neutron flux in automotive environments can induce Single Event Upsets (SEU), unpredictably flipping SRAM bits. PSoC™ 4 HVPA integrates dedicated combinational logic for <b>Single Error Correction, Double Error Detection (SECDED)</b>, decoding and dynamically inverting corrupt bits in a single clock cycle with zero CPU intervention.</p>
+    <p>High-energy atmospheric neutron flux in automotive environments can induce Single Event Upsets (SEU), unpredictably flipping SRAM bits. PSoC™ 4 HVPA protects SRAM, code flash and data flash with <b>single-error-correct, double-error-detect (SECDED)</b> ECC (DS §1.1.2). Single-bit errors are corrected in-line and the error address and data are logged; uncorrectable errors go to the fault system, which raises an interrupt or reset as configured.</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="SECDED Hamming Code Hardware Logic Circuit Architecture">
@@ -118,12 +136,12 @@
         <!-- 7-bit Parity bits -->
         <line x1="20" y1="160" x2="155" y2="160" stroke="var(--analog)" stroke-width="2.5"/>
         <rect x="25" y="138" width="125" height="18" fill="var(--surface)" rx="3"/>
-        <text class="ts t-mono" x="87" y="152" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">Parity P0~P6 (7b)</text>
+        <text class="ts t-mono" x="87" y="152" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">Check bits (7b)</text>
 
         <!-- XOR Parity Generator Tree -->
         <rect x="155" y="40" width="180" height="95" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
         <text class="ts" x="245" y="68" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">XOR Tree Generator</text>
-        <text class="ts t-mut" x="245" y="90" text-anchor="middle" font-size="11">5-Stage Multi-Input XOR</text>
+        <text class="ts t-mut" x="245" y="90" text-anchor="middle" font-size="11">Multi-input XOR trees</text>
         <rect x="175" y="98" width="140" height="22" rx="4" fill="var(--sunk)"/>
         <text class="ts t-mono" x="245" y="113" text-anchor="middle" font-size="10" fill="var(--ink)">Calculates P'_0 ~ P'_6</text>
 
@@ -156,7 +174,7 @@
 
         <rect x="650" y="135" width="170" height="75" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
         <text class="ts" x="735" y="160" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">Safety Core Trip</text>
-        <text class="ts t-mono" x="735" y="180" text-anchor="middle" font-size="10" fill="var(--bad)">Assert HardFault / NMI</text>
+        <text class="ts t-mono" x="735" y="180" text-anchor="middle" font-size="10" fill="var(--bad)">Fault report → IRQ / reset</text>
         <text class="ts" x="735" y="198" text-anchor="middle" font-size="9" fill="var(--muted)">Lockdown to Safe State</text>
 
         <!-- Truth Table below (Clean 3 stacked rows with plenty of room) -->
@@ -167,65 +185,92 @@
 
         <circle cx="55" cy="287" r="4" fill="var(--muted)"/>
         <text class="ts t-mono" x="70" y="291" font-size="11">S == 0 and P_all valid</text>
-        <text class="ts" x="250" y="291" font-size="11" fill="var(--muted)">&rarr; Data Intact (No Error). Passed straight to CPU core with 0 cycle penalty</text>
+        <text class="ts" x="250" y="291" font-size="11" fill="var(--muted)">&rarr; No error; data goes straight to the CPU</text>
 
         <circle cx="55" cy="312" r="4" fill="var(--ok)"/>
-        <text class="ts t-mono" x="70" y="316" font-size="11" fill="var(--ok)">S != 0 and P_all invalid</text>
-        <text class="ts" x="250" y="316" font-size="11" fill="var(--ok)">&rarr; Single-Bit Flip Automatically Corrected. Diagnostic counter logs SEU incident</text>
+        <text class="ts t-mono" x="70" y="316" font-size="11" fill="var(--ok)">P_all invalid</text>
+        <text class="ts" x="250" y="316" font-size="11" fill="var(--ok)">&rarr; Single error: flip bit S to correct (S = 0 means P0 itself); address and data logged</text>
 
         <circle cx="55" cy="337" r="4" fill="var(--bad)"/>
         <text class="ts t-mono" x="70" y="341" font-size="11" fill="var(--bad)">S != 0 and P_all valid</text>
-        <text class="ts" x="250" y="341" font-size="11" fill="var(--bad)">&rarr; Uncorrectable Double-Bit Error &rarr; HardFault / NMI. Immediate fail-safe lockdown</text>
+        <text class="ts" x="250" y="341" font-size="11" fill="var(--bad)">&rarr; Double error: detected only, reported to the fault system (IRQ or reset)</text>
       </svg>
-      <figcaption>Figure 1.2: SRAM Hardware SECDED Hamming Code XOR Tree Generator, Syndrome Matrix, and Dynamic Inversion Logic</figcaption>
+      <figcaption>Figure 1.2: SECDED(39,32) encoder trees, syndrome decision and correction path. Inject errors yourself in the <a href="lab.html#ecc">MCU Lab</a>.</figcaption>
     </div>
 
     <!-- ==================== DETAILS ==================== -->
-    <h2 id="cortex-m0plus-details">3. Arm Cortex-M0+ Core Technical Specifications</h2>
+    <h2 id="cortex-m0plus-details">3. Arm Cortex-M0+ Core Parameters</h2>
     <div class="tblwrap"><table>
-      <tr><th>Architecture Feature</th><th>Cortex-M0</th><th>Cortex-M0+ (PSoC 4 HVPA)</th><th>Automotive BMS Practical Value</th></tr>
-      <tr><td><b>Pipeline Stages</b></td><td>3 stages (Fetch, Decode, Execute)</td><td><b>2 stages (Fetch, Execute)</b></td><td>Reduces branch penalty; cuts dynamic power dissipation by ~30%</td></tr>
-      <tr><td><b>Single-Cycle I/O Port</b></td><td>No (via AHB bus, 2 cycles)</td><td><b>Dedicated Fast I/O Bus</b></td><td>Pyro-fuse actuation or contactor disconnect in 1 clock cycle</td></tr>
-      <tr><td><b>Interrupt Controller (NVIC)</b></td><td>Fixed priority grouping</td><td><b>Up to 32 interrupts, 4 priority levels</b></td><td>Over-current trips receive deterministic sub-microsecond latency</td></tr>
-      <tr><td><b>Memory Protection (MPU)</b></td><td>None</td><td><b>Optional 8-region hardware MPU</b></td><td>Isolates AUTOSAR OS tasks and SafeTlib library partitions</td></tr>
-      <tr><td><b>Hardware Multiplier</b></td><td>32 cycles or 1 cycle</td><td><b>Single-cycle 32&times;32 Multiplier</b></td><td>Real-time Sinc decimation filtering and Kalman matrix operations</td></tr>
+      <tr><th>Feature</th><th>Cortex-M0</th><th>Cortex-M0+ (used in HVPA)</th><th>Why it matters for a BMS</th></tr>
+      <tr><td><b>Pipeline</b></td><td>3 stages</td><td><b>2 stages (fetch, execute)</b></td><td>Smaller branch penalty, lower energy per instruction (Arm quotes about one-third less)</td></tr>
+      <tr><td><b>Single-cycle I/O port</b></td><td>No</td><td><b>Architectural option</b></td><td>Implementation is device-specific; check the TRM</td></tr>
+      <tr><td><b>NVIC</b></td><td>Up to 32 IRQs, 4 priority levels</td><td><b>Up to 32 IRQs, 4 priority levels</b></td><td>Same on both; 15-cycle interrupt latency (zero wait states)</td></tr>
+      <tr><td><b>MPU</b></td><td>No</td><td><b>Optional 8-region MPU, implemented on HVPA (DS)</b></td><td>Separates the safety library from application memory</td></tr>
+      <tr><td><b>Multiplier</b></td><td>1 or 32 cycles (implementation choice)</td><td>1 or 32 cycles (implementation choice)</td><td>Fixed-point filtering and SoC maths</td></tr>
+      <tr><td><b>HVPA clock</b></td><td>—</td><td><b>24 or 48 MHz (part-dependent)</b></td><td>Flash needs 3 wait states at 49.152 MHz (DS SID13)</td></tr>
     </table></div>
 
-    <div class="callout" style="--c:var(--core)">
-      <b>Deterministic Interrupt Latency:</b> The Cortex-M0+ features hardware auto-stacking (pushing <code>r0-r3, r12, lr, pc, xPSR</code> onto the stack) with fixed 15-cycle entry latency and 6-cycle tail-chaining, providing guaranteed timing for critical safety faults.
+    <h2 id="bus-matrix">4. AHB-Lite Interconnect &amp; 8-Channel DMA</h2>
+    <p>The current and voltage channels convert continuously at kSPS rates. Interrupting the CPU for every result would waste most of its time on interrupt entry and exit. The HVPA DMA has <b>8 channels</b> with 32-bit transfers and <b>chainable ping-pong descriptors</b>, and it keeps working while the CPU sleeps (DS §1.1.6).</p>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 820 250" role="img" aria-label="PACSS results moved by DMA into SRAM ping-pong buffers">
+        <rect x="20" y="80" width="150" height="80" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="95" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">PACSS</text>
+        <text class="ts t-mut" x="95" y="132" text-anchor="middle" font-size="11">I / V / T result registers</text>
+        <line x1="170" y1="120" x2="250" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <text class="ts t-mut" x="210" y="110" text-anchor="middle" font-size="10">trigger</text>
+        <rect x="250" y="70" width="170" height="100" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="335" y="100" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">DMA (8 ch)</text>
+        <text class="ts t-mono" x="335" y="122" text-anchor="middle" font-size="11">descriptor A ⇄ B</text>
+        <text class="ts t-mut" x="335" y="144" text-anchor="middle" font-size="10">32-bit · runs while CPU sleeps</text>
+        <line x1="420" y1="105" x2="520" y2="70" stroke="var(--core)" stroke-width="2.2"/>
+        <line x1="420" y1="135" x2="520" y2="170" stroke="var(--core)" stroke-width="2.2"/>
+        <rect x="520" y="40" width="140" height="56" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts t-mono" x="590" y="73" text-anchor="middle" font-size="12">SRAM buffer A</text>
+        <rect x="520" y="144" width="140" height="56" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts t-mono" x="590" y="177" text-anchor="middle" font-size="12">SRAM buffer B</text>
+        <line x1="660" y1="68" x2="700" y2="120" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="5 4"/>
+        <line x1="660" y1="172" x2="700" y2="120" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="5 4"/>
+        <rect x="700" y="92" width="100" height="56" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="1.8"/>
+        <text class="ts" x="750" y="116" text-anchor="middle" font-weight="700" font-size="12">CPU</text>
+        <text class="ts t-mut" x="750" y="134" text-anchor="middle" font-size="10">processes full half</text>
+      </svg>
+      <figcaption>Figure 1.3: Ping-pong DMA — while DMA fills buffer A, the CPU processes buffer B, and vice versa.</figcaption>
     </div>
 
-    <h2 id="bus-matrix">4. System Interconnect: AHB-Lite &amp; 8-Channel DMA Controller</h2>
-    <p>Continuous shunt current measurement requires sampling rates in the tens of kHz. Interrupting the CPU for every sample would cause severe CPU starvation. PSoC 4 HVPA establishes an autonomous 8-channel DMA controller directly bridged to the AHB-Lite matrix.</p>
-
-    <h3>Descriptor Chaining &amp; Ping-Pong Buffers</h3>
-    <p>The DMA supports scatter-gather descriptor chaining. When the PACSS analog subsystem finishes a synchronized current and voltage sample, a hardware trigger instructs the DMA to transfer the 32-bit packet into SRAM ping-pong buffers without waking the Cortex-M0+ core, allowing the CPU to remain in low-power Sleep mode.</p>
-
-    <h2 id="memory-ecc">5. Memory Subsystem with SECDED Hardware ECC</h2>
-    <p>Cosmic neutron flux and package trace alpha particles can induce Single Event Upsets (SEU). If battery state calibration parameters in SRAM flip a bit, catastrophic BMS misjudgments could occur.</p>
-
+    <h2 id="memory-ecc">5. Memory Subsystem &amp; SECDED ECC</h2>
     <div class="math-block">
-      <b>Single Error Correction, Double Error Detection (SECDED Hamming Code):</b><br>
-      For a data word of \(k = 32\) bits, parity bits \(p\) must satisfy:<br>
-      \[2^p \ge k + p + 1 \implies 2^6 = 64 \ge 39 \quad (p = 6 \text{ bits for single-error correction})\]
-      Adding 1 overall parity bit yields \(p = 7\) check bits for full SECDED capability.
+      <b>SECDED check bits:</b> for \(k = 32\) data bits the Hamming check bits \(p\) must satisfy
+      \[2^p \ge k + p + 1 \implies p = 6 \quad (64 \ge 39)\]
+      One more overall parity bit adds double-error detection: 7 check bits, a 39-bit codeword.
     </div>
-
-    <ul>
-      <li><b>128 KB Code Flash + 8 KB Data Flash:</b> Transparent hardware ECC decodes and corrects single-bit faults in 1 clock cycle. Double-bit errors immediately raise a Non-Maskable Interrupt (NMI).</li>
-      <li><b>8 KB SRAM ECC:</b> Accompanied by dedicated fault injection registers for runtime self-testing by safety libraries during power-on self-test (POST).</li>
-    </ul>
-
-    <h2 id="clock-power">6. Clock Tree &amp; Ultra-Low Power Modes</h2>
-    <p>Automotive battery sensors must draw minimal quiescent current during vehicle parking (&lt; 50 &mu;A OEM budget).</p>
-
     <div class="tblwrap"><table>
-      <tr><th>Operating Mode</th><th>CPU State</th><th>PACSS Analog Subsystem</th><th>Clock Source</th><th>Typical Current (@ 12V VBAT)</th></tr>
-      <tr><td><b>Active</b></td><td>Full speed (24~48 MHz)</td><td>Dual ADC continuous sampling</td><td>Internal Main Oscillator IMO (48 MHz)</td><td><b>3.5 mA ~ 5.5 mA</b></td></tr>
-      <tr><td><b>Sleep</b></td><td>Clock gated</td><td>ADC active, DMA autonomous</td><td>IMO (48 MHz)</td><td><b>1.8 mA ~ 2.4 mA</b></td></tr>
-      <tr><td><b>Deep Sleep</b></td><td>Low leakage retention</td><td>Duty-cycled periodic wake-up</td><td>Internal Low-speed Oscillator ILO (32 kHz)</td><td><b>12 &mu;A ~ 25 &mu;A</b></td></tr>
-      <tr><td><b>Hibernate</b></td><td>Core unpowered</td><td>Off</td><td>Optional 32.768 kHz WCO crystal</td><td><b>&lt; 5 &mu;A</b></td></tr>
+      <tr><th>Memory (DS)</th><th>Size</th><th>Protection</th></tr>
+      <tr><td>Code flash</td><td>Up to 128 KB</td><td>ECC</td></tr>
+      <tr><td>Data flash</td><td>Up to 8 KB</td><td>ECC</td></tr>
+      <tr><td>SRAM</td><td>Up to 8 KB (retained in all power modes)</td><td>ECC</td></tr>
+      <tr><td>SFlash (supervisory)</td><td>1 KB for constants</td><td>—</td></tr>
     </table></div>
+
+    <h2 id="clock-power">6. Clocks &amp; Power Modes (Datasheet Figures)</h2>
+    <p>The HVPA has three power modes: Active, Sleep and Deep Sleep (DS §1.2.1). All currents below are measured at VBAT.</p>
+    <div class="tblwrap"><table>
+      <tr><th>Mode</th><th>Conditions (DS)</th><th>Typ / max</th></tr>
+      <tr><td><b>Active</b></td><td>HFCLK = 24.576 MHz, both PACSS channels converting</td><td><b>6 / 8 mA</b> (SID12)</td></tr>
+      <tr><td><b>Active</b></td><td>HFCLK = 49.152 MHz, same load</td><td><b>10 / 12 mA</b> (SID13)</td></tr>
+      <tr><td><b>Sleep</b></td><td>CPU stopped, clocks running, HFCLK = 24 MHz</td><td><b>3 mA</b> typ (SID14)</td></tr>
+      <tr><td><b>Deep Sleep + 1 Hz measurement</b></td><td>T<sub>A</sub> ≤ 85 °C, HV dividers off</td><td><b>85 / 100 µA</b> (SID15A.3)</td></tr>
+      <tr><td><b>Deep Sleep, no periodic wake-up</b></td><td>T<sub>A</sub> ≤ 85 °C, HV dividers off</td><td><b>35 / 60 µA</b> (SID17A.3)</td></tr>
+      <tr><td>Deep Sleep wake-up time</td><td>—</td><td><b>35 µs</b> max (SID22)</td></tr>
+    </table></div>
+    <div class="tblwrap"><table>
+      <tr><th>Oscillator (DS)</th><th>Frequency</th><th>Accuracy</th><th>Use</th></tr>
+      <tr><td>IMO</td><td>Up to 49.152 MHz</td><td>±2% (±1% or ±1.5% after software calibration to HPOSC)</td><td>System clock</td></tr>
+      <tr><td>HPOSC</td><td>2 MHz</td><td>±1%</td><td>Reference for calibrating IMO and PILO</td></tr>
+      <tr><td>PILO</td><td>32 kHz</td><td>±5% or ±7% (part-dependent)</td><td>Watchdogs, wake-up timers, lifetime counter</td></tr>
+      <tr><td>ILO</td><td>40 kHz</td><td>—</td><td>Low-speed clock</td></tr>
+    </table></div>
+    <div class="callout" style="--c:var(--core)"><b>Design takeaway:</b> an IBS that wakes once per second to measure averages about 85 µA. Vehicle quiescent budgets are usually tens of mA, so the IBS is a small share. Try it in the <a href="designer.html">Spec Designer</a>.</div>
 
     <div class="pager"></div>
   </article>

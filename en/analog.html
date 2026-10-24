@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/analog.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/analog.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="02 Precision Analog &amp; Power Circuit Schematics · MCU Notes">
+<meta property="og:description" content="In-depth analysis of Infineon PSoC™ 4 HVPA precision analog circuit principles: 4-terminal Kelvin shunt filtering, chopper-stabilized instrumentation amplifier (PGA), switched-capacitor 2nd-order Delta-Sigma modulator, and 42V HV LDMOS regulator with bandgap cell.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/analog.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>02 Precision Analog &amp; Power Circuit Schematics · MCU Notes</title>
 <meta name="description" content="In-depth analysis of Infineon PSoC™ 4 HVPA precision analog circuit principles: 4-terminal Kelvin shunt filtering, chopper-stabilized instrumentation amplifier (PGA), switched-capacitor 2nd-order Delta-Sigma modulator, and 42V HV LDMOS regulator with bandgap cell.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,16 +28,17 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="analog" data-ch="analog">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
-    <div class="eyebrow">Chapter 02 · Precision Analog &amp; PMIC Circuit Schematics</div>
-    <h1>Precision Analog &amp; High-Voltage Power: Circuit Schematics &amp; Principles</h1>
-    <p class="lead">In automotive battery management systems (BMS), the microcontroller analog front-end directly interfaces with noisy, high-voltage battery rails. Grounded on the <b>Infineon PSoC™ 4 HVPA-144K</b> architecture, this chapter explores transistor-level and op-amp level circuit schematics: 4-terminal Kelvin shunt sensing, chopper-stabilized PGAs, 2nd-order switched-capacitor ΔΣ modulators, and 42V-tolerant monolithic PMIC regulators.</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 02 · Precision Analog &amp; Power</div>
+    <h1>Precision Analog &amp; Power: Microvolt Sensing and a 42 V Battery Supply</h1>
+    <p class="lead">An IBS must measure shunt signals from a few mA of parked current to over a thousand amps of cranking current, on one chip that runs straight from the battery. Using the PACSS analog subsystem of the <b>Infineon PSoC™ 4 HVPA-144K</b>, this chapter follows the signal path: Kelvin wiring and filtering → chopper PGA → ΔΣ modulator → AGC and scaler → decimation chain, and finally the 42 V-class high-voltage regulator.</p>
+    <p class="src">Device figures: PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K (“DS”). Transistor-level details in the figures are teaching concepts, not Infineon’s published circuits.</p>
 
-    <!-- ==================== CIRCUIT 1 ==================== -->
-    <h2 id="kelvin-filter">1. 4-Terminal Kelvin Shunt Sensing &amp; Anti-Aliasing RC Filter Circuit</h2>
-    <p>Shunt resistors for automotive batteries have extremely low resistance (typically <b>100 µΩ</b>). Standard 2-terminal resistors suffer from solder contact resistance (0.5 mΩ ~ 2 mΩ) and copper trace TCR (3900 ppm/°C) that destroy accuracy. Thus, a <b>Kelvin 4-wire connection</b> with symmetric differential and common-mode RC filtering is mandatory.</p>
+    <h2 id="kelvin-filter">1. Four-Terminal Kelvin Sensing &amp; RC Anti-Alias Filter</h2>
+    <p>Automotive shunts are typically only <b>100 µΩ</b>. Solder and trace resistance can exceed the shunt itself, and copper has a temperature coefficient of about 3900 ppm/°C, so sense lines that share the high-current path corrupt the reading. A <b>four-terminal Kelvin connection</b> is mandatory: high current flows through the outer terminals and the sense lines tap the resistor body directly.</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="Kelvin Shunt Sensing &amp; Differential RC Filter Schematic">
@@ -110,14 +126,26 @@
         <rect x="720" y="115" width="85" height="140" rx="6" fill="var(--sunk)" stroke="var(--analog)" stroke-width="1.8"/>
         <text class="ts" x="762" y="165" text-anchor="middle" font-weight="700" font-size="14" fill="var(--analog)">PGA</text>
         <text class="ts" x="762" y="190" text-anchor="middle" font-size="12" font-weight="600">Pre-Amp</text>
-        <text class="ts t-mut" x="762" y="215" text-anchor="middle" font-size="11">Gain 1~64x</text>
+        <text class="ts t-mut" x="762" y="215" text-anchor="middle" font-size="11">Gain 1–512</text>
       </svg>
       <figcaption>Figure 2.1: 4-Terminal Kelvin Shunt Connection &amp; Symmetric Differential/Common-Mode RC Anti-Aliasing Filter</figcaption>
     </div>
 
-    <!-- ==================== CIRCUIT 2 ==================== -->
-    <h2 id="chopper-pga">2. Chopper-Stabilized Instrumentation Amplifier (PGA) Circuit</h2>
-    <p>When measuring vehicle sleep currents (e.g. 15 mA), the voltage across a 100 µΩ shunt is only 1.5 µV. Native CMOS input offset voltages (0.5 mV ~ 2 mV) and 1/f flicker noise would obliterate this signal. The PSoC™ 4 HVPA utilizes <b>chopper stabilization</b> to eliminate offset drift.</p>
+    <h3>Filter corner frequency</h3>
+    <div class="math-block">
+      The differential capacitor \(C_{\text{diff}}\) sees \(2R_f\), and the two common-mode capacitors appear as \(C_{\text{cm}}/2\) in series for differential signals:
+      \[f_{c,\text{diff}} = \frac{1}{2\pi \cdot 2R_f \cdot \left(C_{\text{diff}} + \tfrac{C_{\text{cm}}}{2}\right)}\]
+      With \(R_f = 100\,\Omega\), \(C_{\text{diff}} = 100\,\text{nF}\), \(C_{\text{cm}} = 10\,\text{nF}\):
+      \[f_{c,\text{diff}} = \frac{1}{2\pi \times 200 \times 105\,\text{nF}} \approx 7.6\,\text{kHz}\]
+    </div>
+    <ul>
+      <li>7.6 kHz keeps the current dynamics (the DS notes 8 kSPS is enough on the main channels for lead-acid) while giving first-order attenuation of PWM noise above 20 kHz.</li>
+      <li>Match both \(R_f\) (0.1% recommended) and keep \(C_{\text{diff}} \ge 10\,C_{\text{cm}}\) so asymmetry does not turn common-mode noise into a differential error.</li>
+      <li>The chip also has an on-chip anti-alias filter of about 30 kHz bandwidth (DS §1.8.1); the external RC mainly handles faster transients and ESD.</li>
+    </ul>
+
+    <h2 id="chopper-pga">2. Chopper-Stabilised PGA</h2>
+    <p>A 15 mA parked current across 100 µΩ is only <b>1.5 µV</b>. Ordinary CMOS amplifiers have hundreds of µV of input offset plus low-frequency 1/f noise, enough to bury the signal. The PACSS analog channels include <b>choppers</b> to minimise offset (DS §1.8: “The choppers minimize offset error”).</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 390" role="img" aria-label="Chopper-Stabilized Amplifier Circuit &amp; Frequency Spectrum">
@@ -170,7 +198,7 @@
         <text class="ts t-mono" x="725" y="143" text-anchor="middle" font-size="11">Hardware Comb Filter</text>
         <text class="ts t-mut" x="725" y="172" text-anchor="middle" font-size="10">Notches Cancel f_ch Ripples</text>
         <line x1="725" y1="185" x2="725" y2="205" stroke="var(--ok)" stroke-width="2"/>
-        <text class="ts t-mono" x="725" y="215" text-anchor="middle" font-weight="700" font-size="11" fill="var(--ok)">Output D_out (24-bit)</text>
+        <text class="ts t-mono" x="725" y="215" text-anchor="middle" font-weight="700" font-size="11" fill="var(--ok)">→ Sinc² → FIR</text>
 
         <!-- Frequency Spectrum Diagrams below -->
         <rect x="25" y="245" width="245" height="120" fill="var(--surface)" stroke="var(--line)" rx="6"/>
@@ -196,8 +224,16 @@
       <figcaption>Figure 2.2: Chopper-Stabilized Programmable Gain Amplifier (PGA) Architecture &amp; Spectrum Up-Modulation</figcaption>
     </div>
 
-    <!-- ==================== CIRCUIT 3 ==================== -->
-    <h2 id="delta-sigma-schematic">3. 2nd-Order Switched-Capacitor Delta-Sigma (ΔΣ) Modulator Circuit</h2>
+    <ol>
+      <li><b>Modulate (CHOP 1):</b> the input polarity alternates at \(f_{\text{ch}}\), moving the DC signal up to \(f_{\text{ch}}\).</li>
+      <li><b>Amplify:</b> the amplifier’s own offset \(V_{os}\) and 1/f noise stay near DC.</li>
+      <li><b>Demodulate (CHOP 2):</b> a second synchronous swap returns the signal to DC and moves \(V_{os}\) and 1/f noise up to \(f_{\text{ch}}\), where the digital filter removes them.</li>
+    </ol>
+    <div class="callout" style="--c:var(--warn)"><b>What chopping cannot fix:</b> it removes only errors <b>inside the amplifier</b>. Thermo-EMF at the shunt (Seebeck) and voltage drops from asymmetric wiring are real input voltages that chopping cannot distinguish; they need symmetric layout and zero-current calibration. See <a href="lessons.html#case3-seebeck">Case 3</a>.</div>
+
+    <h2 id="delta-sigma-schematic">3. ΔΣ Modulator</h2>
+    <p>Each ADC consists of a PGA, anti-alias filter, buffer amplifier and a <b>multi-level ΔΣ modulator</b> (DS §1.8.1). The datasheet says continuous conversion needs a Sinc³ decimator “one order higher than the modulator”, which implies a second-order modulator. The figure sketches a second-order loop with switched-capacitor integrators.</p>
+
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="2nd-Order Switched-Capacitor Delta-Sigma Modulator Schematic">
         <!-- Input Vin -->
@@ -265,14 +301,14 @@
 
         <!-- Clocked 1-bit Latched Comparator -->
         <rect x="625" y="112" width="105" height="66" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="677" y="136" text-anchor="middle" font-weight="700" font-size="13" fill="var(--bad)">1-Bit Latch</text>
+        <text class="ts" x="677" y="136" text-anchor="middle" font-weight="700" font-size="13" fill="var(--bad)">Multi-level Q</text>
         <rect x="640" y="146" width="75" height="22" rx="3" fill="var(--sunk)"/>
         <text class="ts t-mono" x="677" y="161" text-anchor="middle" font-size="11" font-weight="600">Clock fs</text>
 
         <!-- Modulator Bitstream Output -->
         <line x1="730" y1="145" x2="815" y2="145" stroke="var(--bad)" stroke-width="3"/>
         <circle cx="815" cy="145" r="4.5" fill="var(--bad)"/>
-        <text class="ts t-mono" x="765" y="125" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">D_out (1-bit PDM)</text>
+        <text class="ts t-mono" x="765" y="125" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">D_out (multi-level)</text>
         <text class="ts t-mut" x="765" y="180" text-anchor="middle" font-size="11" font-weight="600">To Sinc&sup3; Filter</text>
 
         <!-- Feedback 1-bit DAC path (Complete Solid Junctions) -->
@@ -281,7 +317,7 @@
         <line x1="755" y1="280" x2="570" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
 
         <rect x="290" y="250" width="280" height="60" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="430" y="274" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">1-Bit Differential DAC Feedback</text>
+        <text class="ts" x="430" y="274" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">Multi-level feedback DAC</text>
         <text class="ts t-mono" x="430" y="295" text-anchor="middle" font-size="11" font-weight="600">V_feedback = &plusmn;V_ref (1.200V)</text>
 
         <line x1="290" y1="280" x2="185" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
@@ -290,25 +326,111 @@
       <figcaption>Figure 2.3: 2nd-Order Switched-Capacitor Differential Delta-Sigma (&Delta;&Sigma;) Modulator Topology</figcaption>
     </div>
 
-    <!-- ==================== CIRCUIT 4 ==================== -->
-    <h2 id="hv-pmic-schematic">4. 42V Direct Battery PMIC Regulator &amp; Bandgap Reference Circuit</h2>
+    <div class="math-block">
+      Output of a second-order modulator in the z-domain:
+      \[Y(z) = z^{-2}X(z) + (1 - z^{-1})^2 E(z)\]
+      The noise transfer function \(\text{NTF}(z) = (1 - z^{-1})^2\) gives \(|\text{NTF}(e^{j\omega})| \approx \omega^2\) at low frequency: quantisation noise is pushed to high frequency, where the decimator removes it. An ideal second-order loop gains about 15 dB of SNR per doubling of OSR; a multi-level quantiser lowers quantisation noise further and improves stability.
+    </div>
+
+    <h2 id="agc-scaler">4. AGC &amp; Scaler: from mA to kA</h2>
+    <p>The current-channel gain spans <b>1–512</b>. The AGC watches the input with comparators and, when a threshold is crossed, a lookup table sets the PGA, modulator gain and scaler together (DS §1.8.5). The scaler multiplies results by <b>512/G</b> so every LSB has the same weight: <b>0.715 mA</b> with a 100 µΩ shunt.</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 260" role="img" aria-label="AGC and scaler block diagram">
+        <rect x="20" y="90" width="110" height="60" rx="6" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="75" y="125" text-anchor="middle" font-size="12" font-weight="700">R_shunt</text>
+        <line x1="130" y1="120" x2="170" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="170" y="80" width="120" height="80" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="230" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">PGA</text>
+        <text class="ts t-mut" x="230" y="134" text-anchor="middle" font-size="11">gain 1–512</text>
+        <line x1="290" y1="120" x2="330" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="330" y="80" width="120" height="80" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="390" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">ΔΣ + Sinc</text>
+        <text class="ts t-mut" x="390" y="134" text-anchor="middle" font-size="11">DSM + decimation</text>
+        <line x1="450" y1="120" x2="490" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="490" y="80" width="140" height="80" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="560" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Scaler</text>
+        <text class="ts t-mono" x="560" y="134" text-anchor="middle" font-size="11">× 512 / G</text>
+        <line x1="630" y1="120" x2="670" y2="120" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="670" y="80" width="150" height="80" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="745" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">Normalised result</text>
+        <text class="ts t-mono" x="745" y="134" text-anchor="middle" font-size="11">1 LSB = 0.715 mA</text>
+        <rect x="250" y="200" width="280" height="44" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="390" y="227" text-anchor="middle" font-weight="700" font-size="12" fill="var(--warn)">AGC comparators + lookup table</text>
+        <path d="M390 160V200" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4"/>
+        <path d="M250 222H230V160" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+        <path d="M530 222H560V160" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+        <text class="ts t-mut" x="410" y="185" font-size="10">range switch by input level</text>
+      </svg>
+      <figcaption>Figure 2.5: The AGC lookup table sets PGA, modulator gain and scaler together, so the output LSB weight does not change with gain.</figcaption>
+    </div>
+
+    <div class="tblwrap"><table>
+      <tr><th>Gain G</th><th>Input full scale 1.2 V/G</th><th>Current full scale at 100 µΩ</th><th>Scaler</th></tr>
+      <tr><td>4</td><td>±300 mV</td><td>±3000 A</td><td>×128</td></tr>
+      <tr><td>16</td><td>±75 mV</td><td>±750 A</td><td>×32</td></tr>
+      <tr><td>64</td><td>±18.75 mV</td><td>±187.5 A</td><td>×8</td></tr>
+      <tr><td>512</td><td>±2.34 mV</td><td>±23.4 A</td><td>×1</td></tr>
+    </table></div>
+    <p>The DS example covers 0–3000 A full scale with gains 4–512, and recommends raising PGA gain before modulator gain to minimise input-referred noise. Drag the current in the <a href="lab.html#shunt">MCU Lab</a> to watch the AGC change range.</p>
+
+    <h2 id="decimation-chain">5. Decimation Chain: Sinc³ → Sinc² → FIR</h2>
+    <p>The modulator output passes through a Sinc³ decimator (ratio DR), a Sinc² decimator (ratio DR2) and a programmable 16-tap FIR, followed by compensation, averaging/accumulation and window comparison (DS §1.8.3–1.8.4).</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 200" role="img" aria-label="Decimation chain and data rates">
+        <rect x="20" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="85" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">ΔΣ modulator</text>
+        <text class="ts t-mono" x="85" y="112" text-anchor="middle" font-size="11">3.072 MHz</text>
+        <line x1="150" y1="95" x2="190" y2="95" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="190" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="255" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Sinc³ ÷ DR</text>
+        <text class="ts t-mono" x="255" y="112" text-anchor="middle" font-size="11">DR 64 → 48 kSPS</text>
+        <line x1="320" y1="95" x2="360" y2="95" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="360" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="425" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Sinc² ÷ DR2</text>
+        <text class="ts t-mono" x="425" y="112" text-anchor="middle" font-size="11">DR2 48 → 1 kSPS</text>
+        <line x1="490" y1="95" x2="530" y2="95" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="530" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="595" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">Programmable FIR</text>
+        <text class="ts t-mono" x="595" y="112" text-anchor="middle" font-size="11">16 taps</text>
+        <line x1="660" y1="95" x2="700" y2="95" stroke="var(--ok)" stroke-width="2.5"/>
+        <rect x="700" y="60" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="760" y="90" text-anchor="middle" font-weight="700" font-size="12" fill="var(--ok)">Average / threshold</text>
+        <text class="ts t-mut" x="760" y="112" text-anchor="middle" font-size="10">window-compare IRQ</text>
+        <text class="ts t-mut" x="255" y="160" text-anchor="middle" font-size="11">nulls at 48 kHz multiples</text>
+        <text class="ts t-mut" x="425" y="160" text-anchor="middle" font-size="11">nulls at 1 kHz multiples</text>
+      </svg>
+      <figcaption>Figure 2.6: The datasheet example decimation chain and the data rate at each stage.</figcaption>
+    </div>
+
+    <ul>
+      <li>Sinc³ nulls sit at \(N \cdot f_{\text{mod}}/DR\); Sinc² nulls at \(N \cdot f_{\text{mod}}/(DR \cdot DR2)\). DS example: OSR 64 at 3.072 MHz → 48 kHz; DR2 = 48 → nulls every 1 kHz.</li>
+      <li>DS: lead-acid applications need only 8 kSPS on the main voltage and current channels, leaving the third digital channel for temperature or diagnostics.</li>
+      <li>To reject both 50 Hz and 60 Hz mains, the averaging window must be a multiple of 100 ms (nulls at multiples of 10 Hz). Modulator clock and OSR alone give kHz-level nulls; they do not line up with 50/60 Hz by themselves.</li>
+    </ul>
+    <p>Adjust DR, DR2 and averaging length in the <a href="lab.html#sinc">MCU Lab</a> and watch the nulls move.</p>
+
+    <h2 id="hv-pmic-schematic">6. High-Voltage Regulator &amp; Bandgap Reference (Concept)</h2>
+    <p>The HVPA runs straight from a 12 V or 24 V battery: VBAT operates from <b>3.6 to 28 V</b> and remains functional up to <b>42 V</b> (DS §1.2.1). The HV regulator produces 3.3 V VDDD and VDDA, which may drop to 2.7 V when VBAT falls below 4 V; VDDD can also feed external loads up to 10 mA. Core regulators then produce the 1.8 V VCCD.</p>
+
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="42V HV Linear Regulator &amp; Bandgap Circuit Schematic">
         <!-- Input KL30 from left -->
         <line x1="20" y1="75" x2="110" y2="75" stroke="#c0392b" stroke-width="3"/>
         <circle cx="20" cy="75" r="4" fill="#c0392b"/>
-        <text class="ts t-mono" x="25" y="60" font-weight="700" font-size="11" fill="#c0392b">VBAT (3.2V~42V)</text>
+        <text class="ts t-mono" x="25" y="60" font-weight="700" font-size="11" fill="#c0392b">VBAT 3.6–28 V (≤ 42 V)</text>
 
         <!-- Reverse Protection Diode -->
         <polygon points="110,68 125,75 110,82" fill="var(--ink)"/>
         <line x1="125" y1="68" x2="125" y2="82" stroke="var(--ink)" stroke-width="2"/>
         <line x1="125" y1="75" x2="185" y2="75" stroke="#c0392b" stroke-width="3"/>
-        <text class="ts" x="117" y="98" text-anchor="middle" font-size="10" fill="var(--muted)">Reverse Diode</text>
+        <text class="ts" x="117" y="98" text-anchor="middle" font-size="10" fill="var(--muted)">external reverse diode</text>
 
         <!-- Power LDMOS Pass Transistor -->
         <rect x="185" y="50" width="115" height="52" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
-        <text class="ts" x="242" y="73" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">HV-LDMOS</text>
-        <text class="ts t-mono" x="242" y="90" text-anchor="middle" font-size="10">V_BR &gt; 45V</text>
+        <text class="ts" x="242" y="73" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">HV pass device</text>
+        <text class="ts t-mono" x="242" y="90" text-anchor="middle" font-size="10">rated for 42 V</text>
 
         <!-- Regulated VDDD 3.3V Output Line -->
         <line x1="300" y1="75" x2="570" y2="75" stroke="var(--ok)" stroke-width="3"/>
@@ -348,7 +470,7 @@
         <rect x="40" y="230" width="180" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts" x="130" y="254" text-anchor="middle" font-weight="700" font-size="12" fill="var(--analog)">Brokaw Bandgap Cell</text>
         <rect x="55" y="265" width="150" height="22" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="130" y="280" text-anchor="middle" font-size="11">V_BG = 1.200 V (&plusmn;0.05%)</text>
+        <text class="ts t-mono" x="130" y="280" text-anchor="middle" font-size="11">V_BG ≈ 1.2 V</text>
         <line x1="220" y1="230" x2="300" y2="230" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts t-mono" x="250" y="222" font-size="10" font-weight="600" fill="var(--analog)">V_ref</text>
 
@@ -366,8 +488,15 @@
         <circle cx="815" cy="75" r="3" fill="var(--core)"/>
         <text class="ts t-mono" x="780" y="62" font-size="10" font-weight="700" fill="var(--core)">VCCD=1.8V</text>
       </svg>
-      <figcaption>Figure 2.4: 42V-Tolerant High-Voltage LDMOS Linear Regulator &amp; Brokaw Bandgap Reference Schematic</figcaption>
+      <figcaption>Figure 2.4: Concept of the HV linear regulator and bandgap reference (external reverse diode, internal 3.3 V regulator, 1.8 V core regulator)</figcaption>
     </div>
+
+    <ul>
+      <li><b>Bandgap:</b> a PTAT term \(V_T = kT/q\) is added to the CTAT \(V_{BE}\) to give a reference of about 1.2 V with a very low temperature coefficient: \(V_{\text{BG}} = V_{BE} + K \cdot V_T\).</li>
+      <li><b>Regulation loop:</b> an error amplifier compares the divided output with \(V_{\text{BG}}\) and drives the HV pass device to hold 3.3 V.</li>
+      <li><b>External parts:</b> DS Figure 1 calls for a series R1 (10–15 Ω) and C1 (2.2 µF) filter on VBAT plus an external reverse-polarity diode; VDDD, VDDA and VCCD each need X7R bypass capacitors.</li>
+      <li><b>Over-voltage:</b> 42 V is the absolute maximum. The DS notes that <b>external protection may be required</b> (series resistor, diode, TVS) against high-voltage pulses. See <a href="process.html#active-clamp-circuit">Chapter 04</a>.</li>
+    </ul>
 
     <div class="pager"></div>
   </article>

@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/application.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/application.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/application.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/application.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="03 車用 BMS 與系統電路原理 · MCU Notes">
+<meta property="og:description" content="深入解析智慧電池感測器（IBS）與高壓電池斷路單元（BDU）的系統級硬體電路原理：極柱分流電阻採樣電路、LIN 總線實體層驅動電路、高壓繼電器節能 PWM 驅動、熱電效應抑制，以及庫倫積分 SoC 與動態內阻 SoH 演算法。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/application.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>03 車用 BMS 與系統電路原理 · MCU Notes</title>
 <meta name="description" content="深入解析智慧電池感測器（IBS）與高壓電池斷路單元（BDU）的系統級硬體電路原理：極柱分流電阻採樣電路、LIN 總線實體層驅動電路、高壓繼電器節能 PWM 驅動、熱電效應抑制，以及庫倫積分 SoC 與動態內阻 SoH 演算法。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,9 +28,10 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="application" data-ch="app">
+<a class="skip" href="#main">跳到主要內容</a>
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
-  <article>
+  <article id="main">
     <div class="eyebrow">Chapter 03 · Automotive BMS &amp; System Circuit Schematics</div>
     <h1>車用電池管理系統：智慧感測器 (IBS) 與斷路 (BDU) 電路原理</h1>
     <p class="lead">現代車輛的電氣系統要求電池感測模組能在極端嚴苛的高溫、震動與高電磁干擾環境下自主運行。本章深入剖析安裝於蓄電池極柱的<b>智慧電池感測器（IBS）完整硬體電路原理圖</b>、LIN 總線實體層電路、高壓電池斷路單元（BDU）接觸器驅動消弧電路，以及庫倫計 SoC 與動態內阻 SoH 演算法的工程實踐。</p>
@@ -23,6 +39,7 @@
     <!-- ==================== CIRCUIT 1 ==================== -->
     <h2 id="ibs-schematic">1. 智慧電池感測器 (IBS) 完整系統級硬體電路原理圖</h2>
     <p>智慧電池感測器（IBS）直接固定在汽車電瓶的負極接線柱上。它只需要連接三條外線：電瓶正極採樣線（KL30）、車身底盤搭鐵大電纜（GND）、以及一條通往車身控制器的單線 LIN 總線。</p>
+    <p class="src">元件出處：PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K（DS）。圖中外部元件數值為典型設計示例。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 430" role="img" aria-label="智慧電池感測器 IBS 完整電路原理圖">
@@ -76,7 +93,7 @@
 
         <!-- VBAT Pin -->
         <circle cx="360" cy="105" r="5" fill="#c0392b"/>
-        <text class="ts t-mono" x="375" y="102" font-size="11" font-weight="700" fill="#c0392b">VBAT (Pin 1)</text>
+        <text class="ts t-mono" x="375" y="102" font-size="11" font-weight="700" fill="#c0392b">VBAT</text>
 
         <!-- Internal Subsystem 1: 42V PMIC -->
         <rect x="390" y="115" width="185" height="65" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="1.5"/>
@@ -88,7 +105,7 @@
         <rect x="600" y="115" width="195" height="135" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="1.5"/>
         <text class="ts" x="697" y="137" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">PACSS 雙通道 16-bit &Delta;&Sigma;</text>
         <rect x="612" y="148" width="170" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="697" y="164" text-anchor="middle" font-size="10">電流通道 (&plusmn;150mV) + PGA</text>
+        <text class="ts t-mono" x="697" y="164" text-anchor="middle" font-size="10">電流通道 G 1–512（AGC）</text>
         <rect x="612" y="180" width="170" height="24" rx="3" fill="var(--sunk)"/>
         <text class="ts t-mono" x="697" y="196" text-anchor="middle" font-size="10">電壓通道 (24:1 高壓衰減)</text>
         <text class="ts t-mut" x="697" y="228" text-anchor="middle" font-size="9">無延遲完全同步採樣</text>
@@ -128,10 +145,16 @@
       </svg>
       <figcaption>圖 3.1：智慧電池感測器（IBS）模組實體電路原理圖（含電源濾波、凱爾文分流檢測與 LIN 總線）</figcaption>
     </div>
+    <ul>
+      <li><b>電壓通道：</b>內部高壓分壓 24×（28.8 V 滿量程）或 16×（19.2 V），量測 12 V 時分壓器約耗 6 µA（DS）。</li>
+      <li><b>溫度：</b>支援內部與外部溫度量測；外部 NTC 可貼近電瓶端子以估算電解液溫度。</li>
+      <li><b>保護：</b>KL30 進線的 TVS 與防反接二極體是外部元件，DS 建議以外部保護對付高壓脈衝。</li>
+    </ul>
 
     <!-- ==================== CIRCUIT 2 ==================== -->
     <h2 id="bdu-circuit">2. 高壓電池斷路單元 (BDU) 接觸器與 Pyro-fuse 驅動保護電路原理</h2>
     <p>在 400V / 800V 高壓電動車電池包中，電池斷路單元（Battery Disconnect Unit, BDU）負責在正常啟動時閉合主正/主負高壓接觸器（High-Voltage Contactor），並在發生嚴重短路或碰撞時，在 <b>1 毫秒內引爆火工斷路安全熔絲（Pyro-fuse）</b>。這要求微控制器具備嚴密的高低側雙開關驅動與快速退磁消弧電路。</p>
+    <div class="callout" style="--c:var(--warn)"><b>適用範圍：</b>HVPA 的定位是 12 V / 24 V 鉛酸電池感測（VBAT 絕對最大 42 V），不是 400/800 V 電池包的 BDU 控制器。本節說明 BDU 的通用驅動電路概念；實際 BDU 由低壓側 MCU 經隔離或專用驅動器控制接觸器與火工切斷器。</div>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="BDU 接觸器與 Pyro-fuse 驅動消弧電路原理圖">
@@ -155,7 +178,7 @@
         <!-- Fast Demagnetization Clamp Diode Network (Flyback + 36V Zener) -->
         <path d="M285 65v65h165v-65" fill="none" stroke="var(--bad)" stroke-width="2"/>
         <polygon points="340,125 355,130 340,135" fill="var(--bad)"/>
-        <line x1="355,123" x2="355" y2="137" stroke="var(--bad)" stroke-width="2"/>
+        <line x1="355" y1="123" x2="355" y2="137" stroke="var(--bad)" stroke-width="2"/>
         <polygon points="385,135 370,130 385,125" fill="var(--bad)"/>
         <path d="M370 123v14M370 123h4M370 137h-4" stroke="var(--bad)" stroke-width="2"/>
         <text class="ts" x="367" y="154" text-anchor="middle" font-size="10" font-weight="600" fill="var(--bad)">36V 齊納 + 超快恢復二極體 (快速退磁消弧)</text>
@@ -185,7 +208,7 @@
         <line x1="390" y1="285" x2="580" y2="285" stroke="#d35400" stroke-width="3"/>
         <rect x="580" y="255" width="220" height="70" rx="6" fill="var(--surface)" stroke="#d35400" stroke-width="2"/>
         <text class="ts" x="690" y="280" text-anchor="middle" font-weight="700" font-size="13" fill="#d35400">Pyro-fuse 火工切斷器</text>
-        <text class="ts t-mono" x="690" y="302" text-anchor="middle" font-size="10" fill="var(--ink)">單週期 Fast I/O 緊急引爆 (&lt; 20ns)</text>
+        <text class="ts t-mono" x="690" y="302" text-anchor="middle" font-size="10" fill="var(--ink)">經外部驅動器觸發（毫秒等級）</text>
       </svg>
       <figcaption>圖 3.2：BDU 高壓接觸器高低側雙開關驅動、快速消弧齊納箝位與節能 PWM 電路原理圖</figcaption>
     </div>
@@ -198,13 +221,61 @@
     </ul>
 
     <!-- ==================== ALGORITHMS ==================== -->
-    <h2 id="soc-coulomb-detail">3. 荷電狀態 (SoC) 估算：庫倫積分與開路電壓 (OCV) 融合演算法</h2>
-    <p>電池的荷電狀態（SoC）即剩餘可用電量佔額定容量的比例。MCU 採用<b>安時積分法（Coulomb Counting）</b>：</p>
+    <h2 id="soc-coulomb-detail">3. 荷電狀態 (SoC)：庫倫積分與 OCV 融合</h2>
+    <p>SoC 是剩餘可用電量佔額定容量的比例。MCU 以<b>安時積分（Coulomb Counting）</b>持續追蹤：</p>
     <div class="math-block">
-      \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^t \eta(I) \cdot I(\tau) \, d\tau\]
-      其中 \(Q_n\) 為電池額定容量，\(\eta(I)\) 為充放電庫倫效率因子。
+      \[\text{SoC}(t) = \text{SoC}(t_0) - \frac{1}{Q_n} \int_{t_0}^{t} \eta(I) \cdot I(\tau) \, d\tau\]
+      \(Q_n\) 為額定容量，\(\eta(I)\) 為充放電庫倫效率。
     </div>
-    <p>當車輛熄火停車並靜置超過 3 小時後，電池極板去極化完成，電化學系統達到熱力學平衡（電流 \(|I| &lt; 15\,\text{mA}\)），此時端電壓精確等於<b>開路電壓（Open-Circuit Voltage, OCV）</b>。MCU 讀取電壓並查閱預先標定的 OCV-SoC 曲線，執行一次性絕對校正，重設積分初始狀態 \(\text{SoC}(t_0)\)，徹底終止長達數週停放時微弱電流漂移所累積的發散誤差。</p>
+    <p>積分最大的弱點是<b>偏移會被累積</b>：10 µV 偏移在 100 µΩ 上相當於 100 mA 虛假電流，停放 30 天就是 72 Ah。因此車輛熄火並充分靜置（鉛酸電池通常需數小時）、電流接近零時，MCU 讀取端電壓當作<b>開路電壓（OCV）</b>，查 OCV–SoC 表重設 \(\text{SoC}(t_0)\)，終止漂移。OCV 本身受溫度與極化影響，也有數 % 的誤差。</p>
+    <p>到 <a href="lab.html#coulomb">互動實驗室</a> 比較有無斬波與 OCV 定錨時的 SoC 漂移。</p>
+
+    <h2 id="soh-impedance-detail">4. 健康狀態 (SoH)：啟動時的動態內阻</h2>
+    <div class="math-block">
+      引擎冷啟動時，啟動馬達造成數百安培的電流步階，端電壓同時下陷。兩顆 ADC 同步取樣 \(\Delta V\) 與 \(\Delta I\)：
+      \[R_{\text{int}}(T) = \frac{V_{\text{pre-crank}} - V_{\text{min-crank}}}{I_{\text{peak-crank}} - I_{\text{idle}}}\]
+    </div>
+    <ul>
+      <li><b>同步取樣很重要：</b>電壓與電流若錯開取樣，ΔV/ΔI 會混入電流變化斜率造成誤差。HVPA 兩顆 ADC 可同時轉換。</li>
+      <li><b>溫度補償：</b>鉛酸電池內阻隨溫度大幅變化，比較 SoH 前必須換算到參考溫度。</li>
+      <li><b>趨勢判讀：</b>內阻長期上升代表極板硫化或失水，可在無法啟動之前提出更換警告。</li>
+    </ul>
+
+    <h2 id="lin-bus">5. LIN 匯流排：IBS 與車身控制器的介面</h2>
+    <p>HVPA 整合 LIN 收發器，相容 <b>LIN 2.2A / 2.1 / 2.0 / 1.3、SAE J2602 與 ISO 17987</b>；LIN 腳耐壓 <b>−27 V 至 +42 V</b>（DS）。內部 RC 振盪器的 IBS 靠主節點送出的 Sync 欄位校準鮑率。</p>
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 210" role="img" aria-label="LIN 訊框結構">
+        <text class="ts" x="20" y="30" font-weight="700" font-size="12" fill="var(--warn)">Header（主節點送出）</text>
+        <text class="ts" x="560" y="30" font-weight="700" font-size="12" fill="var(--app)">Response（IBS 回應）</text>
+        <rect x="20" y="50" width="200" height="60" rx="4" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="120" y="76" text-anchor="middle" font-size="12" font-weight="700">Break</text>
+        <text class="ts t-mut" x="120" y="96" text-anchor="middle" font-size="10">≥ 13 bit dominant + delimiter</text>
+        <rect x="225" y="50" width="130" height="60" rx="4" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="290" y="76" text-anchor="middle" font-size="12" font-weight="700">Sync 0x55</text>
+        <text class="ts t-mut" x="290" y="96" text-anchor="middle" font-size="10">從節點量測位元時間</text>
+        <rect x="360" y="50" width="150" height="60" rx="4" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="435" y="76" text-anchor="middle" font-size="12" font-weight="700">PID</text>
+        <text class="ts t-mut" x="435" y="96" text-anchor="middle" font-size="10">ID[5:0] + P0 + P1</text>
+        <rect x="560" y="50" width="160" height="60" rx="4" fill="var(--surface)" stroke="var(--app)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="640" y="76" text-anchor="middle" font-size="12" font-weight="700">Data 1–8 B</text>
+        <text class="ts t-mut" x="640" y="96" text-anchor="middle" font-size="10">電流 / 電壓 / SoC</text>
+        <rect x="725" y="50" width="95" height="60" rx="4" fill="var(--surface)" stroke="var(--app)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="772" y="76" text-anchor="middle" font-size="12" font-weight="700">Checksum</text>
+        <text class="ts t-mut" x="772" y="96" text-anchor="middle" font-size="10">Enhanced 含 PID</text>
+        <line x1="20" y1="140" x2="510" y2="140" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts t-mut" x="265" y="160" text-anchor="middle" font-size="11">主節點（BCM / 閘道器）</text>
+        <line x1="560" y1="140" x2="820" y2="140" stroke="var(--app)" stroke-width="2"/>
+        <text class="ts t-mut" x="690" y="160" text-anchor="middle" font-size="11">從節點（IBS）</text>
+        <text class="ts t-mut" x="420" y="195" text-anchor="middle" font-size="11">名目時間 = 34 + 10·(N+1) 位元；允許最長 1.4 倍</text>
+      </svg>
+      <figcaption>圖 3.3：LIN 訊框由主節點的 header 與從節點的 response 組成。</figcaption>
+    </div>
+    <ul>
+      <li><b>PID：</b>6 位元 ID 加 2 個同位位元：P0 = ID0⊕ID1⊕ID2⊕ID4，P1 = ¬(ID1⊕ID3⊕ID4⊕ID5)。</li>
+      <li><b>Checksum：</b>LIN 2.x 一般訊框用 Enhanced（含 PID），診斷訊框 0x3C/0x3D 用 Classic（不含 PID）。兩者都是帶進位加總後取反。</li>
+      <li><b>EMC：</b>收發器以斜率控制降低輻射；DS 也提供非 LIN 的快速模式（100 kbit/s）供刷寫等用途。</li>
+    </ul>
+    <p>到 <a href="lab.html#lin">互動實驗室</a> 改變 ID 與資料，觀察 PID、checksum 與波形。</p>
 
     <div class="pager"></div>
   </article>

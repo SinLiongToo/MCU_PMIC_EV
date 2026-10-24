@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/safety.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/safety.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/safety.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/safety.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="06 功能安全與硬體診斷電路 · MCU Notes">
+<meta property="og:description" content="深入探討車載微控制器的 ISO 26262 ASIL-C 安全電路原理：分流器焊點斷線（Wire-Break）類比自檢電流源電路、問答式窗口看門狗硬體 LFSR 密碼生成電路、時脈監視器（CSV）與 FMEDA 定量隨機硬體失效率計算。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/safety.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>06 功能安全與硬體診斷電路 · MCU Notes</title>
 <meta name="description" content="深入探討車載微控制器的 ISO 26262 ASIL-C 安全電路原理：分流器焊點斷線（Wire-Break）類比自檢電流源電路、問答式窗口看門狗硬體 LFSR 密碼生成電路、時脈監視器（CSV）與 FMEDA 定量隨機硬體失效率計算。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,16 +28,28 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="safety" data-ch="safety">
+<a class="skip" href="#main">跳到主要內容</a>
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
-  <article>
-    <div class="eyebrow">Chapter 06 · Functional Safety &amp; Hardware Diagnostic Circuits</div>
-    <h1>功能安全：ISO 26262 ASIL-C 晶片硬體診斷電路原理</h1>
-    <p class="lead">在車用動力電池系統中，若分流器因機械震動發生焊點斷裂開路，或 CPU 陷入無窮死循環而持續輸出虛假電流，將引發熱失控或行駛中意外斷路。ISO 26262 ASIL-C 要求安全機制必須深入到<b>晶片硬體電路級別</b>。本章深度剖析：分流器焊點斷線微電流診斷電路、問答看門狗硬體 LFSR 檢驗電路、時脈交叉監視電路，以及 FMEDA 隨機失效率定量分析。</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 06 · Functional Safety</div>
+    <h1>功能安全：ISO 26262、晶片安全機制與 FMEDA 指標</h1>
+    <p class="lead">功能安全的目標是：發生隨機硬體故障時，系統能偵測並進入安全狀態。本章先整理 HVPA 資料手冊列出的安全機制與正式安全宣稱，再說明分流器斷線診斷、問答式窗口看門狗的原理，最後是 ISO 26262 的 SPFM、LFM 與 PMHF 指標。</p>
+    <p class="src">晶片數值出處：PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K（DS）；指標出處：ISO 26262-5:2018。圖 6.1、6.2 為原理示意，電流值、門檻與多項式為舉例，非 HVPA 規格。</p>
 
-    <!-- ==================== CIRCUIT 1 ==================== -->
-    <h2 id="wire-break-circuit">1. 分流電阻焊點斷線 (Wire-Break) 類比診斷電路原理</h2>
-    <p>智慧電池感測器（IBS）長期承受發動機艙的劇烈振動與冷熱交替循環（-40°C ~ +125°C）。分流電阻與 PCB 之間的焊點可能產生微裂紋（Micro-crack）最終導致開路。若焊點斷開，差分輸入引腳浮空（Floating），環境干擾噪聲可能使 ADC 讀數恰好落在正常放電區間，導致系統無法察覺。PSoC™ 4 HVPA PACSS 內建了<b>硬體主動微電流斷線注入電路</b>。</p>
+    <h2 id="safety-mechanisms">1. HVPA 的安全宣稱與安全機制</h2>
+    <div class="callout" style="--c:var(--safety)"><b>資料手冊原文：</b>「The device is developed compliant to ISO 26262, meeting all process requirements for ASIL C and hardware architectural metrics for ASIL B.」<br>也就是：開發<b>流程</b>符合 ASIL C；晶片本身的<b>硬體架構指標</b>達 ASIL B。系統要宣稱 ASIL C，需要在系統層加入額外的安全機制，並依 Safety Manual 使用晶片。</div>
+    <div class="tblwrap"><table>
+      <tr><th>安全機制（DS）</th><th>偵測的故障</th></tr>
+      <tr><td>記憶體保護單元 MPU</td><td>軟體越權存取</td></tr>
+      <tr><td>問答式窗口看門狗 CRWDT</td><td>程式跑飛、卡死、跳過安全任務</td></tr>
+      <tr><td>電源監控</td><td>3.3 V 與 1.8 V 電源的過壓與 brown-out</td></tr>
+      <tr><td>SECDED ECC（SRAM、Flash）</td><td>記憶體位元翻轉</td></tr>
+      <tr><td>類比診斷</td><td>備援參考電壓；電壓、電流、溫度量測路徑冗餘</td></tr>
+    </table></div>
+
+    <h2 id="wire-break-circuit">2. 分流器斷線診斷（原理）</h2>
+    <p>IBS 長期承受振動與溫度循環，分流器的焊點或量測線可能開路。開路時輸入浮接，雜訊可能剛好落在「正常」讀值範圍。常見的偵測方法是在量測線注入微小診斷電流：正常時分流器只有數十 µΩ，診斷電流造成的壓降可忽略；開路時輸入被拉到電源軌，比較器立即判定故障。HVPA 另可用兩顆 ADC 交叉量測與診斷通道（VDIAG）檢查量測路徑。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="分流器焊點斷線診斷電路原理圖">
@@ -33,7 +60,7 @@
         <!-- Current Source Pull-up -->
         <rect x="250" y="68" width="95" height="46" rx="5" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts" x="297" y="90" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">微電流源</text>
-        <text class="ts t-mono" x="297" y="105" text-anchor="middle" font-size="11" font-weight="700">I_diag (50nA)</text>
+        <text class="ts t-mono" x="297" y="105" text-anchor="middle" font-size="11" font-weight="700">I_diag</text>
         <line x1="297" y1="50" x2="297" y2="68" stroke="var(--ok)" stroke-width="2"/>
         <line x1="297" y1="114" x2="297" y2="140" stroke="var(--analog)" stroke-width="2"/>
 
@@ -47,7 +74,7 @@
         <!-- Current Sink Pull-down -->
         <rect x="470" y="240" width="95" height="46" rx="5" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts" x="517" y="262" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">微電流漏</text>
-        <text class="ts t-mono" x="517" y="277" text-anchor="middle" font-size="11" font-weight="700">I_diag (50nA)</text>
+        <text class="ts t-mono" x="517" y="277" text-anchor="middle" font-size="11" font-weight="700">I_diag</text>
         <line x1="517" y1="286" x2="517" y2="310" stroke="var(--line)" stroke-width="2"/>
 
         <!-- Switch S_diag2 -->
@@ -85,33 +112,29 @@
         <rect x="600" y="125" width="195" height="135" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
         <text class="ts" x="697" y="152" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">差分窗口比較器</text>
         <rect x="615" y="165" width="165" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="697" y="181" text-anchor="middle" font-size="11" font-weight="600">|V_P &minus; V_N| &gt; 2.5V</text>
+        <text class="ts t-mono" x="697" y="181" text-anchor="middle" font-size="11" font-weight="600">|V_P &minus; V_N| &gt; V_th</text>
         <rect x="615" y="195" width="165" height="24" rx="3" fill="var(--surface)" stroke="var(--bad)" stroke-width="1.5"/>
-        <text class="ts" x="697" y="211" text-anchor="middle" font-size="11" font-weight="700" fill="var(--bad)">觸發安全中斷 (&lt; 2&mu;s)</text>
+        <text class="ts" x="697" y="211" text-anchor="middle" font-size="11" font-weight="700" fill="var(--bad)">觸發故障中斷</text>
         <text class="ts t-mut" x="697" y="245" text-anchor="middle" font-size="9">通報 BCM 車載控制器</text>
       </svg>
       <figcaption>圖 6.1：微電流主動注入式分流器焊點斷線（Wire-Break）診斷檢測電路原理圖</figcaption>
     </div>
 
-    <h3>電路診斷邏輯與工作物理機制</h3>
     <ul>
-      <li><b>正常焊接狀態（Normal Operation）：</b> 診斷開關 <code>Diag_EN</code> 閉合，微弱的 \(50\,\text{nA}\) 電流注入 <code>ISENSE_P</code> 引腳並由 <code>ISENSE_N</code> 抽出。在焊點完好時，分流器阻值僅為 \(100\,\mu\Omega\)，微弱電流產生的附加壓降為：
-        \[\Delta V_{\text{diag}} = 50\,\text{nA} \times 100\,\mu\Omega = 5 \times 10^{-12}\text{ V} \quad (5\,\text{pV})\]
-        此皮伏級壓降對微伏級的電流正常量測完全不造成任何可觀測的誤差。</li>
-      <li><b>焊點開路故障狀態（Wire-Break Fault）：</b> 當焊點因疲勞斷開，分流電阻脫離回路，輸入端等效阻抗變為晶片引腳的漏電阻（兆歐級 \(R_{\text{leak}} &gt; 100\,\text{M}\Omega\)）。此時 \(50\,\text{nA}\) 電流迅速將 <code>ISENSE_P</code> 軌拉高至 \(V_{\text{DDA}} = 3.3\text{V}\)，同時將 <code>ISENSE_N</code> 軌拉低至 \(V_{\text{SSA}} = 0\text{V}\)。</li>
-      <li><b>硬體比較器瞬態跳脫：</b> 差分窗口比較器偵測到輸入跨壓瞬間飆升至滿量程軌電平（\(|V_P - V_N| \approx 3.3\text{V}\)），在 <b>小於 2 µs 內</b> 直接觸發專屬硬體安全中斷，通報整車 BCM 進入安全保護狀態。</li>
+      <li><b>正常：</b>例如 \(I_{\text{diag}} = 50\,\text{nA}\) 流過 \(100\,\mu\Omega\)，壓降 \(5\,\text{pV}\)，遠低於 LSB，不影響量測。</li>
+      <li><b>開路：</b>輸入阻抗變成兆歐級漏電，\(I_{\text{diag}}\) 把正端拉高、負端拉低，跨壓遠超量程。</li>
+      <li><b>判定：</b>比較器或 ADC 窗口比較偵測到超量程，觸發故障中斷並通知 BCM。</li>
     </ul>
 
-    <!-- ==================== CIRCUIT 2 ==================== -->
-    <h2 id="wdt-lfsr-circuit">2. 問答式窗口看門狗硬體 LFSR 密碼檢驗電路原理</h2>
-    <p>傳統看門狗僅要求軟體定時清狗（Feed Dog）。若程式陷入簡單死循環並在循環內包含餵狗代碼，傳統看門狗完全無法識別故障。ISO 26262 ASIL-C 要求採用<b>問答式窗口看門狗（Challenge-Response Window Watchdog）</b>。</p>
+    <h2 id="wdt-lfsr-circuit">3. 問答式窗口看門狗（CRWDT）</h2>
+    <p>一般看門狗只要求「定時餵狗」：程式卡在含有餵狗指令的小迴圈時，仍會持續成功餵狗。HVPA 有兩個看門狗：一個可在 Deep Sleep 運作，另一個是<b>問答式看門狗（CRWDT）</b>。CRWDT 在「太早、太晚或金鑰錯誤」時產生逾時事件，可設定為重置或中斷，原因記錄在 Reset Cause 暫存器（DS §1.2.4）。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 340" role="img" aria-label="問答看門狗硬體 LFSR 檢驗電路圖">
         <!-- ILO Clock -->
         <rect x="25" y="35" width="145" height="55" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
-        <text class="ts" x="97" y="58" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">獨立低速 ILO 振盪器</text>
-        <text class="ts t-mono" x="97" y="75" text-anchor="middle" font-size="11">32 kHz Clock</text>
+        <text class="ts" x="97" y="58" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">獨立低功耗振盪器</text>
+        <text class="ts t-mono" x="97" y="75" text-anchor="middle" font-size="11">32 kHz PILO</text>
 
         <!-- WDT Timer Counter -->
         <line x1="170" y1="62" x2="215" y2="62" stroke="var(--safety)" stroke-width="2"/>
@@ -127,9 +150,9 @@
 
         <!-- LFSR Challenge Generator -->
         <rect x="25" y="140" width="225" height="110" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
-        <text class="ts" x="137" y="165" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">16 位元硬體 LFSR 生成器</text>
+        <text class="ts" x="137" y="165" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">挑戰值產生器（示意）</text>
         <rect x="35" y="176" width="205" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="137" y="192" text-anchor="middle" font-size="11">x^16 + x^14 + x^13 + x^11 + 1</text>
+        <text class="ts t-mono" x="137" y="192" text-anchor="middle" font-size="11">e.g. x^16+x^14+x^13+x^11+1</text>
         <text class="ts t-mut" x="137" y="222" text-anchor="middle" font-size="10">即時產生偽隨機挑戰題目</text>
         <text class="ts t-mono" x="137" y="238" text-anchor="middle" font-size="10" font-weight="600" fill="var(--core)">Challenge Token</text>
 
@@ -162,23 +185,29 @@
       <figcaption>圖 6.2：問答式窗口看門狗硬體 LFSR 偽隨機挑戰與多項式金鑰硬體驗證電路原理圖</figcaption>
     </div>
 
-    <!-- ==================== FMEDA METRICS ==================== -->
-    <h2 id="fmeda-metrics-detail">3. FMEDA 定量隨機硬體失效率指標 (SPFM / LFM / FIT)</h2>
-    <p>ISO 26262 Part 5 規範了隨機硬體失效的量化驗證方法——<b>失效模式、影響與診斷分析（FMEDA）</b>。其衡量標準以 <b>FIT（Failures in Time，每 \(10^9\) 工作小時的失效次數）</b> 為單位。</p>
+    <ul>
+      <li><b>窗口下限：</b>抓到高速重複餵狗的跑飛迴圈。</li>
+      <li><b>窗口上限：</b>抓到卡死或任務超時。</li>
+      <li><b>金鑰：</b>韌體必須依序送出預期的金鑰，常把安全自測結果納入計算，證明任務確實執行。金鑰格式見 TRM。</li>
+    </ul>
+    <p>到 <a href="lab.html#wdt">互動實驗室</a> 試試過早、過晚與金鑰錯誤的情況。</p>
 
+    <h2 id="fmeda-metrics-detail">4. FMEDA 與硬體架構指標</h2>
+    <p>ISO 26262-5 以 <b>FMEDA</b>（失效模式、影響與診斷分析）量化隨機硬體失效。失效率單位為 <b>FIT</b>：每 \(10^9\) 元件小時 1 次失效。</p>
     <div class="math-block">
-      <b>單點故障指標 (Single-Point Fault Metric, SPFM)：</b><br>
-      \[\text{SPFM} = \frac{\sum (\lambda_{\text{SPF}} + \lambda_{\text{RF}})_{\text{covered}}}{\sum \lambda_{\text{safety}}} \ge 97\% \quad (\text{ASIL-C 規範})\]
-      <b>潛伏故障指標 (Latent Fault Metric, LFM)：</b><br>
-      \[\text{LFM} = \frac{\sum \lambda_{\text{MPF, detected}}}{\sum \lambda_{\text{MPF}}} \ge 80\% \quad (\text{ASIL-C 規範})\]
+      <b>單點故障指標 SPFM：</b>
+      \[\text{SPFM} = 1 - \frac{\sum(\lambda_{\text{SPF}} + \lambda_{\text{RF}})}{\sum \lambda}\]
+      <b>潛伏故障指標 LFM：</b>
+      \[\text{LFM} = 1 - \frac{\sum \lambda_{\text{MPF,latent}}}{\sum \lambda - \sum(\lambda_{\text{SPF}} + \lambda_{\text{RF}})}\]
+      其中 \(\lambda\) 為與安全相關的硬體失效率；SPF 為單點故障、RF 為殘餘故障（未被安全機制涵蓋的部分）、MPF,latent 為未被偵測的潛伏多點故障。
     </div>
-
     <div class="tblwrap"><table>
-      <tr><th>車規指標</th><th>ISO 26262 ASIL-B 門檻</th><th>ISO 26262 ASIL-C 門檻</th><th>PSoC™ 4 HVPA 典型達標值</th></tr>
-      <tr><td><b>SPFM (單點故障指標)</b></td><td>&ge; 90%</td><td><b>&ge; 97%</b></td><td><b>&gt; 98.4%</b></td></tr>
-      <tr><td><b>LFM (潛伏故障指標)</b></td><td>&ge; 60%</td><td><b>&ge; 80%</b></td><td><b>&gt; 85.2%</b></td></tr>
-      <tr><td><b>PMHF (隨機硬體失效機率)</b></td><td>&lt; 100 FIT</td><td><b>&lt; 100 FIT</b></td><td><b>&lt; 18 FIT (極高安全性)</b></td></tr>
+      <tr><th>指標（ISO 26262-5）</th><th>ASIL B</th><th>ASIL C</th><th>ASIL D</th></tr>
+      <tr><td><b>SPFM</b></td><td>≥ 90%</td><td>≥ 97%</td><td>≥ 99%</td></tr>
+      <tr><td><b>LFM</b></td><td>≥ 60%</td><td>≥ 80%</td><td>≥ 90%</td></tr>
+      <tr><td><b>PMHF</b></td><td>&lt; 100 FIT</td><td>&lt; 100 FIT</td><td>&lt; 10 FIT</td></tr>
     </table></div>
+    <div class="callout" style="--c:var(--safety)"><b>範例：</b>某電流量測路徑總失效率 50 FIT，其中 40 FIT 由 ECC、冗餘量測與看門狗涵蓋 99%，其餘 10 FIT 涵蓋 90%。殘餘故障 = 40×1% + 10×10% = 1.4 FIT，SPFM = 1 − 1.4/50 = <b>97.2%</b>，剛好達到 ASIL C 門檻。可見要提高等級，關鍵是提升「大失效率區塊」的診斷涵蓋率。</div>
 
     <div class="pager"></div>
   </article>

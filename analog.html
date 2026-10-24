@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/analog.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="02 高精度類比與電源電路原理 · MCU Notes">
+<meta property="og:description" content="深入解析 Infineon PSoC™ 4 HVPA PACSS 精密類比電路原理：4 端子凱爾文分流檢測濾波、斬波穩零前置放大器（PGA）、二階切換電容 Delta-Sigma 調變器、Sinc³ 數位降採樣濾波，以及 42V 高壓 LDMOS 穩壓電源與帶隙基準電路。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>02 高精度類比與電源電路原理 · MCU Notes</title>
 <meta name="description" content="深入解析 Infineon PSoC™ 4 HVPA PACSS 精密類比電路原理：4 端子凱爾文分流檢測濾波、斬波穩零前置放大器（PGA）、二階切換電容 Delta-Sigma 調變器、Sinc³ 數位降採樣濾波，以及 42V 高壓 LDMOS 穩壓電源與帶隙基準電路。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,16 +28,17 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="analog" data-ch="analog">
+<a class="skip" href="#main">跳到主要內容</a>
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
-  <article>
-    <div class="eyebrow">Chapter 02 · Precision Analog &amp; Power Circuit Schematics</div>
-    <h1>高精度類比與電源：微伏級感測與 42V 直連電路原理</h1>
-    <p class="lead">在車用電池管理系統（BMS）中，微控制器必須直接與惡劣的車載強電母線交互。本文以 <b>Infineon PSoC™ 4 HVPA-144K</b> 晶片架構為基礎，從電晶體與運算放大器層級深度剖析：4 端子凱爾文分流檢測抗干擾電路、斬波穩零前置放大器（Chopper PGA）、二階切換電容 ΔΣ 調變器、數位 Sinc³ 抽取濾波器，以及直連電瓶耐受 42V 拋負載的內部高壓 PMIC 穩壓電源電路。</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 02 · Precision Analog &amp; Power</div>
+    <h1>高精度類比與電源：微伏級感測與 42 V 直連電源</h1>
+    <p class="lead">IBS 必須在同一顆晶片上量測從數 mA 暗電流到上千 A 啟動電流的分流器訊號，並直接由電瓶供電。本章以 <b>Infineon PSoC™ 4 HVPA-144K</b> 的 PACSS 類比子系統為例，依訊號路徑說明：凱爾文接線與濾波 → 斬波 PGA → ΔΣ 調變器 → AGC 與 scaler → 抽取濾波鏈，最後是 42 V 等級的高壓穩壓器。</p>
+    <p class="src">晶片數值出處：PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K（DS）。圖中電晶體級細節為教學用概念圖，非 Infineon 公開的實際電路。</p>
 
-    <!-- ==================== CIRCUIT 1 ==================== -->
-    <h2 id="kelvin-filter">1. 4 端子凱爾文 (Kelvin) 分流檢測與差模/共模濾波電路原理</h2>
-    <p>車用分流電阻阻值極低（通常僅為 <b>100 µΩ</b>，即 0.0001 Ω）。如果使用傳統雙引腳電阻，焊錫接觸電阻（約 0.5 mΩ ~ 2 mΩ）與銅箔走線電阻將比分流電阻本體大上 5 至 20 倍，且銅的電阻溫度係數高達 3900 ppm/°C，會徹底摧毀量測精度。因此，電路必須採用<b>四端子凱爾文檢測（Kelvin 4-Wire Connection）</b>架構。</p>
+    <h2 id="kelvin-filter">1. 四端子凱爾文接線與 RC 抗混疊濾波</h2>
+    <p>車用分流電阻通常只有 <b>100 µΩ</b>。焊點與走線電阻可能比分流器本體還大，銅的溫度係數約 3900 ppm/°C，若量測線與大電流共用路徑，讀值會被嚴重污染。因此必須採用<b>四端子凱爾文接線</b>：大電流走外側端子，量測線直接取自電阻本體的內側端子。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="凱爾文檢測與抗混疊濾波電路原理圖">
@@ -110,25 +126,26 @@
         <rect x="720" y="115" width="85" height="140" rx="6" fill="var(--sunk)" stroke="var(--analog)" stroke-width="1.8"/>
         <text class="ts" x="762" y="165" text-anchor="middle" font-weight="700" font-size="14" fill="var(--analog)">PGA</text>
         <text class="ts" x="762" y="190" text-anchor="middle" font-size="12" font-weight="600">前級放大</text>
-        <text class="ts t-mut" x="762" y="215" text-anchor="middle" font-size="11">Gain 1~64x</text>
+        <text class="ts t-mut" x="762" y="215" text-anchor="middle" font-size="11">Gain 1–512</text>
       </svg>
       <figcaption>圖 2.1：4 端子凱爾文分流檢測與對稱對差分 / 共模 RC 抗混疊濾波器電路拓撲</figcaption>
     </div>
 
-    <h3>電路設計與濾波截止頻率計算</h3>
-    <p>在車載逆變器工作時，IGBT 或 SiC MOSFET 的高頻開關（10 kHz ~ 100 kHz）會透過空間電磁場與接地回路向分流電阻注入巨大的高頻共模噪聲（Common-Mode Noise）與差模毛刺。為防止高頻雜訊在 ΔΣ 採樣時混疊（Aliasing）回基頻，必須配置對稱的 RC 濾波網路：</p>
+    <h3>濾波器截止頻率</h3>
+    <div class="math-block">
+      差模電容 \(C_{\text{diff}}\) 看到的等效電阻是 \(2R_f\)，兩顆共模電容對差模訊號等效為串聯 \(C_{\text{cm}}/2\)：
+      \[f_{c,\text{diff}} = \frac{1}{2\pi \cdot 2R_f \cdot \left(C_{\text{diff}} + \tfrac{C_{\text{cm}}}{2}\right)}\]
+      代入 \(R_f = 100\,\Omega\)、\(C_{\text{diff}} = 100\,\text{nF}\)、\(C_{\text{cm}} = 10\,\text{nF}\)：
+      \[f_{c,\text{diff}} = \frac{1}{2\pi \times 200 \times 105\,\text{nF}} \approx 7.6\,\text{kHz}\]
+    </div>
     <ul>
-      <li><b>差模截止頻率（Differential Cut-off Frequency）：</b> 差模電容 \(C_{\text{diff}}\) 跨接於兩差分信號線之間，其等效電阻為 \(2 R_f\)。差模截止頻率公式為：
-        \[f_{c,\text{diff}} = \frac{1}{2\pi \cdot (2 R_f) \cdot \left( C_{\text{diff}} + \frac{C_{\text{cm}}}{2} \right)}\]
-        代入典型設計值 \(R_f = 100\,\Omega\)，\(C_{\text{diff}} = 100\,\text{nF}\)，\(C_{\text{cm}} = 10\,\text{nF}\)：
-        \[f_{c,\text{diff}} \approx \frac{1}{2\pi \times 200 \times 105 \times 10^{-9}} \approx 7.58\,\text{kHz}\]
-        該截止頻率既能完整保留 1 kHz 的電池動態充放電波形，又能將逆變器高頻 PWM 開關載波（&gt; 20 kHz）強烈衰減 20 dB 以上。</li>
-      <li><b>共模抑制平衡設計原則：</b> 兩側的 \(R_f\) 必須使用 0.1% 高精度對稱電阻，且 \(C_{\text{diff}} \ge 10 \times C_{\text{cm}}\)。若兩側電阻存在偏差 \(\Delta R\)，高頻共模干擾將轉化為偽差模信號，導致電流讀數劇烈跳動。</li>
+      <li>7.6 kHz 足以保留電流動態（DS 指出鉛酸應用主通道 8 kSPS 即足夠），同時對 20 kHz 以上的 PWM 雜訊提供一階衰減。</li>
+      <li>兩側 \(R_f\) 需匹配（建議 0.1%），並使 \(C_{\text{diff}} \ge 10\,C_{\text{cm}}\)，避免共模雜訊經不對稱轉成差模誤差。</li>
+      <li>晶片內另有約 30 kHz 頻寬的抗混疊濾波器（DS §1.8.1），外部 RC 主要對付更高頻的突波與 ESD。</li>
     </ul>
 
-    <!-- ==================== CIRCUIT 2 ==================== -->
-    <h2 id="chopper-pga">2. 斬波穩零前置放大器 (Chopper-Stabilized PGA) 電路原理</h2>
-    <p>在測量汽車鎖車暗電流（如 15 mA）時，100 µΩ 分流器兩端的差分電壓僅有 <b>1.5 µV</b>。然而，CMOS 製程放大器本質上存在兩大干擾源：半導體晶格缺陷導致的 <b>1/f 閃爍雜訊（Flicker Noise）</b>，以及差分對電晶體幾何失配造成的<b>輸入偏移電壓（Input Offset Voltage $V_{os}$，通常高達 0.5 mV ~ 2 mV）</b>。若不加以消除，1.5 µV 的真值將徹底被數百微伏的噪聲淹沒。PSoC™ 4 HVPA PACSS 採用了<b>斬波調變穩零技術（Chopper Stabilization）</b>。</p>
+    <h2 id="chopper-pga">2. 斬波穩零 PGA</h2>
+    <p>鎖車暗電流 15 mA 在 100 µΩ 上只有 <b>1.5 µV</b>。一般 CMOS 放大器的輸入偏移在數百 µV 等級，還有低頻 1/f 雜訊，足以淹沒訊號。PACSS 類比通道內建<b>斬波器（chopper）</b>以壓低偏移（DS §1.8：「The choppers minimize offset error」）。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 390" role="img" aria-label="斬波穩零放大器電路原理圖">
@@ -182,7 +199,7 @@
         <text class="ts t-mono" x="725" y="143" text-anchor="middle" font-size="11">數位硬體 Comb Filter</text>
         <text class="ts t-mut" x="725" y="172" text-anchor="middle" font-size="10">凹槽精準消除 f_ch 漣波</text>
         <line x1="725" y1="185" x2="725" y2="205" stroke="var(--ok)" stroke-width="2"/>
-        <text class="ts t-mono" x="725" y="215" text-anchor="middle" font-weight="700" font-size="11" fill="var(--ok)">輸出 D_out (24-bit)</text>
+        <text class="ts t-mono" x="725" y="215" text-anchor="middle" font-weight="700" font-size="11" fill="var(--ok)">→ Sinc² → FIR</text>
 
         <!-- Frequency Spectrum Diagrams below (Cleanly partitioned with generous padding) -->
         <rect x="25" y="245" width="245" height="120" fill="var(--surface)" stroke="var(--line)" rx="6"/>
@@ -208,17 +225,15 @@
       <figcaption>圖 2.2：斬波穩零前置放大器（Chopper-Stabilized PGA）電路架構與頻譜搬移原理解析</figcaption>
     </div>
 
-    <h3>斬波穩零運作三步驟原理</h3>
     <ol>
-      <li><b>輸入調變（Modulation，CHOP 1）：</b> 輸入直流微伏信號 \(V_{\text{in}}\) 通過由非重疊時脈 \(\phi_1, \phi_2\) 控制的 MOS 開關矩陣，以高達 \(f_{\text{ch}} = 250\,\text{kHz}\) 的頻率交替反轉極性。直流信號被調變為頻率為 \(f_{\text{ch}}\) 的高頻方波交流信號。</li>
-      <li><b>中間級放大（Amplification）：</b> 交流化的方波信號進入運算放大器核心被放大 \(A_v\) 倍。此時運算放大器內部電晶體產生的原生直流偏移電壓 \(V_{os}\) 與低頻 1/f 閃爍雜訊<b>直接疊加在放大級輸出端，保持在直流與低頻段</b>。</li>
-      <li><b>輸出解調與濾波（Demodulation &amp; Filtering，CHOP 2）：</b> 第二組同步開關矩陣對放大後的信號進行二次換向。原本被調變至 \(f_{\text{ch}}\) 的目標微弱信號被<b>精準還原回直流（DC）基頻</b>；而放大器自身產生的 \(V_{os}\) 與 1/f 雜訊則經歷了第一次換向，被<b>搬移（Up-Modulated）到 \(f_{\text{ch}}\) 及其奇次諧波的高頻處</b>。</li>
+      <li><b>調變（CHOP 1）：</b>輸入以頻率 \(f_{\text{ch}}\) 交替反相，直流訊號被搬到 \(f_{\text{ch}}\)。</li>
+      <li><b>放大：</b>放大器自身的偏移 \(V_{os}\) 與 1/f 雜訊仍停留在直流附近。</li>
+      <li><b>解調（CHOP 2）：</b>再次同步反相後，訊號回到直流，而 \(V_{os}\) 與 1/f 雜訊被搬到 \(f_{\text{ch}}\)，再由後級數位濾波器濾除。</li>
     </ol>
-    <p>隨後，後級的數位 Sinc³ 降採樣低通濾波器將位於 \(f_{\text{ch}}\) 處的高頻雜訊與截波紋波（Chopping Ripples）完全濾除，使得放大器整體的等效輸入偏移電壓由原始的 250 µV <b>驟降至 0.5 µV 以下（溫漂 &lt; 5 nV/°C）</b>，實現真正的微伏級零漂移感測。</p>
+    <div class="callout" style="--c:var(--warn)"><b>斬波的極限：</b>斬波只能消除<b>放大器內部</b>的誤差。分流器兩端的熱電勢（Seebeck）、接線不對稱造成的壓降都是真實的輸入電壓，斬波無法分辨，必須靠佈局對稱與零電流校準處理。見 <a href="lessons.html#case3-seebeck">案例三</a>。</div>
 
-    <!-- ==================== CIRCUIT 3 ==================== -->
-    <h2 id="delta-sigma-schematic">3. 二階切換電容 Delta-Sigma (ΔΣ) 調變器電路原理</h2>
-    <p>PSoC™ 4 HVPA PACSS 採用的類比-數位轉換器是<b>二階切換電容（Switched-Capacitor, SC）ΔΣ 調變器</b>。它由兩級全差分積分器、一個高速鎖存比較器（1-bit Quantizer）與一個 1-bit 回饋 DAC 組成。</p>
+    <h2 id="delta-sigma-schematic">3. ΔΣ 調變器</h2>
+    <p>每顆 ADC 由 PGA、抗混疊濾波、緩衝放大器與<b>多位準（multi-level）ΔΣ 調變器</b>組成（DS §1.8.1）。資料手冊提到連續轉換需使用「比調變器高一階」的 Sinc³ 抽取器，代表調變器是二階。下圖以單端切換電容積分器示意二階迴路。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 370" role="img" aria-label="二階切換電容 Delta-Sigma 調變器電路原理圖">
@@ -287,14 +302,14 @@
 
         <!-- Clocked 1-bit Latched Comparator -->
         <rect x="625" y="112" width="105" height="66" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="677" y="136" text-anchor="middle" font-weight="700" font-size="13" fill="var(--bad)">1-Bit Latch</text>
+        <text class="ts" x="677" y="136" text-anchor="middle" font-weight="700" font-size="13" fill="var(--bad)">Multi-level Q</text>
         <rect x="640" y="146" width="75" height="22" rx="3" fill="var(--sunk)"/>
         <text class="ts t-mono" x="677" y="161" text-anchor="middle" font-size="11" font-weight="600">時脈 fs</text>
 
         <!-- Modulator Bitstream Output -->
         <line x1="730" y1="145" x2="815" y2="145" stroke="var(--bad)" stroke-width="3"/>
         <circle cx="815" cy="145" r="4.5" fill="var(--bad)"/>
-        <text class="ts t-mono" x="765" y="125" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">D_out (1-bit PDM)</text>
+        <text class="ts t-mono" x="765" y="125" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">D_out (multi-level)</text>
         <text class="ts t-mut" x="765" y="180" text-anchor="middle" font-size="11" font-weight="600">往 Sinc&sup3; 濾波器</text>
 
         <!-- Feedback 1-bit DAC path (Complete Solid Junctions) -->
@@ -303,7 +318,7 @@
         <line x1="755" y1="280" x2="570" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
 
         <rect x="290" y="250" width="280" height="60" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
-        <text class="ts" x="430" y="274" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">1 位元差分 DAC 回授單元</text>
+        <text class="ts" x="430" y="274" text-anchor="middle" font-weight="700" font-size="13" fill="var(--warn)">多位準回授 DAC</text>
         <text class="ts t-mono" x="430" y="295" text-anchor="middle" font-size="11" font-weight="600">V_feedback = &plusmn;V_ref (1.200V)</text>
 
         <line x1="290" y1="280" x2="185" y2="280" stroke="var(--warn)" stroke-width="2.2" stroke-dasharray="6 3"/>
@@ -312,41 +327,111 @@
       <figcaption>圖 2.3：二階切換電容（Switched-Capacitor）差分 &Delta;&Sigma; 調變器電路拓撲與動態噪聲整形機制</figcaption>
     </div>
 
-    <h3>電荷平衡方程與二階雜訊整形數學模型</h3>
-    <p>調變器在時脈驅動下工作於兩相非重疊時脈 \(\phi_1\)（採樣相）與 \(\phi_2\)（積分相）。在每個時脈週期中，輸入電壓 \(V_{\text{in}}\) 對採樣電容 \(C_{s1}\) 充電，隨後回饋 DAC 根據前一週期的比較器輸出 \(D_{\text{out}} \in \{+1, -1\}\) 注入反向電荷：</p>
     <div class="math-block">
-      <b>積分節點電荷平衡方程式：</b><br>
-      \[Q_{\text{net}} = C_{s1} \cdot V_{\text{in}}[n] - D_{\text{out}}[n] \cdot C_{s1} \cdot V_{\text{REF}}\]
-      若輸入信號為正，調變器輸出位元流中 \(+1\) 的密度大於 \(-1\)；積分器將差值電荷不斷累加。
+      二階調變器的 z 域輸出：
+      \[Y(z) = z^{-2}X(z) + (1 - z^{-1})^2 E(z)\]
+      雜訊轉移函數 \(\text{NTF}(z) = (1 - z^{-1})^2\)，在低頻 \(|\text{NTF}(e^{j\omega})| \approx \omega^2\)：量化雜訊被推往高頻，再由抽取濾波器濾除。理想二階調變器的訊噪比每倍增一次 OSR 約提升 15 dB；多位準量化器可再降低量化雜訊並改善穩定性。
     </div>
-    <p>在 \(z\) 域中，二階調變器的輸出離散轉移方程為：</p>
-    <div class="math-block">
-      \[Y(z) = z^{-2} X(z) + (1 - z^{-1})^2 E(z)\]
-      其中 \(X(z)\) 為輸入信號，\(E(z)\) 為比較器的 1-bit 量化誤差。關鍵在於量化噪聲傳遞函數（Noise Transfer Function, NTF）：
-      \[\text{NTF}(z) = (1 - z^{-1})^2\]
-      在直流附近（\(z \to 1\)，即 \(\omega \to 0\)），\(\text{NTF}(e^{j\omega}) = (1 - e^{-j\omega})^2 \approx \omega^2\)。這意味著<b>低頻段的量化噪聲被二階微分算子強烈壓制為零</b>，大量噪聲被「推向（Shaped）」高頻。配合超採樣率 \(OSR = 256\)，基頻帶內的有效訊噪比（SNR）達到 <b>98 dB 以上，等效有效位元數 ENOB &gt; 16.0 bits</b>。</p>
 
-    <!-- ==================== CIRCUIT 4 ==================== -->
-    <h2 id="hv-pmic-schematic">4. 直連 42V 高壓 PMIC 穩壓電源與帶隙基準電路原理</h2>
-    <p>PSoC™ 4 HVPA 能在無外掛降壓晶片的情況下直接連接汽車 12V/24V 電瓶極柱，其內部高壓調節器（HV Linear Regulator）的核心在於<b>橫向雙擴散功率管（LDMOS）與曲率補償帶隙基準源（Bandgap Reference）</b>的協同設計。</p>
+    <h2 id="agc-scaler">4. AGC 與 Scaler：從 mA 到 kA 的動態範圍</h2>
+    <p>電流通道增益範圍 <b>1–512</b>。AGC 以比較器監看輸入，超過門檻就透過查找表同時調整 PGA、調變器增益與 scaler（DS §1.8.5）。Scaler 把結果乘上 <b>512/G</b>，讓每個 LSB 的權重固定：100 µΩ 分流器時 1 LSB = <b>0.715 mA</b>。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 260" role="img" aria-label="AGC 與 scaler 方塊圖">
+        <rect x="20" y="90" width="110" height="60" rx="6" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="75" y="125" text-anchor="middle" font-size="12" font-weight="700">R_shunt</text>
+        <line x1="130" y1="120" x2="170" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="170" y="80" width="120" height="80" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="230" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">PGA</text>
+        <text class="ts t-mut" x="230" y="134" text-anchor="middle" font-size="11">增益 1–512</text>
+        <line x1="290" y1="120" x2="330" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="330" y="80" width="120" height="80" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="390" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">ΔΣ + Sinc</text>
+        <text class="ts t-mut" x="390" y="134" text-anchor="middle" font-size="11">DSM + 抽取</text>
+        <line x1="450" y1="120" x2="490" y2="120" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="490" y="80" width="140" height="80" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="560" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Scaler</text>
+        <text class="ts t-mono" x="560" y="134" text-anchor="middle" font-size="11">× 512 / G</text>
+        <line x1="630" y1="120" x2="670" y2="120" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="670" y="80" width="150" height="80" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="745" y="112" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">正規化結果</text>
+        <text class="ts t-mono" x="745" y="134" text-anchor="middle" font-size="11">1 LSB = 0.715 mA</text>
+        <rect x="250" y="200" width="280" height="44" rx="8" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts" x="390" y="227" text-anchor="middle" font-weight="700" font-size="12" fill="var(--warn)">AGC 門檻比較 + 查找表</text>
+        <path d="M390 160V200" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4"/>
+        <path d="M250 222H230V160" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+        <path d="M530 222H560V160" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+        <text class="ts t-mut" x="410" y="185" font-size="10">依輸入大小換檔</text>
+      </svg>
+      <figcaption>圖 2.5：AGC 以查找表同時設定 PGA、調變器增益與 scaler，使輸出 LSB 權重不隨增益改變。</figcaption>
+    </div>
+
+    <div class="tblwrap"><table>
+      <tr><th>增益 G</th><th>輸入滿量程 1.2 V/G</th><th>100 µΩ 時的電流滿量程</th><th>Scaler</th></tr>
+      <tr><td>4</td><td>±300 mV</td><td>±3000 A</td><td>×128</td></tr>
+      <tr><td>16</td><td>±75 mV</td><td>±750 A</td><td>×32</td></tr>
+      <tr><td>64</td><td>±18.75 mV</td><td>±187.5 A</td><td>×8</td></tr>
+      <tr><td>512</td><td>±2.34 mV</td><td>±23.4 A</td><td>×1</td></tr>
+    </table></div>
+    <p>DS 範例中，AGC 從 0 到 3000 A 滿量程使用 4–512 的增益；資料手冊建議先提高 PGA 增益、再提高調變器增益，以降低輸入雜訊。到 <a href="lab.html#shunt">互動實驗室</a> 拖動電流，看 AGC 如何換檔。</p>
+
+    <h2 id="decimation-chain">5. 抽取濾波鏈：Sinc³ → Sinc² → FIR</h2>
+    <p>調變器輸出經 Sinc³（抽取比 DR）、Sinc²（抽取比 DR2）與 16 tap 可程式 FIR，之後還有補償、平均/累加與窗口比較（DS §1.8.3–1.8.4）。</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 200" role="img" aria-label="抽取濾波鏈與資料率">
+        <rect x="20" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="85" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--analog)">ΔΣ 調變器</text>
+        <text class="ts t-mono" x="85" y="112" text-anchor="middle" font-size="11">3.072 MHz</text>
+        <line x1="150" y1="95" x2="190" y2="95" stroke="var(--analog)" stroke-width="2.5"/>
+        <rect x="190" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="255" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Sinc³ ÷ DR</text>
+        <text class="ts t-mono" x="255" y="112" text-anchor="middle" font-size="11">DR 64 → 48 kSPS</text>
+        <line x1="320" y1="95" x2="360" y2="95" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="360" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="425" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Sinc² ÷ DR2</text>
+        <text class="ts t-mono" x="425" y="112" text-anchor="middle" font-size="11">DR2 48 → 1 kSPS</text>
+        <line x1="490" y1="95" x2="530" y2="95" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="530" y="60" width="130" height="70" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="595" y="90" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">可程式 FIR</text>
+        <text class="ts t-mono" x="595" y="112" text-anchor="middle" font-size="11">16 taps</text>
+        <line x1="660" y1="95" x2="700" y2="95" stroke="var(--ok)" stroke-width="2.5"/>
+        <rect x="700" y="60" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="760" y="90" text-anchor="middle" font-weight="700" font-size="12" fill="var(--ok)">平均 / 門檻</text>
+        <text class="ts t-mut" x="760" y="112" text-anchor="middle" font-size="10">窗口比較中斷</text>
+        <text class="ts t-mut" x="255" y="160" text-anchor="middle" font-size="11">零點：48 kHz 倍數</text>
+        <text class="ts t-mut" x="425" y="160" text-anchor="middle" font-size="11">零點：1 kHz 倍數</text>
+      </svg>
+      <figcaption>圖 2.6：DS 範例的抽取鏈與各級資料率。</figcaption>
+    </div>
+
+    <ul>
+      <li>Sinc³ 零點在 \(N \cdot f_{\text{mod}}/DR\)；Sinc² 零點在 \(N \cdot f_{\text{mod}}/(DR \cdot DR2)\)。DS 範例：OSR 64、3.072 MHz → 48 kHz；DR2 = 48 → 1 kHz 零點。</li>
+      <li>DS：鉛酸電池應用的主電壓/電流通道只需 8 kSPS，因此第三個數位通道可用來量測溫度或診斷。</li>
+      <li>要同時消除 50 Hz 與 60 Hz 工頻，平均視窗須為 100 ms 的整數倍（零點落在 10 Hz 倍數）。單靠調變器時脈與 OSR 得到的是 kHz 等級零點，不會自動對準 50/60 Hz。</li>
+    </ul>
+    <p>到 <a href="lab.html#sinc">互動實驗室</a> 調整 DR、DR2 與平均長度，直接看零點位置。</p>
+
+    <h2 id="hv-pmic-schematic">6. 高壓穩壓器與能隙基準（概念）</h2>
+    <p>HVPA 可直接由 12 V/24 V 電瓶供電：VBAT <b>3.6–28 V</b> 工作，可運作至 <b>42 V</b>（DS §1.2.1）。高壓穩壓器產生 3.3 V 的 VDDD 與 VDDA；VBAT 低於 4 V 時輸出可能降至 2.7 V。VDDD 另可供應外部負載最多 10 mA。內部再由核心穩壓器產生 1.8 V 的 VCCD。</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="42V 耐受高壓穩壓器與帶隙基準電路拓撲圖">
         <!-- Input KL30 from left -->
         <line x1="20" y1="75" x2="110" y2="75" stroke="#c0392b" stroke-width="3"/>
         <circle cx="20" cy="75" r="4" fill="#c0392b"/>
-        <text class="ts t-mono" x="25" y="60" font-weight="700" font-size="11" fill="#c0392b">VBAT (3.2V~42V)</text>
+        <text class="ts t-mono" x="25" y="60" font-weight="700" font-size="11" fill="#c0392b">VBAT 3.6–28 V (≤ 42 V)</text>
 
         <!-- Reverse Protection Diode -->
         <polygon points="110,68 125,75 110,82" fill="var(--ink)"/>
         <line x1="125" y1="68" x2="125" y2="82" stroke="var(--ink)" stroke-width="2"/>
         <line x1="125" y1="75" x2="185" y2="75" stroke="#c0392b" stroke-width="3"/>
-        <text class="ts" x="117" y="98" text-anchor="middle" font-size="10" fill="var(--muted)">防反接</text>
+        <text class="ts" x="117" y="98" text-anchor="middle" font-size="10" fill="var(--muted)">外部防反接</text>
 
         <!-- Power LDMOS Pass Transistor -->
         <rect x="185" y="50" width="115" height="52" rx="6" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
-        <text class="ts" x="242" y="73" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">HV-LDMOS</text>
-        <text class="ts t-mono" x="242" y="90" text-anchor="middle" font-size="10">V_BR &gt; 45V</text>
+        <text class="ts" x="242" y="73" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">HV pass device</text>
+        <text class="ts t-mono" x="242" y="90" text-anchor="middle" font-size="10">rated for 42 V</text>
 
         <!-- Regulated VDDD 3.3V Output Line -->
         <line x1="300" y1="75" x2="570" y2="75" stroke="var(--ok)" stroke-width="3"/>
@@ -386,7 +471,7 @@
         <rect x="40" y="230" width="180" height="70" rx="6" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts" x="130" y="254" text-anchor="middle" font-weight="700" font-size="12" fill="var(--analog)">能隙基準源 (Bandgap)</text>
         <rect x="55" y="265" width="150" height="22" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="130" y="280" text-anchor="middle" font-size="11">V_BG = 1.200 V (&plusmn;0.05%)</text>
+        <text class="ts t-mono" x="130" y="280" text-anchor="middle" font-size="11">V_BG ≈ 1.2 V</text>
         <line x1="220" y1="230" x2="300" y2="230" stroke="var(--analog)" stroke-width="2"/>
         <text class="ts t-mono" x="250" y="222" font-size="10" font-weight="600" fill="var(--analog)">V_ref</text>
 
@@ -404,16 +489,14 @@
         <circle cx="815" cy="75" r="3" fill="var(--core)"/>
         <text class="ts t-mono" x="780" y="62" font-size="10" font-weight="700" fill="var(--core)">VCCD=1.8V</text>
       </svg>
-      <figcaption>圖 2.4：42V 耐受高壓 LDMOS 線性穩壓器、折疊保護回路與帶隙能隙基準源電路拓撲</figcaption>
+      <figcaption>圖 2.4：高壓線性穩壓器與能隙基準的概念示意（外部防反接、內部穩壓與 1.8 V 核心穩壓）</figcaption>
     </div>
 
-    <h3>電路工作機制與負載突降抗擾原理解析</h3>
     <ul>
-      <li><b>能隙基準源（Bandgap Reference，Brokaw Cell）：</b> 利用具有正溫度係數（PTAT）的熱電壓 \(V_T = \frac{kT}{q}\) 與具有負溫度係數（CTAT）的晶體管基極-射極電壓 \(V_{BE}\) 進行加權相加：
-        \[V_{\text{BG}} = V_{BE} + K \cdot V_T \approx 1.200\text{ V}\]
-        晶片內建雷射/eFuse 修調電阻梯，將全溫區（-40°C ~ +125°C）電壓溫漂係數嚴格壓制在 <b>15 ppm/°C 以內</b>。</li>
-      <li><b>分壓閉環負回授：</b> 輸出電壓 \(V_{\text{DDD}}\) 經電阻分壓產生反饋電壓 \(V_{\text{fb}} = V_{\text{DDD}} \cdot \frac{R_2}{R_1 + R_2}\)。誤差放大器比較 \(V_{\text{fb}}\) 與 \(V_{\text{BG}}\)，動態調整功率 LDMOS 的閘極電壓。當輸出負載抽載增大導致電壓下跌時，誤差放大器拉高閘極電壓以降低 LDMOS 導通電阻，維持輸出於精確的 3.30V。</li>
-      <li><b>42V 負載突降（Load Dump）自保機制：</b> 在高達 42V 的瞬態衝擊下，功率管的漂移區（Drift Region）承受絕大部分壓降；閘極配置有 38V 主動齊納鉗位二極體，限制閘-源極跨壓 \(V_{GS} \le 12\text{V}\)，防止超薄閘極氧化層被高壓擊穿。同時，誤差放大器具備高達 <b>65 dB 的電源抑制比（PSRR @ 100 kHz）</b>，確保後端敏感的 16-bit ADC 類比電源不受電瓶突波干擾。</li>
+      <li><b>能隙基準：</b>PTAT 的 \(V_T = kT/q\) 與 CTAT 的 \(V_{BE}\) 加權相加，得到約 1.2 V、溫度係數很低的參考電壓：\(V_{\text{BG}} = V_{BE} + K \cdot V_T\)。</li>
+      <li><b>閉迴路調節：</b>誤差放大器比較分壓回授與 \(V_{\text{BG}}\)，調整高壓導通元件，使輸出維持在 3.3 V。</li>
+      <li><b>外部元件：</b>DS 圖 1 要求 VBAT 串聯 R1（10–15 Ω）與 C1（2.2 µF）濾波，並使用外部防反接二極體；VDDD、VDDA、VCCD 都需要 X7R 旁路電容。</li>
+      <li><b>過壓：</b>42 V 是絕對最大額定。DS 註明為防止高壓脈衝損壞，<b>可能需要外部保護</b>（串聯電阻、二極體、TVS）。詳見 <a href="process.html#active-clamp-circuit">第 04 章</a>。</li>
     </ul>
 
     <div class="pager"></div>

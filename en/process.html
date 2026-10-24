@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/process.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/process.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/process.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/process.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="04 HV Silicon Process &amp; Clamp Circuits · MCU Notes">
+<meta property="og:description" content="Semiconductor process integration in automotive mixed-signal MCUs: BCD (Bipolar-CMOS-DMOS) technology, Deep Trench Isolation (DTI), ISO 7637-2 load dump active dynamic clamping circuits, and thermal packaging.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/process.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>04 HV Silicon Process &amp; Clamp Circuits · MCU Notes</title>
 <meta name="description" content="Semiconductor process integration in automotive mixed-signal MCUs: BCD (Bipolar-CMOS-DMOS) technology, Deep Trench Isolation (DTI), ISO 7637-2 load dump active dynamic clamping circuits, and thermal packaging.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,30 +28,65 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="process" data-ch="fab">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
-    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Silicon Protection Circuits</div>
-    <h1>High-Voltage Silicon Process: Monolithic Integration &amp; 42V Active Clamp Circuits</h1>
-    <p class="lead">Integrating 1.8V dense logic, microvolt-sensitive differential analog amplifiers, and 42V high-voltage power devices on one monolithic piece of silicon requires <b>BCD (Bipolar-CMOS-DMOS) smart power fabrication technology</b>, paired with nanosecond-responsive <b>Active Dynamic Clamp</b> protection against automotive alternator Load Dump surges.</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 04 · High-Voltage Process &amp; Protection</div>
+    <h1>High-Voltage Silicon Process: Monolithic Integration &amp; Over-Voltage Protection</h1>
+    <p class="lead">Putting a 1.8 V digital core, microvolt-level analog and 42 V-capable devices on one die needs a mixed-signal process with high-voltage devices (for example <b>BCD: Bipolar-CMOS-DMOS</b>), plus over-voltage protection planned at system level. This chapter covers where load dump comes from, the test standard, protection layering, and isolation and thermal aspects of the process.</p>
+    <p class="src">Device figures: PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K (“DS”). Infineon does not publish the HVPA process node or internal clamp design; transistor-level content here describes general principles.</p>
 
-    <!-- ==================== CIRCUIT 1 ==================== -->
-    <h2 id="active-clamp-circuit">1. On-Chip 42V Load Dump Active Dynamic Clamp Circuit Principles</h2>
-    <p>Under ISO 7637-2 specifications, vehicle 12V electrical systems experience alternator Load Dump (Pulse 5b) transients up to 40V ~ 42V lasting up to 400 milliseconds. Relying solely on external discrete TVS diodes introduces breakdown voltage tolerance risks (typically spanning 32V to 45V), which may allow internal thin gate oxides to rupture before external protection conducts. PSoC™ 4 HVPA monolithically integrates an expansive <b>Active Dynamic LDMOS Avalanche Clamp</b> along the silicon die periphery.</p>
+    <h2 id="active-clamp-circuit">1. Load Dump &amp; Layered Over-Voltage Protection</h2>
+    <p>A load dump happens when the battery is disconnected while the alternator is charging: the alternator field cannot collapse instantly, so its output rises sharply for hundreds of milliseconds. The current standard is <b>ISO 16750-2</b> (the old ISO 7637-2:2004 pulses 5a/5b moved there).</p>
+    <div class="tblwrap"><table>
+      <tr><th>12 V system</th><th>Test A (unsuppressed)</th><th>Test B (centrally suppressed)</th></tr>
+      <tr><td>Peak</td><td>U<sub>s</sub> 79–101 V</td><td>U<sub>s</sub>* limited inside the alternator, commonly 35 V (OEM-specific)</td></tr>
+      <tr><td>Duration t<sub>d</sub></td><td>40–400 ms</td><td>Same as Test A</td></tr>
+      <tr><td>Source resistance R<sub>i</sub></td><td>0.5–4 Ω</td><td>Same as Test A</td></tr>
+    </table></div>
+    <p>The HVPA VBAT operates from 3.6 to 28 V, stays functional up to 42 V, and has an <b>absolute maximum of 42 V</b> (DS SIDA5); the LIN pin is rated −27 V to +42 V. Note 2 of the absolute maximum ratings says: <b>“To prevent damage caused by high-voltage pulses, external protection (that is, series resistor, diode, TVS) may be required.”</b> The right design approach is layered protection, not relying on an on-chip clamp to replace a TVS:</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 250" role="img" aria-label="Layered over-voltage protection">
+        <rect x="20" y="60" width="180" height="110" rx="8" fill="var(--surface)" stroke="var(--app)" stroke-width="2"/>
+        <text class="ts" x="110" y="88" text-anchor="middle" font-weight="700" font-size="13" fill="var(--app)">① Alternator</text>
+        <text class="ts t-mut" x="110" y="112" text-anchor="middle" font-size="11">Test B central clamp</text>
+        <text class="ts t-mono" x="110" y="138" text-anchor="middle" font-size="11">Uₛ* ≈ 35 V</text>
+        <line x1="200" y1="115" x2="250" y2="115" stroke="#c0392b" stroke-width="3"/>
+        <rect x="250" y="60" width="200" height="110" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="350" y="88" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">② Module protection</text>
+        <text class="ts t-mut" x="350" y="112" text-anchor="middle" font-size="11">TVS + R1/C1 + reverse diode</text>
+        <text class="ts t-mono" x="350" y="138" text-anchor="middle" font-size="11">DS: R1 10–15 Ω, C1 2.2 µF</text>
+        <line x1="450" y1="115" x2="500" y2="115" stroke="#c0392b" stroke-width="3"/>
+        <rect x="500" y="60" width="160" height="110" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="580" y="88" text-anchor="middle" font-weight="700" font-size="13" fill="var(--fab)">③ Chip VBAT</text>
+        <text class="ts t-mut" x="580" y="112" text-anchor="middle" font-size="11">operating 3.6–28 V</text>
+        <text class="ts t-mono" x="580" y="138" text-anchor="middle" font-size="11">abs. max 42 V</text>
+        <line x1="660" y1="115" x2="700" y2="115" stroke="var(--ok)" stroke-width="3"/>
+        <rect x="700" y="80" width="120" height="70" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="760" y="110" text-anchor="middle" font-weight="700" font-size="12" fill="var(--ok)">VDDD 3.3 V</text>
+        <text class="ts t-mono" x="760" y="130" text-anchor="middle" font-size="11">VCCD 1.8 V</text>
+        <text class="ts t-mut" x="420" y="210" text-anchor="middle" font-size="11">Each layer must keep the next one below its rating</text>
+      </svg>
+      <figcaption>Figure 4.2: The three layers of load-dump protection.</figcaption>
+    </div>
+
+    <p>The chip still contains ESD and transient clamp structures. The figure shows a common RC/Zener-triggered active clamp: a Zener or RC network detects over-voltage or a fast dV/dt and turns on a large transistor that steers the energy to ground.</p>
 
     <div class="fig">
       <svg class="viz" viewBox="0 0 840 380" role="img" aria-label="On-Chip 42V Active Dynamic Clamp Circuit Schematic">
         <!-- Power Rail VBAT -->
         <line x1="30" y1="60" x2="800" y2="60" stroke="#c0392b" stroke-width="4"/>
-        <text class="ts t-mono" x="35" y="45" font-weight="700" font-size="12" fill="#c0392b">VBAT Rail (Normal: 12V, ISO 7637-2 Load Dump Surge up to 42V)</text>
+        <text class="ts t-mono" x="35" y="45" font-weight="700" font-size="12" fill="#c0392b">VBAT (normally 12–14 V; transient sources in the table below)</text>
 
         <!-- Zener Diode Stack (36.5V Breakdown) -->
         <line x1="190" y1="60" x2="190" y2="90" stroke="var(--ink)" stroke-width="2"/>
         <rect x="135" y="90" width="110" height="75" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
-        <text class="ts" x="190" y="115" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">Zener Stack</text>
+        <text class="ts" x="190" y="115" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">Zener / breakdown trigger</text>
         <rect x="145" y="125" width="90" height="22" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="190" y="140" text-anchor="middle" font-size="11">V_Z = 36.5 V</text>
-        <text class="ts t-mut" x="190" y="157" text-anchor="middle" font-size="9">Temp-Compensated</text>
+        <text class="ts t-mono" x="190" y="140" text-anchor="middle" font-size="11">V_Z ≈ trigger</text>
+        <text class="ts t-mut" x="190" y="157" text-anchor="middle" font-size="9">static over-voltage</text>
 
         <!-- dV/dt Transient Trigger Network -->
         <line x1="320" y1="60" x2="320" y2="95" stroke="var(--ink)" stroke-width="2"/>
@@ -58,7 +108,7 @@
         <circle cx="190" cy="185" r="4" fill="var(--warn)"/>
         <line x1="190" y1="185" x2="400" y2="185" stroke="var(--warn)" stroke-width="2.5"/>
         <rect x="235" y="168" width="130" height="22" rx="3" fill="var(--surface)" stroke="var(--line)"/>
-        <text class="ts" x="300" y="183" text-anchor="middle" font-weight="700" font-size="10" fill="var(--warn)">V_trig (Turn-on &gt; 0.7V)</text>
+        <text class="ts" x="300" y="183" text-anchor="middle" font-weight="700" font-size="10" fill="var(--warn)">V_trig</text>
 
         <!-- Pre-Driver Inverter / Level Buffer -->
         <rect x="400" y="145" width="140" height="80" rx="6" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
@@ -73,12 +123,12 @@
 
         <!-- Main Giant LDMOS Clamp Transistor -->
         <rect x="600" y="105" width="200" height="150" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.5"/>
-        <text class="ts" x="700" y="135" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">Main Power LDMOS</text>
+        <text class="ts" x="700" y="135" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">Large clamp transistor</text>
         <rect x="615" y="148" width="170" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="700" y="164" text-anchor="middle" font-size="11">Channel Width W = 15,000 &mu;m</text>
+        <text class="ts t-mono" x="700" y="164" text-anchor="middle" font-size="11">Area sized for energy</text>
         <rect x="615" y="178" width="170" height="24" rx="3" fill="var(--sunk)"/>
-        <text class="ts t-mono" x="700" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#c0392b">Sinks I_clamp &gt; 3.5 A</text>
-        <text class="ts t-mut" x="700" y="222" text-anchor="middle" font-size="10">V_BR = 45V Avalanche</text>
+        <text class="ts t-mono" x="700" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#c0392b">Sinks transient current</text>
+        <text class="ts t-mut" x="700" y="222" text-anchor="middle" font-size="10">Breakdown &gt; clamp level</text>
 
         <line x1="700" y1="60" x2="700" y2="105" stroke="#c0392b" stroke-width="4"/>
         <line x1="700" y1="255" x2="700" y2="300" stroke="var(--ink)" stroke-width="4"/>
@@ -88,29 +138,37 @@
         <path d="M692 300h16M696 304h8M699 308h2" stroke="var(--ink)" stroke-width="2"/>
         <text class="ts" x="35" y="322" font-weight="700" font-size="12">GND (Common Die P-Substrate)</text>
       </svg>
-      <figcaption>Figure 4.1: Monolithic 42V Load Dump Active Dynamic LDMOS Avalanche Clamp Schematic</figcaption>
+      <figcaption>Figure 4.1: Generic RC/Zener-triggered active clamp concept (common in ESD and transient protection; the HVPA’s internal structure is not public)</figcaption>
     </div>
 
-    <h3>Dual Triggering Mechanisms</h3>
     <ul>
-      <li><b>Static Overvoltage Trigger:</b> When the alternator supply rises slowly past the Zener breakdown threshold \(V_Z = 36.5\text{V}\), avalanche current flows through bias resistor \(R_{\text{trig}}\), driving the trigger node to \(V_{\text{trig}} = I_{\text{zener}} \cdot R_{\text{trig}} &gt; 0.7\text{V}\). The push-pull pre-driver quickly pulls the gate of the massive power LDMOS high, clamping the supply line <b>strictly below 38.5V</b>.</li>
-      <li><b>Transient \(dV/dt\) Fast Pre-Trigger:</b> During ultra-fast voltage spikes (e.g. contactor inductive disengagement with \(dV/dt &gt; 10\,\text{V/}\mu\text{s}\)), high-pass capacitor \(C_{\text{trig}}\) injects displacement current into the trigger node, opening the LDMOS channel <b>10 nanoseconds (ns) ahead of breakdown</b>, completely eliminating turn-on delay blind spots.</li>
+      <li><b>Static trigger:</b> when the voltage slowly rises past the trigger point, Zener current builds a voltage across \(R_{\text{trig}}\) and turns on the clamp transistor.</li>
+      <li><b>dV/dt trigger:</b> a very fast transient injects displacement current through \(C_{\text{trig}}\), turning the clamp on before the voltage reaches device limits.</li>
+      <li><b>Energy limit:</b> on-chip clamps have limited area and energy capability — fine for ESD and short transients. Load-dump energy (hundreds of ms, tens of joules) must be absorbed externally. Estimate TVS energy in the <a href="lab.html#loaddump">MCU Lab</a>.</li>
     </ul>
 
-    <!-- ==================== BCD DETAILS ==================== -->
-    <h2 id="bcd-technology">2. BCD (Bipolar-CMOS-DMOS) Smart Power Cross-Section</h2>
+    <h2 id="bcd-technology">2. BCD (Bipolar-CMOS-DMOS) Process</h2>
     <div class="tblwrap"><table>
-      <tr><th>Device Type</th><th>Transistor Structure</th><th>Function in PSoC™ 4 HVPA</th><th>Physical Advantage</th></tr>
-      <tr><td><b>B (Bipolar)</b></td><td>Bipolar Junction Transistor (BJT)</td><td>Precision bandgap voltage reference, low-noise pre-amps</td><td>Ultra-low 1/f flicker noise, superior temperature linearity and long-term stability</td></tr>
-      <tr><td><b>C (CMOS)</b></td><td>Complementary MOS</td><td>32-bit Cortex-M0+ core, 128KB Flash, 8KB SRAM, digital Sinc filters</td><td>Extremely dense gate integration, near-zero static leakage, high energy efficiency</td></tr>
-      <tr><td><b>D (DMOS)</b></td><td>Lateral DMOS (LDMOS)</td><td>42V high-voltage linear regulator, LIN PHY driver, active ESD clamp</td><td>High voltage drift region, breakdown voltage \(V_{BR} &gt; 45\text{ V}\), low on-resistance</td></tr>
+      <tr><th>Device</th><th>Structure</th><th>Typical role in an HV mixed-signal MCU</th><th>Property</th></tr>
+      <tr><td><b>B (Bipolar)</b></td><td>Bipolar transistor</td><td>Bandgap reference, low-noise input stages</td><td>Low 1/f noise, predictable V<sub>BE</sub> temperature behaviour</td></tr>
+      <tr><td><b>C (CMOS)</b></td><td>Complementary MOS</td><td>CPU, flash, SRAM, digital filters</td><td>High density, low static leakage</td></tr>
+      <tr><td><b>D (DMOS)</b></td><td>Lateral double-diffused MOS (LDMOS)</td><td>HV regulator, LIN driver, HV divider switches</td><td>Drift region sustains high drain voltage</td></tr>
     </table></div>
+    <p>An LDMOS spreads the electric field over a long, lightly doped <b>drift region</b> to raise breakdown voltage, at the cost of on-resistance and area. Since the HVPA’s VBAT, LIN and VSENSE pins must withstand 42 V, those paths use high-voltage devices.</p>
 
-    <h2 id="isolation-dti">3. Deep Trench Isolation (DTI) &amp; Substrate Noise Immunity</h2>
-    <p>High-voltage switching injects minority carriers into the p-substrate. Deep Trench Isolation (DTI) creates vertical silicon dioxide and polysilicon insulating barriers etched down to the buried oxide layer, attenuating substrate noise by over <b>40 dB</b> and completely suppressing CMOS latch-up under automotive transients.</p>
+    <h2 id="isolation-dti">3. Isolation: Deep Trench Isolation (DTI) &amp; Substrate Noise</h2>
+    <p>High-voltage switching injects minority carriers and displacement current into the shared substrate, which can travel to microvolt-level analog circuits or trigger parasitic latch-up. Common countermeasures are <b>deep trench isolation (DTI)</b>, guard rings, buried layers, and floor-planning that separates HV and analog areas with separate ground returns. The HVPA’s requirement for external 2.2 kΩ series resistors on the VSENSE/VDIAG high-voltage sense inputs, to limit ESD and transient current (DS), follows the same logic.</p>
 
-    <h2 id="thermal-package">4. Automotive Thermal Management (-40°C to +125°C / +150°C)</h2>
-    <p>Qualified to AEC-Q100 Grade 1, PSoC™ 4 HVPA operates reliably in engine compartments up to +125°C ambient and +150°C junction temperature with a thermal resistance \(\theta_{JC} &lt; 2.5\text{ °C/W}\) through its bottom exposed pad soldered directly to PCB ground planes.</p>
+    <h2 id="thermal-package">4. Temperature Range &amp; Package</h2>
+    <div class="tblwrap"><table>
+      <tr><th>Item (DS)</th><th>Value</th></tr>
+      <tr><td>Ambient T<sub>A</sub></td><td>−40 to +125 °C (AEC-Q100 Grade 1)</td></tr>
+      <tr><td>Junction T<sub>J</sub></td><td>−40 to +150 °C</td></tr>
+      <tr><td>Storage</td><td>−55 to +125 °C</td></tr>
+      <tr><td>Package</td><td>32-QFN (6 × 6 mm) with wettable flanks</td></tr>
+      <tr><td>VBAT long-term average current limit</td><td>40 mA (160 mA transient)</td></tr>
+    </table></div>
+    <p>An IBS sits on the battery terminal, so heat arrives mainly through the terminal and the shunt busbar. The chip itself dissipates only milliwatts, so junction temperature is set by the environment rather than self-heating.</p>
 
     <div class="pager"></div>
   </article>

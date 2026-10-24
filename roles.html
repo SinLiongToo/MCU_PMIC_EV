@@ -3,63 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/roles.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/roles.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/roles.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/roles.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="職務地圖與求職指南 · MCU Notes">
+<meta property="og:description" content="車用微控制器與半導體產業求職全攻略：車規 MCU 系統架構師、嵌入式韌體工程師、類比 IC 設計師、ISO 26262 功能安全專員、測試產品工程師：職責劃分、核心工具、必修章節與高頻面試題解析。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/roles.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>職務地圖與求職指南 · MCU Notes</title>
 <meta name="description" content="車用微控制器與半導體產業求職全攻略：車規 MCU 系統架構師、嵌入式韌體工程師、類比 IC 設計師、ISO 26262 功能安全專員、測試產品工程師：職責劃分、核心工具、必修章節與高頻面試題解析。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="roles" data-ch="app">
+<a class="skip" href="#main">跳到主要內容</a>
 <div class="doc">
   <aside class="toc" aria-label="本頁章節目錄"></aside>
-  <article>
-    <div class="eyebrow">Career Map · 職務地圖與求職指南</div>
-    <h1>車用 MCU 職涯地圖：各崗位技能樹與面試高頻題</h1>
-    <p class="lead">車載微控制器（MCU）領域橫跨半導體晶圓、類比混合訊號電路、底層嵌入式韌體、車載網路通訊與車規功能安全（ISO 26262）。不同的工程崗位對專業技能的要求有何側重？本章梳理了六大核心研發職位、推薦閱讀章節、必備工具鏈與量產級面試真題。</p>
+  <article id="main">
+    <div class="eyebrow">Career Map · 職務地圖</div>
+    <h1>車用 MCU 職涯地圖：各崗位技能與面試題</h1>
+    <p class="lead">車用 MCU 橫跨半導體、類比混合訊號、嵌入式韌體、車載網路與功能安全。下表整理六個常見研發職位的職責、工具與建議先讀的章節，後面附上四題常見面試題與答題要點。</p>
 
-    <h2 id="roles-matrix">1. 六大研發職位與技能對照表</h2>
+    <h2 id="roles-matrix">1. 六個研發職位與技能</h2>
     <div class="tblwrap"><table>
-      <tr><th>工程職位</th><th>核心職責焦點</th><th>日常關鍵工具鏈</th><th>推薦優先研讀章節</th></tr>
-      <tr><td><b>MCU 系統架構師</b><br>(System Architect)</td><td>定義晶片規格、CPU 核心選擇、匯流排拓撲、高壓與低壓分區、功率預算</td><td>Enterprise Architect, MATLAB/Simulink, PSpice</td><td><a href="core.html">01 核心</a>、<a href="analog.html">02 類比</a>、<a href="process.html">04 製程</a></td></tr>
-      <tr><td><b>嵌入式車載韌體工程師</b><br>(Firmware / AUTOSAR)</td><td>開發 MCAL 驅動、SafeTlib 安全庫整合、LIN/CAN 協議棧、庫倫計與卡爾曼濾波</td><td>IAR Embedded Workbench, Keil, Lauterbach TRACE32, Git</td><td><a href="core.html">01 核心</a>、<a href="application.html">03 BMS</a>、<a href="safety.html">06 安全</a></td></tr>
-      <tr><td><b>類比混合訊號 IC 設計師</b><br>(Mixed-Signal Designer)</td><td>設計高精度 ΔΣ ADC、PGA 放大器、Bandgap 基準源、42V 內部 LDO</td><td>Cadence Virtuoso, Spectre, Synopsys CustomSim</td><td><a href="analog.html">02 類比</a>、<a href="process.html">04 製程</a>、<a href="test.html">05 測試</a></td></tr>
-      <tr><td><b>ISO 26262 功能安全專員</b><br>(FuSa Engineer)</td><td>執行 HARA 危險分析、建構安全機制、編寫安全手冊（Safety Manual）、FMEDA</td><td>Ansys Medini Analyze, Polarion, JIRA</td><td><a href="safety.html">06 安全</a>、<a href="lessons.html">案例</a></td></tr>
-      <tr><td><b>BMS 系統應用工程師</b><br>(Application Engineer - AE)</td><td>客戶現場技術支援、分流器選型、車載電磁相容（EMC）調優、疑難雜症排查</td><td>Vector CANoe/CANalyzer, 示波器, 功率分析儀</td><td><a href="application.html">03 BMS</a>、<a href="designer.html">設計器</a>、<a href="lessons.html">案例</a></td></tr>
-      <tr><td><b>晶圓測試與產品工程師</b><br>(TE / PE)</td><td>設計 ATE 測試程式、類比電阻 eFuse 修調演算法、全溫區良率提升與分析</td><td>Teradyne / Advantest ATE, Python, JMP, YieldHub</td><td><a href="test.html">05 測試</a>、<a href="process.html">04 製程</a></td></tr>
+      <tr><th>職位</th><th>職責重點</th><th>常用工具</th><th>建議章節</th></tr>
+      <tr><td><b>MCU 系統架構師</b></td><td>晶片規格、核心與匯流排選擇、高低壓分區、功耗預算</td><td>MATLAB/Simulink、SystemC、試算表模型</td><td><a href="core.html">01</a>、<a href="analog.html">02</a>、<a href="process.html">04</a></td></tr>
+      <tr><td><b>車用韌體工程師</b></td><td>MCAL／驅動、安全函式庫整合、LIN 協定棧、SoC 演算法</td><td>IAR、Keil、GCC、Lauterbach TRACE32、Git</td><td><a href="core.html">01</a>、<a href="application.html">03</a>、<a href="safety.html">06</a></td></tr>
+      <tr><td><b>類比混合訊號 IC 設計</b></td><td>ΔΣ ADC、PGA、能隙基準、高壓穩壓器</td><td>Cadence Virtuoso、Spectre</td><td><a href="analog.html">02</a>、<a href="process.html">04</a>、<a href="test.html">05</a></td></tr>
+      <tr><td><b>功能安全工程師</b></td><td>HARA、安全概念、安全機制、FMEDA、Safety Manual</td><td>Ansys medini analyze、Polarion、Jama</td><td><a href="safety.html">06</a>、<a href="lessons.html">案例</a></td></tr>
+      <tr><td><b>BMS 應用工程師</b></td><td>客戶支援、分流器選型、EMC 調校、現場問題排查</td><td>Vector CANoe、示波器、功率分析儀</td><td><a href="application.html">03</a>、<a href="designer.html">設計器</a>、<a href="lessons.html">案例</a></td></tr>
+      <tr><td><b>測試／產品工程師</b></td><td>ATE 程式、修調演算法、多溫度測試、良率分析</td><td>Teradyne／Advantest ATE、Python、JMP</td><td><a href="test.html">05</a>、<a href="process.html">04</a></td></tr>
     </table></div>
 
-    <h2 id="interview-prep">2. 車規 MCU 高頻面試題與解答技巧</h2>
-
-    <div class="callout" style="--c:var(--core)">
-      <b>Q1: 為什麼車用 BMS 電流量測偏好 ΔΣ ADC 而非 SAR ADC？</b><br>
-      <b>參考解答要點：</b> 
-      1. <b>動態範圍與解析度：</b> 分流器阻值極小（100 µΩ），待機暗電流只有數微伏，而啟動電流高達上百毫伏，動態範圍超過 100 dB。ΔΣ 透過超採樣與雜訊整形，能輕鬆達成 16-bit 以上有效位元數（ENOB）。<br>
-      2. <b>本質抗干擾能力：</b> 車載環境存在發電機與逆變器強烈 PWM 高頻噪聲。ΔΣ 自帶積分特性與 Sinc 數位降採樣濾波，可在 50Hz/60Hz 工頻及高頻開關雜訊點產生傳輸零點（Notch），提供高達 80 dB 的共模與工頻抑制比，而 SAR ADC 則對採樣瞬間的瞬態雜訊極度敏感。
-    </div>
-
-    <div class="callout" style="--c:var(--safety)">
-      <b>Q2: 傳統窗口看門狗與挑戰-應答（Challenge-Response）看門狗有何關鍵差異？</b><br>
-      <b>參考解答要點：</b> 
-      傳統窗口看門狗僅約束餵狗的「時間點」（太早或太晚皆報錯），但若 CPU 陷入局部死循環（例如 while(1) 內包含餵狗代碼），傳統看門狗無法察覺。挑戰-應答看門狗在時間窗口的基礎上引入了「邏輯與算法檢驗」：看門狗硬體隨機產生偽隨機問卷（Seed），MCU 必須在關鍵任務（ADC 採樣、RAM ECC 檢查、堆疊指針檢驗）執行完畢後將各狀態代入多項式，計算出唯一正確的金鑰寫入。若程序未完整走過所有安全任務，即使時間精確也會被看門狗判定為失效而復位。
-    </div>
-
-    <div class="callout" style="--c:var(--analog)">
-      <b>Q3: 車用微控制器如何抵禦 ISO 7637-2 Pulse 5b（拋負載 Load Dump）？</b><br>
-      <b>參考解答要點：</b> 
-      發電機在全負荷下電瓶突然斷開會引發長達 400ms、電壓高達 40V 以上的脈衝。防禦層面分為：<br>
-      1. <b>製程支撐：</b> 採用 BCD 製程，功率 LDMOS 元件崩潰電壓設計在 45V 以上；<br>
-      2. <b>晶片內主動箝位：</b> 當感測到 VBAT 超過 38V 時，晶片內主動 ESD 箝位電路導通，將瞬態能量引流至地；<br>
-      3. <b>高 PSRR 線性穩壓：</b> 內部高壓 LDO 在輸入劇烈暴漲時，具備足夠的頻寬與瞬態響應速度，確保內部 3.3V 與 1.8V 核心邏輯電源軌不產生過沖或塌陷。
-    </div>
-
-    <div class="callout" style="--c:var(--test)">
-      <b>Q4: 什麼是 Wettable Flank QFN？為什麼車廠強烈要求這項封裝特性？</b><br>
-      <b>參考解答要點：</b> 
-      標準 QFN 引腳切面在晶片分片切割時裸露且無電鍍，在 SMT 回流焊時焊錫無法爬附在側面，僅能焊接底面。這導致車廠 SMT 產線的自動光學檢測機（AOI）無法透過俯視鏡頭辨識焊點飽滿度，無法確認是否有虛焊。Wettable Flank 封裝在引腳邊緣預製了階梯凹槽並進行化學鍍錫，焊接時焊錫會自動爬升形成明顯的側向焊角（Solder Fillet），使 AOI 能 100% 精確識別焊接缺陷，滿足車規零缺陷（Zero PPM）產線要求。
-    </div>
+    <h2 id="interview-prep">2. 常見面試題與答題要點</h2>
+    <div class="callout" style="--c:var(--core)"><b>Q1：為什麼 BMS 電流量測常用 ΔΣ ADC 而不是 SAR？</b><br><b>答題要點：</b>① 動態範圍：100 µΩ 分流器上，暗電流只有數 µV、啟動電流可達上百 mV，需要極大的動態範圍；ΔΣ 以超取樣與雜訊整形達到高解析度，HVPA 再以 AGC 增益 1–512 擴展範圍。② 抗干擾：ΔΣ 的抽取濾波器本身就是低通，零點可對準干擾頻率；SAR 只在取樣瞬間取值，對突波較敏感。③ 代價是延遲較長、頻寬較低，但電池感測只需 kSPS 等級。</div>
+    <div class="callout" style="--c:var(--safety)"><b>Q2：一般窗口看門狗與問答式看門狗差在哪？</b><br><b>答題要點：</b>窗口看門狗只檢查「餵狗時間」，太早或太晚都報錯；但程式若卡在含有餵狗指令的迴圈中，仍可能剛好落在窗口內。問答式看門狗再要求送出正確的金鑰序列，金鑰通常與安全任務的結果綁在一起，證明任務真的執行了。HVPA 的 CRWDT 在太早、太晚或金鑰錯誤時都會觸發重置或中斷。</div>
+    <div class="callout" style="--c:var(--analog)"><b>Q3：車用 MCU 如何應付拋負載？</b><br><b>答題要點：</b>① 標準：ISO 16750-2 Test A（未抑制，12 V 系統 79–101 V）與 Test B（發電機內抑制，常見 35 V）。② 分層保護：發電機抑制 → 模組端 TVS、串聯電阻與濾波電容 → 晶片絕對最大額定。HVPA 的 VBAT 絕對最大 42 V，資料手冊註明可能需要外部保護。③ 晶片內箝位只適合 ESD 與短暫態，拋負載的能量要由外部元件吸收。</div>
+    <div class="callout" style="--c:var(--test)"><b>Q4：什麼是 wettable-flank QFN？車廠為什麼要求？</b><br><b>答題要點：</b>一般 QFN 側面切口是裸銅，焊錫只在底部，AOI 從上方看不到焊點。Wettable flank 在引腳側面做電鍍凹階，焊錫爬上側面形成可見焊角，產線就能用 AOI 檢查焊接品質，符合車用零缺陷要求。HVPA 使用 32-QFN wettable flank 封裝。</div>
 
     <div class="pager"></div>
   </article>

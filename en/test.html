@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/test.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/test.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/test.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/test.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="05 Test &amp; Qualification · MCU Notes">
+<meta property="og:description" content="Automotive microcontroller testing & qualification: Wafer probe CP and final test FT, eFuse precision analog trimming, tri-temp testing (-40°C, 25°C, 125°C), AEC-Q100 standards, and wettable flank QFN packaging for 100% AOI inspection.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/test.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>05 Test &amp; Qualification · MCU Notes</title>
 <meta name="description" content="Automotive microcontroller testing & qualification: Wafer probe CP and final test FT, eFuse precision analog trimming, tri-temp testing (-40°C, 25°C, 125°C), AEC-Q100 standards, and wettable flank QFN packaging for 100% AOI inspection.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,27 +28,111 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="test" data-ch="test">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
-    <div class="eyebrow">Chapter 05 · Test, Calibration &amp; Automotive Qualification</div>
-    <h1>Testing, Trimming &amp; AEC-Q100: Industrial Journey to Zero Defects</h1>
-    <p class="lead">Consumer silicon allows occasional RMA returns; automotive microcontrollers mandate <b>Zero PPM (parts per million)</b>. A single errant voltage sample during sub-zero highway driving could trip high-voltage contactors and stall the powertrain. This chapter examines wafer probe testing, eFuse trimming, and AEC-Q100 qualification.</p>
+  <article id="main">
+    <div class="eyebrow">Chapter 05 · Test, Calibration &amp; Qualification</div>
+    <h1>Test, Calibration &amp; Qualification: from Wafer to Zero Defects</h1>
+    <p class="lead">Automotive silicon targets <b>zero parts per million (ppm)</b> defects. Following the production flow, this chapter covers wafer probe test and analog trimming, multi-temperature final test, AEC-Q100 reliability qualification, and the wettable-flank package that lets assembly lines inspect solder joints optically.</p>
+    <p class="src">Device figures: PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K (“DS”); reliability conditions: AEC-Q100 Rev. J.</p>
 
-    <h2 id="ate-trimming">1. Wafer Probe (CP) &amp; eFuse Precision Analog Trimming</h2>
-    <div class="math-block">
-      \[V_{\text{corrected}} = \text{Gain\_Trim} \times (V_{\text{raw}} - \text{Offset\_Trim}) + T_{\text{coeff}} \times (T - T_0)\]
-      On-chip non-volatile eFuses store laser/ATE-measured calibration coefficients, trimming bandgap references to &plusmn;0.05% and reducing raw ADC offset from &plusmn;250 µV down to sub-microvolt levels.
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 200" role="img" aria-label="Automotive IC production test flow">
+        <rect x="15" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="90" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--fab)">Wafer fab</text>
+        <text class="ts t-mut" x="90" y="108" text-anchor="middle" font-size="11">process variation</text>
+        <text class="ts t-mut" x="90" y="128" text-anchor="middle" font-size="11">device mismatch</text>
+        <line x1="165" y1="100" x2="183" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M177 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="183" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--test)" stroke-width="2"/>
+        <text class="ts" x="258" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--test)">CP wafer probe</text>
+        <text class="ts t-mut" x="258" y="108" text-anchor="middle" font-size="11">measure + trim</text>
+        <text class="ts t-mut" x="258" y="128" text-anchor="middle" font-size="11">store codes</text>
+        <line x1="333" y1="100" x2="351" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M345 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="351" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="426" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Assembly</text>
+        <text class="ts t-mut" x="426" y="108" text-anchor="middle" font-size="11">32-QFN</text>
+        <text class="ts t-mut" x="426" y="128" text-anchor="middle" font-size="11">wettable flank</text>
+        <line x1="501" y1="100" x2="519" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M513 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="519" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--test)" stroke-width="2"/>
+        <text class="ts" x="594" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--test)">FT final test</text>
+        <text class="ts t-mut" x="594" y="108" text-anchor="middle" font-size="11">multi-temperature</text>
+        <text class="ts t-mut" x="594" y="128" text-anchor="middle" font-size="11">full parametric</text>
+        <line x1="669" y1="100" x2="687" y2="100" stroke="var(--muted)" stroke-width="2"/>
+        <path d="M681 95l6 5-6 5" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <rect x="687" y="50" width="150" height="100" rx="8" fill="var(--surface)" stroke="var(--ok)" stroke-width="2"/>
+        <text class="ts" x="762" y="82" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">Ship / AOI</text>
+        <text class="ts t-mut" x="762" y="108" text-anchor="middle" font-size="11">customer SMT</text>
+        <text class="ts t-mut" x="762" y="128" text-anchor="middle" font-size="11">optical joint check</text>
+      </svg>
+      <figcaption>Figure 5.1: Test flow for an automotive IC from wafer to board.</figcaption>
     </div>
 
-    <h2 id="multi-temp">2. Tri-Temp Production Screening (-40°C, +25°C, +125°C)</h2>
-    <p>Cold test (-40°C) screens for timing race conditions and threshold shifts; hot test (+125°C ~ +150°C) weeds out oxide tunneling, high-temperature gate leakage, and early life bathtub curve failures.</p>
+    <h2 id="ate-trimming">1. Wafer Probe (CP) &amp; Analog Trimming</h2>
+    <p>Process variation makes resistor ratios, transistor matching and the bandgap voltage differ slightly on every die. Untrimmed, ADC offset and gain errors are far larger than battery sensing can tolerate. At CP the ATE measures each die, computes correction codes and stores them in non-volatile memory; at power-up hardware or boot code loads them into the analog registers.</p>
+    <div class="math-block">
+      A typical correction model (offset, gain, temperature coefficient):
+      \[V_{\text{corr}} = G_{\text{trim}} \cdot (V_{\text{raw}} - V_{\text{off,trim}}) + k_T \cdot (T - T_0)\]
+      With \(N\) bits over \(\pm R\), the trim step is \(\Delta = 2R/2^N\) and the quantisation residual is \(\sigma \approx \Delta/\sqrt{12}\); ATE measurement noise and out-of-range tail dies add to it.
+    </div>
+    <div class="tblwrap"><table>
+      <tr><th>Trimmed / calibrated item</th><th>Why it matters</th><th>What the datasheet shows</th></tr>
+      <tr><td><b>IMO main oscillator</b></td><td>LIN baud rate and sampling timing</td><td>±2%; ±1% or ±1.5% after software calibration to the HPOSC</td></tr>
+      <tr><td><b>PILO low-power oscillator</b></td><td>Watchdog and wake-up timing</td><td>±5% or ±7%; about ±1% after calibration (part-dependent)</td></tr>
+      <tr><td><b>Current-channel offset/gain</b></td><td>Long-term Coulomb-counting drift</td><td>Choppers plus a compensation block (gain multiply, offset add)</td></tr>
+      <tr><td><b>HV divider ratio</b></td><td>Battery-voltage accuracy</td><td>24× / 16×; the external 2.2 kΩ is only 0.1% of the divider</td></tr>
+    </table></div>
+    <p>See how trim bits, trim range and measurement noise affect yield in the Monte Carlo model in the <a href="lab.html#trim">MCU Lab</a>.</p>
 
-    <h2 id="aec-q100">3. AEC-Q100 Qualification Protocols</h2>
-    <p>HTOL (1000 hours at 125°C, zero fails across 231 units), HAST (130°C / 85% RH bias), temperature cycling (-55°C to +150°C 1000 cycles), and electrostatic discharge (ESD &ge; 2kV HBM, &ge; 8kV LIN).</p>
+    <h2 id="multi-temp">2. Multi-Temperature Final Test (FT)</h2>
+    <p>After packaging, final test repeats parametric measurements at several temperatures. Testing at room temperature alone misses defects that only appear at the extremes:</p>
+    <ul>
+      <li><b>Cold (−40 °C):</b> start-up timing, oscillator start, comparator and timing margins.</li>
+      <li><b>Room (+25 °C):</b> baseline and full functional vectors.</li>
+      <li><b>Hot (+125 °C for Grade 1):</b> leakage, data retention, analog drift.</li>
+    </ul>
+    <p>Temperature coefficients of analog parameters are verified here, and compensation coefficients stored where needed.</p>
 
-    <h2 id="wettable-flanks">4. Wettable Flank QFN Packaging for 100% AOI Optical Inspection</h2>
-    <p>Step-cut plated flanks allow solder to wick up the sidewall of the package, forming visible solder fillets that enable high-speed Automated Optical Inspection (AOI) cameras on automotive surface-mount lines.</p>
+    <h2 id="aec-q100">3. AEC-Q100 Reliability Qualification</h2>
+    <p>Automotive ICs must pass the Automotive Electronics Council <b>AEC-Q100</b> stress tests. The HVPA is AEC-Q100 qualified for −40 to +125 °C ambient, i.e. <b>Grade 1</b> (DS). Key tests:</p>
+    <div class="tblwrap"><table>
+      <tr><th>Test</th><th>Typical condition (Grade 1)</th><th>Sample</th><th>Purpose</th></tr>
+      <tr><td><b>HTOL</b></td><td>125 °C, max bias, 1000 h</td><td>3 lots × 77, 0 fails</td><td>Accelerates oxide, electromigration and other wear-out</td></tr>
+      <tr><td><b>HAST / THB</b></td><td>130 °C / 85% RH biased 96 h (or 85/85 for 1000 h)</td><td>3 lots × 77, 0 fails</td><td>Moisture ingress and corrosion</td></tr>
+      <tr><td><b>TC</b></td><td>−55 to +150 °C, 1000 cycles</td><td>3 lots × 77, 0 fails</td><td>Cracks and wire-bond lifts from CTE mismatch</td></tr>
+      <tr><td><b>ESD</b></td><td>HBM, CDM</td><td>Per standard</td><td>DS: HBM ±2 kV all pins; CDM ±750 V corner, ±500 V other; ±8 kV on LIN, VBAT etc. (ISO 10605, with external protection)</td></tr>
+      <tr><td><b>Latch-up</b></td><td>±100 mA injection, 1.5× max voltage, max temperature</td><td>Per JESD78</td><td>Parasitic latch-up</td></tr>
+    </table></div>
+
+    <h2 id="wettable-flanks">4. Wettable-Flank QFN Package</h2>
+    <p>The HVPA comes in a <b>32-QFN (6 × 6 mm) with wettable flanks</b> (DS). On a standard QFN the sawn side faces are bare copper, so solder only wets the bottom pad and the joint is hidden under the package where automated optical inspection (AOI) cannot see it. A wettable flank adds a plated step on the side of each lead, so solder climbs it and forms a visible fillet that AOI can check from above.</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 240" role="img" aria-label="Solder joint cross-section: standard QFN vs wettable-flank QFN">
+        <text class="ts" x="200" y="28" text-anchor="middle" font-weight="700" font-size="13">Standard QFN</text>
+        <rect x="60" y="60" width="200" height="90" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mut" x="160" y="108" text-anchor="middle" font-size="11">package body</text>
+        <rect x="200" y="150" width="60" height="12" fill="#b0b8c0"/>
+        <rect x="40" y="162" width="300" height="10" fill="var(--ok)" opacity=".35"/>
+        <path d="M200 162 h80 v-2 h-80z" fill="#9aa0a6"/>
+        <text class="ts t-mut" x="190" y="200" text-anchor="middle" font-size="11">joint hidden underneath</text>
+        <path d="M262 150 v12" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="300" y="140" font-size="11" fill="var(--bad)">no side fillet</text>
+        <text class="ts" x="620" y="28" text-anchor="middle" font-weight="700" font-size="13">Wettable-flank QFN</text>
+        <rect x="480" y="60" width="200" height="90" rx="4" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.8"/>
+        <text class="ts t-mut" x="580" y="108" text-anchor="middle" font-size="11">package body</text>
+        <path d="M620 150 h60 v-14 h-8 v6 h-52z" fill="#b0b8c0"/>
+        <rect x="460" y="162" width="300" height="10" fill="var(--ok)" opacity=".35"/>
+        <path d="M620 162 L690 162 L680 134 Q676 148 660 150 Z" fill="#9aa0a6"/>
+        <text class="ts t-mut" x="610" y="200" text-anchor="middle" font-size="11">solder climbs the plated step</text>
+        <text class="ts" x="700" y="128" font-size="11" fill="var(--ok)">visible fillet</text>
+        <text class="ts t-mut" x="420" y="228" text-anchor="middle" font-size="10">green: PCB pad   grey: solder</text>
+      </svg>
+      <figcaption>Figure 5.2: A wettable flank puts the solder fillet on the package side where AOI can see it.</figcaption>
+    </div>
 
     <div class="pager"></div>
   </article>

@@ -3,6 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/lessons.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/lessons.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/lessons.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/lessons.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="Lessons Learned · MCU Notes">
+<meta property="og:description" content="Automotive MCU production war stories: Contactor ground bounce, sub-zero cold crank BOD reset storms, shunt Seebeck thermoelectric drift, LIN bus 12V shorts, and RC oscillator thermal drift.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/lessons.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>Lessons Learned · MCU Notes</title>
 <meta name="description" content="Automotive MCU production war stories: Contactor ground bounce, sub-zero cold crank BOD reset storms, shunt Seebeck thermoelectric drift, LIN bus 12V shorts, and RC oscillator thermal drift.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,48 +28,54 @@
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="lessons" data-ch="safety">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc">
   <aside class="toc" aria-label="On this page"></aside>
-  <article>
-    <div class="eyebrow">Lessons Learned · Field Failures &amp; Troubleshooting</div>
-    <h1>Automotive MCU Field Lessons: Five Real Failure Cases &amp; Troubleshooting</h1>
-    <p class="lead">Veteran automotive engineers say: "Behind every design guideline and AEC standard lies an expensive vehicle recall." This chapter dissects five classic automotive failure cases (<b>Phenomenon &rarr; Root Cause &rarr; Countermeasure &rarr; Takeaways</b>) and presents a systematic debugging matrix.</p>
+  <article id="main">
+    <div class="eyebrow">Lessons Learned · Typical Failure Scenarios</div>
+    <h1>Automotive MCU Pitfalls: Four Typical Failure Scenarios &amp; a Troubleshooting Matrix</h1>
+    <p class="lead">These scenarios are composites drawn from public literature and common design-review findings. <b>They are representative teaching cases, not incident records of any specific OEM or product.</b> Each follows symptom → root cause → countermeasure, with a field troubleshooting matrix at the end.</p>
 
-    <h2 id="case1-groundbounce">1. Case 1: Contactor Switching Ground Bounce &amp; ADC Latch-up</h2>
-    <div class="callout" style="--c:var(--bad)">
-      <b>Phenomenon:</b> High-voltage contactor closure during regenerative braking caused continuous 0xFFFF saturation on current channels, followed by a Brown-out Reset (BOD) and instrument cluster alarms.
-    </div>
-    <h3>Root Cause &amp; Countermeasure</h3>
-    <p>High \(dI/dt\) through chassis grounding bolts induced hundreds of millivolts of ground bounce (\(V = L \cdot dI/dt\)), pulling differential inputs below ground and triggering substrate ESD diodes. <b>Fix:</b> Monolithic high-voltage integration (PSoC 4 HVPA) with exposed pad star-grounding and symmetric RC input filters.</p>
+    <h2 id="case1-groundbounce">1. Contactor Switching Causes Ground Bounce &amp; ADC Saturation</h2>
+    <div class="callout" style="--c:var(--bad)"><b>Symptom:</b> When a high-voltage contactor closes or pre-charges, a discrete AFE reads full scale for hundreds of milliseconds, the MCU resets, and the cluster shows a battery-system warning.</div>
+    <h3>Root cause</h3>
+    <p>The pre-charge current pulse flows through the parasitic inductance of the ground strap and bolts, creating ground bounce:</p>
+    <div class="math-block">\[V_{\text{bounce}} = L_{\text{par}} \cdot \frac{dI}{dt} \approx 25\,\text{nH} \times 10^7\,\text{A/s} = 250\,\text{mV}\]
+    With the AFE and MCU grounded separately over long return paths, the differential inputs are pulled below ground, the input ESD diodes conduct, and the measurement chain briefly fails.</div>
+    <h3>Countermeasures</h3>
+    <ul><li>Single-point grounding: analog and digital grounds meet at one point, and high-current returns avoid the measurement ground.</li><li>Differential and common-mode RC filtering on the sense lines (see <a href="analog.html#kelvin-filter">Chapter 02</a>), and verify the input common-mode range.</li><li>Integrating the AFE and MCU in one package shortens analog return paths, but correct PCB grounding is still required.</li></ul>
 
-    <h2 id="case2-coldcrank">2. Case 2: Sub-Zero Cold Crank (3.2V) &amp; BOD Reset Storms</h2>
-    <div class="callout" style="--c:var(--warn)">
-      <b>Phenomenon:</b> At -35°C in cold-weather testing, engine cranking collapsed 12V battery rails to 3.2V, causing continuous MCU reset loops and blown starter fuses.
-    </div>
-    <h3>Root Cause &amp; Countermeasure</h3>
-    <p>External LDOs experienced dropout, dropping core rails below BOD thresholds. <b>Fix:</b> Ultra-wide input MCUs supporting operation down to 3.0V direct battery feed, coupled with 100 mV BOD threshold hysteresis.</p>
+    <h2 id="case2-coldcrank">2. Cold Cranking Causes a Reset Loop</h2>
+    <div class="callout" style="--c:var(--warn)"><b>Symptom:</b> Cranking below −30 °C makes the battery voltage sag, the sensor resets repeatedly, LIN drops out, and the crank current and voltage are not fully recorded.</div>
+    <h3>Root cause</h3>
+    <p>Battery internal resistance rises in the cold, so the starter pulls the terminal voltage far down. A sensor powered by a 5 V/3.3 V LDO drops below its brown-out threshold once the input falls under the LDO dropout and resets; the load then decreases, the voltage recovers, the chip restarts and is pulled down again — a reset loop.</p>
+    <h3>Countermeasures</h3>
+    <ul><li>The HVPA VBAT minimum is <b>3.6 V</b>; VDDD may fall to 2.7 V when VBAT drops below 4 V (DS). Validate against the vehicle’s real minimum crank voltage, including the drop across the external reverse diode and R1.</li><li>BOD monitors VCCD: threshold 1.48–1.62 V in Active/Sleep (DS). Do not start heavy loads before VBAT recovers.</li><li>Buffer crank-event measurements in RAM and send them once the voltage has recovered.</li></ul>
 
-    <h2 id="case3-seebeck">3. Case 3: Shunt Resistor Seebeck Thermoelectric Drift</h2>
-    <div class="callout" style="--c:var(--app)">
-      <b>Phenomenon:</b> A 15°C thermal gradient across the copper-manganin shunt generated 22.5 µV of thermoelectric EMF, producing a 225 mA phantom current and 1.35 Ah drift during a 6-hour summer drive.
-    </div>
-    <h3>Root Cause &amp; Countermeasure</h3>
-    <p><b>Fix:</b> Enable on-chip auto-zero chopping to modulate DC Seebeck EMF into high frequencies that are decimated away by the Sinc³ filter, and enforce symmetric PCB copper terminal thermal layouts.</p>
+    <h2 id="case3-seebeck">3. Shunt Thermo-EMF (Seebeck) Causes Coulomb-Counter Drift</h2>
+    <div class="callout" style="--c:var(--app)"><b>Symptom:</b> After a long drive the SoC reads 85%; after a few hours of rest the OCV correction drops it to 62%, and the owner suspects the battery capacity is overstated.</div>
+    <h3>Root cause</h3>
+    <p>A shunt joins copper terminals to a resistive alloy. While driving, one side sits near a heat source and the other is cooled, and the dissimilar-metal junctions generate a thermo-EMF:</p>
+    <div class="math-block">\[V_{\text{th}} \approx S \cdot \Delta T \approx 1\,\mu\text{V/K} \times 15\,\text{K} = 15\,\mu\text{V}\]
+    Across 100 µΩ that is a <b>150 mA</b> phantom current, or 0.9 Ah of error after a 6-hour drive. Precision alloys such as manganin are usually specified below 1 µV/K against copper; the actual value depends on material and construction.</div>
+    <h3>Countermeasures</h3>
+    <ul><li><b>Chopping does not fix this:</b> thermo-EMF is a real input voltage at the shunt; chopping only removes the amplifier’s own offset.</li><li>Symmetric thermal design: match busbar cross-sections, heat paths and joints at both ends; pick an alloy with low thermo-EMF against copper.</li><li>Measure the temperature at both shunt ends and compensate, or calibrate offset at known zero current (e.g. before sleep).</li><li>Bound the accumulated error with OCV anchoring (see <a href="application.html#soc-coulomb-detail">Chapter 03</a>).</li></ul>
 
-    <h2 id="case4-linshort">4. Case 4: LIN Bus Short-to-Battery Terminal</h2>
-    <div class="callout" style="--c:var(--safety)">
-      <b>Phenomenon:</b> A pinched door wire harness shorted LIN to 12V permanent battery power, charring non-automotive grade transceiver chips.
-    </div>
-    <h3>Root Cause &amp; Countermeasure</h3>
-    <p><b>Fix:</b> Use AEC-Q100 certified MCUs with integrated automotive-grade LIN PHYs featuring -27V to +42V DC fault withstand capability.</p>
+    <h2 id="case4-linshort">4. LIN Line Shorted to Battery Positive</h2>
+    <div class="callout" style="--c:var(--safety)"><b>Symptom:</b> A harness chafes at a door hinge, the LIN wire shorts to permanent 12 V, and some modules’ LIN interfaces are damaged.</div>
+    <h3>Root cause</h3>
+    <p>If the LIN transceiver or MCU pin is not rated for it, a short — or a short combined with a load dump — destroys the device.</p>
+    <h3>Countermeasures</h3>
+    <ul><li>The HVPA integrates the LIN transceiver, and the LIN pin is rated <b>−27 V to +42 V</b> (DS), surviving shorts to either battery terminal.</li><li>LIN pin ESD of ±8 kV (ISO 10605) assumes the external protection recommended in the datasheet.</li><li>Add abrasion protection to the harness and monitor bus quality with LIN error counters.</li></ul>
 
     <h2 id="troubleshooting-matrix">5. Troubleshooting Decision Matrix</h2>
     <div class="tblwrap"><table>
-      <tr><th>Symptom</th><th>Likely Root Cause</th><th>Initial Check</th><th>Recommended Fix</th></tr>
-      <tr><td><b>ADC drift with temperature</b></td><td>Offset drift / Chopping disabled</td><td>Check <code>PACSS_CHOP</code> register</td><td>Enable auto-zero chopping &amp; trim eFuses</td></tr>
-      <tr><td><b>Random NMI BusFaults</b></td><td>Double-bit memory flip (SEU)</td><td>Inspect <code>ECC_STATUS</code> register</td><td>Add decoupling caps; distance from ignition coils</td></tr>
-      <tr><td><b>WDT resets at high temp</b></td><td>RC oscillator thermal drift</td><td>Measure WDT feed timing window</td><td>Expand window tolerance to &plusmn;25% or use crystal</td></tr>
-      <tr><td><b>LIN dropouts in sub-zero</b></td><td>Baud rate clock deviation &gt; 1.5%</td><td>Inspect LIN 0x55 synch byte timer</td><td>Enable hardware automatic baud calibration</td></tr>
+      <tr><th>Symptom</th><th>Likely root cause</th><th>First step</th><th>Fix</th></tr>
+      <tr><td><b>Parked SoC keeps falling but real charge is fine</b></td><td>Offset or thermo-EMF being integrated</td><td>Log raw ADC readings at zero current</td><td>Zero-current offset calibration, thermal symmetry, OCV anchoring</td></tr>
+      <tr><td><b>Current reading drifts with temperature</b></td><td>Shunt TCR, amplifier offset drift</td><td>Measure a fixed current in a climate chamber</td><td>Temperature compensation, low-TCR shunt</td></tr>
+      <tr><td><b>Sporadic fault interrupts or resets</b></td><td>Uncorrectable ECC, watchdog, supply brown-out</td><td>Read Reset Cause and fault status registers</td><td>Check decoupling, software timing or memory according to the cause</td></tr>
+      <tr><td><b>Watchdog resets hot or cold</b></td><td>Oscillator drift shifts the window</td><td>Measure PILO/IMO frequency</td><td>Calibrate oscillators to the HPOSC, widen window margins</td></tr>
+      <tr><td><b>LIN frames lost when cold</b></td><td>Baud error beyond tolerance</td><td>Check that sync-field synchronisation is enabled</td><td>Auto-calibrate from the sync field, calibrate the IMO</td></tr>
     </table></div>
 
     <div class="pager"></div>
