@@ -3,24 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/glossary.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/glossary.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/glossary.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/glossary.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="MCU &amp; Analog PMIC Glossary · MCU Notes">
+<meta property="og:description" content="Comprehensive engineering glossary of automotive MCU architecture, precision analog PMIC, battery management systems (BMS), high-voltage semiconductor processes, and ISO 26262 functional safety definitions and formulas.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/glossary.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>MCU &amp; Analog PMIC Glossary · MCU Notes</title>
 <meta name="description" content="Comprehensive engineering glossary of automotive MCU architecture, precision analog PMIC, battery management systems (BMS), high-voltage semiconductor processes, and ISO 26262 functional safety definitions and formulas.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="glossary">
+<a class="skip" href="#main">Skip to content</a>
 <div class="doc" style="max-width:1100px">
-  <article style="max-width:100%">
+  <article id="main" style="max-width:100%">
     <div class="eyebrow">MCU Reference &amp; Standards · Engineering Glossary</div>
     <h1>Automotive MCU &amp; Precision Analog PMIC Glossary</h1>
-    <p class="lead">Curated technical definitions, acronyms, mathematical models, quantitative safety metrics, and chapter references across automotive MCUs, dual-channel ΔΣ AFEs, power management PMICs, BMS algorithms, and ISO 26262 ASIL-C standards.</p>
+    <p class="lead">Curated technical definitions, acronyms, mathematical models, quantitative safety metrics, and chapter references across automotive MCUs, dual-channel ΔΣ AFEs, power management PMICs, BMS algorithms, and ISO 26262 functional safety. Every Chinese entry has a matching English entry.</p>
 
     <div class="term-search-wrap">
-      <input type="search" id="termSearch" class="term-search-inp" placeholder="Search terms, acronyms, or formulas (e.g., PACSS, AGC, SECDED, FIT, LDMOS, OCV, Sinc3, Pyro-fuse...)" autocomplete="off">
+      <input type="search" id="termSearch" class="term-search-inp" placeholder="Search terms, acronyms, or formulas (e.g. PACSS, AGC, SECDED, FIT, LDMOS, OCV, Sinc3)" autocomplete="off">
       <div class="term-chips" id="termChips">
         <button class="term-chip active" type="button" data-filter="all">All Terms</button>
         <button class="term-chip" type="button" data-filter="core">Core Architecture</button>
@@ -32,300 +45,393 @@
     </div>
 
     <div class="term-grid" id="termGrid">
-
-      <!-- ==================== CORE ==================== -->
-      <div class="term-card" data-cat="core" data-term="arm cortex-m0+ fast io nvic ahb pipeline">
+      <!-- TERMS:BEGIN -->
+      <div class="term-card" data-cat="core" data-term="cortex m0+ cpu pipeline nvic">
         <div class="term-head">
-          <h3 class="term-title">Arm® Cortex®-M0+ <small>32-bit Energy-Efficient RISC Processor</small></h3>
-          <span class="term-badge cat-core">Core Architecture</span>
+          <h3 class="term-title">Arm® Cortex®-M0+ <small>32-bit low-power processor core</small></h3>
+          <span class="term-badge cat-core">Core</span>
         </div>
-        <p class="term-def">Ultra-low-power 32-bit RISC core with a 2-stage instruction pipeline delivering 0.93 CoreMark/MHz at 48 MHz. Features a single-cycle dedicated Fast I/O bus and a Nested Vectored Interrupt Controller (NVIC) for deterministic microsecond response.</p>
+        <p class="term-def">ARMv6-M core with a 2-stage pipeline (fetch, execute), an NVIC with up to 32 interrupts and 4 priority levels, and 15-cycle interrupt latency (zero wait states). The HVPA runs it at 24 or 48 MHz depending on the part.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Metrics:</b>Deterministic interrupt latency of 15 cycles; deep sleep current &lt; 15 µA</span>
-          <a class="term-link" href="core.html#cortex-m0p-pipeline">Jump to Chapter 01 · Core Architecture →</a>
+          <span class="term-prop">Arm quotes about 2.46 CoreMark/MHz and 0.93 DMIPS/MHz.</span>
+          <a class="term-link" href="core.html#cortex-m0plus-details">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="core" data-term="fast io single cycle level shifter gpio pyro-fuse">
+      <div class="term-card" data-cat="core" data-term="single cycle io ioport gpio fast">
         <div class="term-head">
-          <h3 class="term-title">Fast I/O Port <small>Single-Cycle Dedicated Peripheral Bus</small></h3>
-          <span class="term-badge cat-core">Core Architecture</span>
+          <h3 class="term-title">Single-cycle I/O port <small>Single-cycle I/O port (IOPORT)</small></h3>
+          <span class="term-badge cat-core">Core</span>
         </div>
-        <p class="term-def">Dedicated hardware bus bypassing the AHB/APB arbiter, directly coupling CPU registers to I/O output latches. Enables sub-20 ns hardware toggling for emergency Pyro-fuse detonator actuation during short-circuit events.</p>
+        <p class="term-def">An optional Cortex-M0+ feature that lets the core reach GPIO registers without AHB arbitration. Whether it is implemented, and where, is up to the silicon vendor.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Circuitry:</b>Register direct coupling + 1.8V-to-12V cross-coupled PMOS level shifter pre-driver</span>
-          <a class="term-link" href="core.html#fast-io-circuit">Jump to Chapter 01 · Fast I/O Circuit Schematic →</a>
+          <span class="term-prop">Saves only tens of ns; external driver and actuator times are usually far longer.</span>
+          <a class="term-link" href="core.html#fast-io-circuit">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="core" data-term="secded ecc hamming code parity single error correction">
+      <div class="term-card" data-cat="core" data-term="secded ecc hamming seu syndrome parity">
         <div class="term-head">
-          <h3 class="term-title">SECDED ECC <small>Single Error Correction, Double Error Detection</small></h3>
-          <span class="term-badge cat-core">Core Architecture</span>
+          <h3 class="term-title">SECDED ECC <small>Single-error correct, double-error detect</small></h3>
+          <span class="term-badge cat-core">Core</span>
         </div>
-        <p class="term-def">Hardware combinatorial Hamming code engine. Appends 7 parity bits to each 32-bit word (39-bit total). Corrects single-bit soft errors caused by cosmic neutron Single-Event Upsets (SEU) in a single cycle and generates an NMI interrupt upon double-bit corruption.</p>
+        <p class="term-def">32 data bits plus 6 Hamming check bits and 1 overall parity bit form a 39-bit codeword. The syndrome points at a single error so it can be corrected; double errors are detected only.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Overhead:</b>+21.9% memory bits; zero-cycle hardware XOR logic tree</span>
-          <a class="term-link" href="core.html#ecc-logic-circuit">Jump to Chapter 01 · SECDED Logic Tree →</a>
+          <span class="term-prop">DS: SRAM, code flash and data flash have ECC; single-bit errors are corrected in-line and the address and data logged.</span>
+          <a class="term-link" href="core.html#memory-ecc">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="core" data-term="dma direct memory access ping pong buffer descriptor">
+      <div class="term-card" data-cat="core" data-term="dma ping pong descriptor">
         <div class="term-head">
-          <h3 class="term-title">DMA <small>Direct Memory Access Controller</small></h3>
-          <span class="term-badge cat-core">Core Architecture</span>
+          <h3 class="term-title">DMA <small>Direct memory access</small></h3>
+          <span class="term-badge cat-core">Core</span>
         </div>
-        <p class="term-def">Multi-channel autonomous transfer engine. Transfers 24-bit dual-channel ADC results into SRAM ping-pong buffers while the CPU is executing complex Kalman filtering or resting in sleep mode.</p>
+        <p class="term-def">Moves data without the CPU, typically ADC results into SRAM ping-pong buffers so the CPU can stay asleep.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Features:</b>8 linked descriptor channels; hardware handshaking on conversion complete</span>
-          <a class="term-link" href="core.html#dma-controller">Jump to Chapter 01 · DMA Controller →</a>
+          <span class="term-prop">DS: 8 channels, 32-bit transfers, chainable ping-pong descriptors.</span>
+          <a class="term-link" href="core.html#bus-matrix">Go to section →</a>
         </div>
       </div>
-
-      <!-- ==================== ANALOG & AFE ==================== -->
-      <div class="term-card" data-cat="analog" data-term="pacss programmable analog cell subsystem afe">
+      <div class="term-card" data-cat="core" data-term="deep sleep power mode current quiescent">
         <div class="term-head">
-          <h3 class="term-title">PACSS <small>Programmable Analog Cell Sub-System</small></h3>
-          <span class="term-badge cat-analog">Analog &amp; AFE</span>
+          <h3 class="term-title">Deep Sleep <small>Deep Sleep power mode</small></h3>
+          <span class="term-badge cat-core">Core</span>
         </div>
-        <p class="term-def">Infineon PSoC™ 4 HVPA proprietary analog front-end integrating dual 16-bit differential switched-capacitor ΔΣ modulators, low-noise chopper-stabilized PGAs, AGC hardware, on-chip 42V input attenuators, and digital Sinc³ decimation filters.</p>
+        <p class="term-def">CPU and high-speed clocks off; low-power oscillator, timers, LIN and watchdogs stay active; all RAM retained.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Specifications:</b>Current channel &plusmn;150 mV FS; voltage channel input up to 28V (42V transient)</span>
-          <a class="term-link" href="analog.html#pacss-architecture">Jump to Chapter 02 · PACSS Architecture →</a>
+          <span class="term-prop">DS: 35 µA typ (no periodic wake-up); 85 µA typ with 1 Hz measurement; wake-up ≤ 35 µs.</span>
+          <a class="term-link" href="core.html#clock-power">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="analog" data-term="kelvin 4-wire shunt sensing anti-aliasing rc filter">
+      <div class="term-card" data-cat="core" data-term="imo pilo ilo hposc oscillator clock">
         <div class="term-head">
-          <h3 class="term-title">Kelvin 4-Wire <small>Four-Terminal Shunt Sensing Topology</small></h3>
-          <span class="term-badge cat-analog">Analog &amp; AFE</span>
+          <h3 class="term-title">IMO / HPOSC / PILO / ILO <small>On-chip oscillators</small></h3>
+          <span class="term-badge cat-core">Core</span>
         </div>
-        <p class="term-def">Method of separating the high-current power path from microvolt measurement taps. Eliminates solder joint contact resistance (0.5 mΩ ~ 2 mΩ) and copper trace TCR (3900 ppm/°C) from destroying measurement accuracy across a 100 µΩ shunt.</p>
+        <p class="term-def">IMO is the main clock (up to 49.152 MHz); HPOSC is a 2 MHz ±1% calibration reference; the 32 kHz PILO clocks watchdogs and wake-up timers; ILO runs at 40 kHz.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Filtering:</b>Symmetric differential/common-mode RC filter (\(f_c \approx 7.58\,\text{kHz}\)), attenuating inverter PWM switching noise (&gt; 20 kHz) by &gt; 20 dB</span>
-          <a class="term-link" href="analog.html#kelvin-shunt-circuit">Jump to Chapter 02 · Kelvin Schematic →</a>
+          <span class="term-prop">DS: IMO ±2%, ±1% or ±1.5% after software calibration to the HPOSC.</span>
+          <a class="term-link" href="core.html#clock-power">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="analog" data-term="chopper stabilization flicker noise 1/f vos offset pga">
+      <div class="term-card" data-cat="analog" data-term="pacss analog subsystem adc channel">
         <div class="term-head">
-          <h3 class="term-title">Chopper Stabilization <small>Modulated Zero-Drift Amplification</small></h3>
-          <span class="term-badge cat-analog">Analog &amp; AFE</span>
+          <h3 class="term-title">PACSS <small>Precision analog channel subsystem</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">Technique using dynamic switch matrices to modulate DC microvolt signals up to high frequency (\(f_{\text{ch}} = 250\,\text{kHz}\)) prior to amplification. Demodulation restores the baseband signal while up-modulating amplifier native \(V_{os}\) and 1/f flicker noise to high frequency for removal by the Sinc³ filter.</p>
+        <p class="term-def">The HVPA analog front end: two ΔΣ ADCs, current/voltage/temperature/diagnostic channels, a sequencer, digital filtering and window compare. Either ADC can reach any analog signal for cross-checking.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Performance:</b>Reduces equivalent input offset voltage from 250 µV to &lt; 0.5 µV (drift &lt; 5 nV/°C)</span>
-          <a class="term-link" href="analog.html#chopper-pga">Jump to Chapter 02 · Chopper PGA Schematic →</a>
+          <span class="term-prop">DS: 16–20+ bit ADCs; 1.2 V ADC full-scale input.</span>
+          <a class="term-link" href="analog.html#delta-sigma-schematic">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="analog" data-term="delta-sigma switched capacitor modulator noise shaping osr">
+      <div class="term-card" data-cat="analog" data-term="kelvin 4 wire four terminal shunt sense">
         <div class="term-head">
-          <h3 class="term-title">Delta-Sigma ADC (ΔΣ) <small>2nd-Order Switched-Capacitor Oversampling Converter</small></h3>
-          <span class="term-badge cat-analog">Analog &amp; AFE</span>
+          <h3 class="term-title">Kelvin 4-wire <small>Four-terminal Kelvin sensing</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">ADC architecture utilizing oversampling and high-order noise shaping. A 2nd-order modulator imposes a \((1 - z^{-1})^2\) noise transfer function, suppressing baseband quantization noise to achieve SNR &gt; 98 dB (ENOB &gt; 16.0 bits) at OSR = 256.</p>
+        <p class="term-def">High current uses the outer terminals while the sense lines tap the resistor body directly, excluding solder and trace resistance. Mandatory for a 100 µΩ shunt.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Features:</b>1-bit differential feedback DAC; fully differential integrator charge balance</span>
-          <a class="term-link" href="analog.html#delta-sigma-schematic">Jump to Chapter 02 · 2nd-Order SC Modulator →</a>
+          <span class="term-prop">Paired with a symmetric RC filter, e.g. 100 Ω + 100 nF → about 7.6 kHz.</span>
+          <a class="term-link" href="analog.html#kelvin-filter">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="analog" data-term="agc automatic gain control pga dynamic range">
+      <div class="term-card" data-cat="analog" data-term="chopper chopping auto zero offset 1/f">
         <div class="term-head">
-          <h3 class="term-title">AGC <small>Hardware Automatic Gain Control</small></h3>
-          <span class="term-badge cat-analog">Analog &amp; AFE</span>
+          <h3 class="term-title">Chopper stabilisation <small>Chopper stabilisation</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">Engine covering a 5-decade current dynamic range (15 mA sleep current up to 1500A starter short-circuit). Fast hardware comparators monitor modulator output and dynamically switch PGA gain across 1x, 2x, 4x, 8x, 16x, 32x, and 64x in a single sample cycle.</p>
+        <p class="term-def">Periodically swaps input polarity before amplification and swaps back afterwards, moving the amplifier’s own offset and 1/f noise to high frequency where the digital filter removes them.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Algorithm:</b>Fast step-down on &gt; 90% full-scale; hysteresis-delayed step-up on &lt; 40%</span>
-          <a class="term-link" href="analog.html#agc-section">Jump to Chapter 02 · AGC Architecture →</a>
+          <span class="term-prop">Cannot remove real input errors such as thermo-EMF at the shunt.</span>
+          <a class="term-link" href="analog.html#chopper-pga">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="analog" data-term="sinc3 comb decimation filter osr notch">
+      <div class="term-card" data-cat="analog" data-term="delta sigma adc dsm modulator noise shaping oversampling">
         <div class="term-head">
-          <h3 class="term-title">Sinc³ Filter <small>Third-Order Decimation Comb Filter</small></h3>
-          <span class="term-badge cat-analog">Analog &amp; AFE</span>
+          <h3 class="term-title">ΔΣ ADC <small>Delta-sigma analog-to-digital converter</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">Digital hardware decimation filter consisting of 3 integrator stages and 3 differentiator stages: \(H(z) = (\frac{1 - z^{-D}}{1 - z^{-1}})^3\). Naturally places deep transmission zeros (notches) at the chopping frequency and its harmonics to eradicate ripples.</p>
+        <p class="term-def">Oversampling and noise shaping push quantisation noise to high frequency, where the decimator removes it. A second-order modulator has NTF = (1 − z⁻¹)².</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Attenuation:</b>&gt; 80 dB rejection at \(f_{\text{ch}}\); outputs 24-bit filtered samples</span>
-          <a class="term-link" href="analog.html#sinc3-section">Jump to Chapter 02 · Sinc³ Decimation Filter →</a>
+          <span class="term-prop">DS: the HVPA uses a multi-level modulator.</span>
+          <a class="term-link" href="analog.html#delta-sigma-schematic">Go to section →</a>
         </div>
       </div>
-
-      <!-- ==================== POWER & APPLICATION ==================== -->
-      <div class="term-card" data-cat="app" data-term="ibs intelligent battery sensor lin shunt bcm">
+      <div class="term-card" data-cat="analog" data-term="agc automatic gain control scaler pga">
         <div class="term-head">
-          <h3 class="term-title">IBS <small>Intelligent Battery Sensor</small></h3>
-          <span class="term-badge cat-app">BMS &amp; Power</span>
+          <h3 class="term-title">AGC &amp; scaler <small>Automatic gain control &amp; scaler</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">Automotive module mounted directly to the 12V or 48V battery negative terminal clamp. Combines an ultra-low-ohmic shunt with a single-chip MCU to report battery current, voltage, temperature, SoC, SoH, and SoF over the LIN bus to the vehicle gateway.</p>
+        <p class="term-def">Comparators watch the input; when a threshold is crossed a lookup table sets PGA, modulator gain and scaler (×512/G) together so the LSB weight does not change with gain.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Operating Envelope:</b>-40°C ~ +125°C under engine-bay vibration; standby current &lt; 15 µA</span>
-          <a class="term-link" href="application.html#ibs-circuit">Jump to Chapter 03 · IBS Terminal Schematic →</a>
+          <span class="term-prop">DS: current-channel gain 1–512; 1 LSB = 0.715 mA at 100 µΩ.</span>
+          <a class="term-link" href="analog.html#agc-scaler">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="app" data-term="coulomb counting integration soc state of charge drift">
+      <div class="term-card" data-cat="analog" data-term="sinc3 sinc2 decimation cic fir filter notch">
         <div class="term-head">
-          <h3 class="term-title">Coulomb Counting <small>Ampere-Hour Current Integration</small></h3>
-          <span class="term-badge cat-app">BMS &amp; Power</span>
+          <h3 class="term-title">Sinc³ / Sinc² decimation <small>Decimation filters</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">Primary algorithm for tracking battery state of charge (SoC): \(SoC(t) = SoC(0) + \frac{1}{Q_n}\int I(\tau)\,d\tau\). Highly sensitive to ADC offset drift, where 1 µV of uncompensated offset across 100 µΩ yields 10 mA error and 7.2 Ah drift per month.</p>
+        <p class="term-def">Sinc (CIC) filters use integrators and differentiators and have nulls at multiples of their output rate. The HVPA chain is Sinc³, then Sinc², then a programmable 16-tap FIR.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Mitigation:</b>Sub-0.5 µV chopper stabilization + periodic overnight OCV thermodynamic calibration</span>
-          <a class="term-link" href="application.html#coulomb-counting">Jump to Chapter 03 · Coulomb Counting Details →</a>
+          <span class="term-prop">DS example: 3.072 MHz, OSR 64 → 48 kHz; DR2 48 → nulls every 1 kHz.</span>
+          <a class="term-link" href="analog.html#decimation-chain">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="app" data-term="bdu battery disconnect unit zener demagnetization pyro-fuse">
+      <div class="term-card" data-cat="analog" data-term="bandgap reference vbg ptat ctat">
         <div class="term-head">
-          <h3 class="term-title">BDU <small>Battery Disconnect Unit</small></h3>
-          <span class="term-badge cat-app">BMS &amp; Power</span>
+          <h3 class="term-title">Bandgap reference <small>Bandgap reference</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">High-voltage safety disconnect unit housing main positive/negative contactors, pre-charge relays, current sensors, and a pyrotechnic fuse (Pyro-fuse). Actuated by MCU pre-drivers with 36V Zener fast demagnetization loops.</p>
+        <p class="term-def">Adds the positive-tempco kT/q to the negative-tempco V<sub>BE</sub> to obtain a reference of about 1.2 V with very low drift.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Demag Physics:</b>\(t_{\text{demag}} = \frac{L \cdot I_{\text{coil}}}{V_Z}\); 36V Zener accelerates contact opening from 18 ms to 2.5 ms</span>
-          <a class="term-link" href="application.html#bdu-circuit">Jump to Chapter 03 · BDU &amp; Pyro-fuse Schematic →</a>
+          <span class="term-prop">Usually trimmed at wafer test.</span>
+          <a class="term-link" href="analog.html#hv-pmic-schematic">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="app" data-term="lin 2.2a local interconnect network single-wire transceiver">
+      <div class="term-card" data-cat="analog" data-term="hv regulator vbat vddd vdda vccd ldo">
         <div class="term-head">
-          <h3 class="term-title">LIN 2.2A <small>Single-Wire Automotive Bus</small></h3>
-          <span class="term-badge cat-app">BMS &amp; Power</span>
+          <h3 class="term-title">HV regulator <small>High-voltage regulator</small></h3>
+          <span class="term-badge cat-analog">Analog</span>
         </div>
-        <p class="term-def">Standard single-wire 12V automotive sub-bus protocol operating at 20 kbps. The PSoC™ 4 HVPA includes an integrated 42V-tolerant LIN physical layer (PHY) with slew-rate control compliant with CISPR 25 Class 5 EMC emission limits.</p>
+        <p class="term-def">Produces 3.3 V VDDD and VDDA directly from battery VBAT; core regulators then make the 1.8 V VCCD.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Protocol:</b>Master/Slave architecture; automatic low-power wake-up; hardware frame CRC</span>
-          <a class="term-link" href="application.html#lin-communication">Jump to Chapter 03 · LIN 2.2A Communication →</a>
+          <span class="term-prop">DS: VBAT 3.6–28 V operating, functional to 42 V (42 V absolute maximum).</span>
+          <a class="term-link" href="analog.html#hv-pmic-schematic">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="app" data-term="ocv open circuit voltage nernst equilibrium kalman">
+      <div class="term-card" data-cat="app" data-term="ibs intelligent battery sensor">
         <div class="term-head">
-          <h3 class="term-title">OCV <small>Open Circuit Voltage</small></h3>
-          <span class="term-badge cat-app">BMS &amp; Power</span>
+          <h3 class="term-title">IBS <small>Intelligent battery sensor</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">Terminal voltage of an electrochemical battery cell under thermodynamic equilibrium with zero external current. Used by BMS firmware during extended vehicle sleep (&gt; 4 hours) to reset Coulomb counting cumulative drift.</p>
+        <p class="term-def">A module on the negative terminal of a 12 V/24 V battery that measures current, voltage and temperature, estimates SoC/SoH and reports over LIN.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Physics:</b>Governed by Nernst equation; coupled with Extended Kalman Filtering for flat LFP plateau regions</span>
-          <a class="term-link" href="application.html#ocv-calibration">Jump to Chapter 03 · OCV Calibration →</a>
+          <span class="term-prop">The HVPA’s main target application (lead-acid monitoring).</span>
+          <a class="term-link" href="application.html#ibs-schematic">Go to section →</a>
         </div>
       </div>
-
-      <!-- ==================== FUNCTIONAL SAFETY ==================== -->
-      <div class="term-card" data-cat="safety" data-term="iso 26262 asil asil-c asil-d functional safety automotive">
+      <div class="term-card" data-cat="app" data-term="coulomb counting soc ampere hour integration">
         <div class="term-head">
-          <h3 class="term-title">ISO 26262 ASIL-C <small>Automotive Safety Integrity Level C</small></h3>
-          <span class="term-badge cat-safety">Functional Safety</span>
+          <h3 class="term-title">Coulomb counting <small>Ampere-hour integration</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">Automotive functional safety standard governing high-risk electrical/electronic systems. Mandates rigorous single-point fault protection (SPFM ≥ 97%) and latent fault detection (LFM ≥ 80%) on the single-chip level.</p>
+        <p class="term-def">Tracks SoC by integrating current: SoC(t) = SoC(t₀) − (1/Q<sub>n</sub>)∫I dt. Offset accumulates linearly.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Target:</b>PMHF &lt; 100 FIT (PSoC 4 HVPA achieves &lt; 18 FIT); accompanied by certified FMEDA and Safety Manual</span>
-          <a class="term-link" href="safety.html#fmeda-metrics-detail">Jump to Chapter 06 · ASIL-C Architecture &amp; FMEDA →</a>
+          <span class="term-prop">1 µV of offset across 100 µΩ = 10 mA, or 7.2 Ah over 30 days.</span>
+          <a class="term-link" href="application.html#soc-coulomb-detail">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="safety" data-term="wire-break micro-current injection shunt solder crack">
+      <div class="term-card" data-cat="app" data-term="ocv open circuit voltage rest soc">
         <div class="term-head">
-          <h3 class="term-title">Shunt Wire-Break <small>Active Micro-Current Injection Diagnostic Circuit</small></h3>
-          <span class="term-badge cat-safety">Functional Safety</span>
+          <h3 class="term-title">OCV <small>Open-circuit voltage</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">Hardware diagnostic mechanism. Periodically injects 50 nA into <code>ISENSE_P</code> and sinks 50 nA from <code>ISENSE_N</code>. An intact 100 µΩ shunt incurs only 5 pV perturbation; a fractured solder joint immediately charges pins to 3.3V rail saturation, firing an NMI in &lt; 2 µs.</p>
+        <p class="term-def">Terminal voltage after a long rest at near-zero current; a lookup table maps it to SoC to re-anchor Coulomb counting.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Hazard Prevention:</b>Prevents floating input pins from picking up EMI that mimics normal discharge current</span>
-          <a class="term-link" href="safety.html#shunt-wire-break-circuit">Jump to Chapter 06 · Wire-Break Diagnostic Schematic →</a>
+          <span class="term-prop">Lead-acid usually needs hours of rest; the result depends on temperature.</span>
+          <a class="term-link" href="application.html#soc-coulomb-detail">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="safety" data-term="challenge-response window watchdog lfsr ilo token safetlib">
+      <div class="term-card" data-cat="app" data-term="soh state of health internal resistance cranking">
         <div class="term-head">
-          <h3 class="term-title">Challenge-Response WDT <small>16-Bit LFSR Window Watchdog</small></h3>
-          <span class="term-badge cat-safety">Functional Safety</span>
+          <h3 class="term-title">SoH / internal resistance <small>State of health &amp; internal resistance</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">Hardware watchdog driven by an independent low-speed oscillator (ILO). Generates pseudo-random questions using a 16-bit LFSR polynomial (\(x^{16} + x^{14} + x^{13} + x^{11} + 1\)). CPU must execute self-tests and return the correct polynomial token within a valid time window.</p>
+        <p class="term-def">During cranking, synchronised voltage-sag and current-step readings give R = ΔV/ΔI; a long-term rise indicates ageing.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Protection:</b>Early or late servicing triggers instant hardware reset; detects runaway CPU stuck in loops</span>
-          <a class="term-link" href="safety.html#wdt-lfsr-circuit">Jump to Chapter 06 · LFSR Watchdog Schematic →</a>
+          <span class="term-prop">Needs temperature compensation before comparison.</span>
+          <a class="term-link" href="application.html#soh-impedance-detail">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="safety" data-term="fmeda fit spfm lfm pmhf random hardware failure">
+      <div class="term-card" data-cat="app" data-term="lin bus pid checksum sync j2602 iso 17987">
         <div class="term-head">
-          <h3 class="term-title">FMEDA <small>Failure Modes, Effects, and Diagnostic Analysis</small></h3>
-          <span class="term-badge cat-safety">Functional Safety</span>
+          <h3 class="term-title">LIN <small>Local Interconnect Network</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">Systematic reliability analysis mandated by ISO 26262 Part 5. Decomposes each sub-circuit (CPU, AFE, PMIC, SRAM, Flash, clocks) into failure modes, failure distributions, and diagnostic coverages to compute SPFM, LFM, and PMHF.</p>
+        <p class="term-def">Single-wire master/slave in-vehicle bus, typically 19.2 kbit/s. A frame is the master header (break, sync 0x55, PID) plus the slave response (data, checksum).</p>
         <div class="term-meta">
-          <span class="term-prop"><b>FIT Definition:</b>Failures in Time (1 failure per \(10^9\) hours of operation); \(1\,\text{FIT} = 10^{-9}\text{ failures/h}\)</span>
-          <a class="term-link" href="safety.html#fmeda-metrics-detail">Jump to Chapter 06 · FMEDA Table →</a>
+          <span class="term-prop">DS: LIN 2.2A / ISO 17987 / SAE J2602 compliant; LIN pin −27 V to +42 V.</span>
+          <a class="term-link" href="application.html#lin-bus">Go to section →</a>
         </div>
       </div>
-
-      <!-- ==================== PROCESS & RELIABILITY ==================== -->
-      <div class="term-card" data-cat="process" data-term="bcd process bipolar cmos dmos smart power dti">
+      <div class="term-card" data-cat="app" data-term="bdu battery disconnect contactor pyro fuse economizer">
         <div class="term-head">
-          <h3 class="term-title">BCD Process <small>Bipolar-CMOS-DMOS Smart Power Semiconductor</small></h3>
-          <span class="term-badge cat-process">Process &amp; AEC</span>
+          <h3 class="term-title">BDU <small>Battery disconnect unit</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">Specialized silicon fabrication process integrating precision analog Bipolar transistors, dense CMOS digital logic, and 45V power DMOS switches on a single monolithic die. Deep Trench Isolation (DTI) prevents substrate latch-up.</p>
+        <p class="term-def">Main contactors, pre-charge circuit, current sensing and pyro-fuse inside a high-voltage pack. Contactors are held with PWM economisers and opened faster with a Zener clamp.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Advantage:</b>Eliminates multi-chip packaging; enables direct 12V/24V battery connection with microvolt sensing</span>
-          <a class="term-link" href="process.html#bcd-process-overview">Jump to Chapter 04 · BCD Smart Power Process →</a>
+          <span class="term-prop">Not an HVPA target application (HVPA max 42 V).</span>
+          <a class="term-link" href="application.html#bdu-circuit">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="process" data-term="load dump 42v ldmos active clamp iso 7637-2 avalanche">
+      <div class="term-card" data-cat="app" data-term="seebeck thermo emf thermocouple drift shunt">
         <div class="term-head">
-          <h3 class="term-title">42V Active Clamp <small>Monolithic Load Dump Avalanche Protection</small></h3>
-          <span class="term-badge cat-process">Process &amp; AEC</span>
+          <h3 class="term-title">Seebeck thermo-EMF <small>Thermo-electric voltage</small></h3>
+          <span class="term-badge cat-app">BMS</span>
         </div>
-        <p class="term-def">On-chip active protection against ISO 7637-2 Pulse 5b load dump transients (up to 42V / 400 ms) when the battery disconnects during alternator charging. Zener breakdown triggers a massive power LDMOS (\(W = 15,000\,\mu\text{m}\)) to dump ampere-level surges.</p>
+        <p class="term-def">Junctions of dissimilar metals generate a voltage under a temperature difference. A temperature gradient across a shunt creates a real offset that Coulomb counting accumulates.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Clamping:</b>Holds internal rails below 36V, preventing gate oxide breakdown in downstream circuits</span>
-          <a class="term-link" href="process.html#active-clamp-circuit">Jump to Chapter 04 · 42V Active Clamp Schematic →</a>
+          <span class="term-prop">Fixes: thermal symmetry, low-EMF alloys, zero-current calibration.</span>
+          <a class="term-link" href="lessons.html#case3-seebeck">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="process" data-term="aec-q100 automotive qualification zero ppm stress testing">
+      <div class="term-card" data-cat="safety" data-term="iso 26262 asil functional safety">
         <div class="term-head">
-          <h3 class="term-title">AEC-Q100 Grade 1 <small>Automotive Electronics Council Stress Qualification</small></h3>
-          <span class="term-badge cat-process">Process &amp; AEC</span>
+          <h3 class="term-title">ISO 26262 / ASIL <small>Road-vehicle functional safety</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
         </div>
-        <p class="term-def">Mandatory automotive qualification standard for integrated circuits. Grade 1 specifies an operating temperature range of -40°C to +125°C, requiring 1,000 hours of High Temperature Operating Life (HTOL), 1,000 temperature cycles, and HBM ESD protection &gt; 2 kV.</p>
+        <p class="term-def">Grades risk as ASIL A–D and sets requirements on the development process and hardware metrics (SPFM, LFM, PMHF).</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Target:</b>Zero PPM (parts per million) failure rate across multi-lot qualification</span>
-          <a class="term-link" href="test.html#aec-q100-standards">Jump to Chapter 05 · AEC-Q100 Standards →</a>
+          <span class="term-prop">DS: HVPA meets ASIL C process requirements and ASIL B hardware architectural metrics.</span>
+          <a class="term-link" href="safety.html#safety-mechanisms">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="process" data-term="wafer trimming efuse laser bandgap calibration">
+      <div class="term-card" data-cat="safety" data-term="spfm single point fault metric">
         <div class="term-head">
-          <h3 class="term-title">Wafer Trimming <small>On-Chip eFuse &amp; Laser Analog Calibration</small></h3>
-          <span class="term-badge cat-process">Process &amp; AEC</span>
+          <h3 class="term-title">SPFM <small>Single-point fault metric</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
         </div>
-        <p class="term-def">Automated testing procedure during wafer probe (CP) where ATE measures bandgap voltage and amplifier offsets across -40°C, +25°C, and +125°C, burning on-chip polysilicon eFuses to tune internal resistor ladders for near-zero temperature drift.</p>
+        <p class="term-def">SPFM = 1 − Σ(λ<sub>SPF</sub> + λ<sub>RF</sub>) / Σλ, measuring how well single-point and residual faults are covered.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Precision:</b>Compresses initial bandgap mismatch from &plusmn;3% down to &plusmn;0.1%</span>
-          <a class="term-link" href="test.html#trimming-calibration">Jump to Chapter 05 · Trimming &amp; Calibration →</a>
+          <span class="term-prop">Targets: ASIL B ≥ 90%, C ≥ 97%, D ≥ 99%.</span>
+          <a class="term-link" href="safety.html#fmeda-metrics-detail">Go to section →</a>
         </div>
       </div>
-
-      <div class="term-card" data-cat="process" data-term="wettable flank qfn packaging aoi automated optical inspection">
+      <div class="term-card" data-cat="safety" data-term="lfm latent fault metric">
         <div class="term-head">
-          <h3 class="term-title">Wettable Flank QFN <small>Automotive Surface Mount Package</small></h3>
-          <span class="term-badge cat-process">Process &amp; AEC</span>
+          <h3 class="term-title">LFM <small>Latent fault metric</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
         </div>
-        <p class="term-def">Advanced quad-flat no-lead package featuring precision step-cut lead edges with electroplated tin. Allows solder paste to wet up the side of each lead during reflow, forming visible solder fillets for 100% Automated Optical Inspection (AOI).</p>
+        <p class="term-def">Measures the fraction of latent multi-point faults that are detected.</p>
         <div class="term-meta">
-          <span class="term-prop"><b>Impact:</b>Eliminates costly X-ray inspection and increases thermal cycling joint fatigue life by 3x</span>
-          <a class="term-link" href="test.html#wettable-flank-qfn">Jump to Chapter 05 · Wettable Flank QFN Structure →</a>
+          <span class="term-prop">Targets: ASIL B ≥ 60%, C ≥ 80%, D ≥ 90%.</span>
+          <a class="term-link" href="safety.html#fmeda-metrics-detail">Go to section →</a>
         </div>
       </div>
-
+      <div class="term-card" data-cat="safety" data-term="fit pmhf failure rate">
+        <div class="term-head">
+          <h3 class="term-title">FIT / PMHF <small>Failure rate &amp; probabilistic metric for hardware failures</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
+        </div>
+        <p class="term-def">1 FIT = 1 failure per 10⁹ device-hours. PMHF is the system-level random hardware failure rate.</p>
+        <div class="term-meta">
+          <span class="term-prop">PMHF targets: ASIL B/C &lt; 100 FIT, D &lt; 10 FIT.</span>
+          <a class="term-link" href="safety.html#fmeda-metrics-detail">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="safety" data-term="fmeda failure modes effects diagnostic analysis">
+        <div class="term-head">
+          <h3 class="term-title">FMEDA <small>Failure modes, effects &amp; diagnostic analysis</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
+        </div>
+        <p class="term-def">Breaks each block into failure modes with failure-rate shares and diagnostic coverage to compute SPFM, LFM and PMHF.</p>
+        <div class="term-meta">
+          <span class="term-prop">The core quantitative method of ISO 26262-5.</span>
+          <a class="term-link" href="safety.html#fmeda-metrics-detail">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="safety" data-term="watchdog crwdt challenge response window wdt">
+        <div class="term-head">
+          <h3 class="term-title">Challenge-response WDT <small>Challenge-response window watchdog</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
+        </div>
+        <p class="term-def">Besides a timing window, requires the correct key sequence, proving the safety tasks actually ran.</p>
+        <div class="term-meta">
+          <span class="term-prop">DS: too soon, too late or wrong key → reset or interrupt; cause latched in Reset Cause.</span>
+          <a class="term-link" href="safety.html#wdt-lfsr-circuit">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="safety" data-term="open wire break diagnosis shunt diagnostic">
+        <div class="term-head">
+          <h3 class="term-title">Open-wire diagnosis <small>Open-wire diagnosis</small></h3>
+          <span class="term-badge cat-safety">FuSa</span>
+        </div>
+        <p class="term-def">Injects a tiny diagnostic current or cross-checks measurements to detect an open shunt joint or sense wire, so a floating input is not mistaken for a valid reading.</p>
+        <div class="term-meta">
+          <span class="term-prop">HVPA provides a backup reference and redundant measurement paths (DS).</span>
+          <a class="term-link" href="safety.html#wire-break-circuit">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="bcd bipolar cmos dmos process">
+        <div class="term-head">
+          <h3 class="term-title">BCD process <small>Bipolar-CMOS-DMOS process</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">A mixed-signal process combining precision bipolar devices, dense CMOS and high-voltage DMOS on one wafer.</p>
+        <div class="term-meta">
+          <span class="term-prop">Infineon does not publish the exact HVPA process.</span>
+          <a class="term-link" href="process.html#bcd-technology">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="ldmos drift region high voltage transistor">
+        <div class="term-head">
+          <h3 class="term-title">LDMOS <small>Lateral double-diffused MOS</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">A power transistor whose long, lightly doped drift region sustains high drain voltage; used in HV regulators, LIN drivers and similar.</p>
+        <div class="term-meta">
+          <span class="term-prop">Higher breakdown costs on-resistance and area.</span>
+          <a class="term-link" href="process.html#bcd-technology">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="dti deep trench isolation latch up substrate">
+        <div class="term-head">
+          <h3 class="term-title">DTI <small>Deep trench isolation</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">Dielectric trenches separate devices, blocking carriers and noise injected into the substrate by HV blocks and reducing latch-up risk.</p>
+        <div class="term-meta">
+          <span class="term-prop">Used together with guard rings and floor-planning.</span>
+          <a class="term-link" href="process.html#isolation-dti">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="load dump iso 16750 7637 pulse 5a 5b alternator">
+        <div class="term-head">
+          <h3 class="term-title">Load dump <small>Load dump</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">A long over-voltage caused by disconnecting the battery while the alternator charges. ISO 16750-2 Test A is unsuppressed (12 V: 79–101 V); Test B is suppressed in the alternator (commonly 35 V).</p>
+        <div class="term-meta">
+          <span class="term-prop">DS: VBAT absolute maximum 42 V; external protection may be required.</span>
+          <a class="term-link" href="process.html#active-clamp-circuit">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="aec q100 grade htol qualification">
+        <div class="term-head">
+          <h3 class="term-title">AEC-Q100 <small>Automotive IC stress qualification</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">The Automotive Electronics Council qualification for ICs. Grade 1 covers −40 to +125 °C; HTOL is 1000 h on 3 lots × 77 with zero fails.</p>
+        <div class="term-meta">
+          <span class="term-prop">DS: HVPA is AEC-Q100 qualified, T<sub>A</sub> −40 to 125 °C.</span>
+          <a class="term-link" href="test.html#aec-q100">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="trim trimming calibration ate wafer probe cp">
+        <div class="term-head">
+          <h3 class="term-title">Trimming <small>Trimming</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">Each die is measured at wafer test and correction codes are stored to compensate offset, gain and drift. Residual error is about step/√12 plus measurement noise.</p>
+        <div class="term-meta">
+          <span class="term-prop">Try the Monte Carlo model in the MCU Lab.</span>
+          <a class="term-link" href="test.html#ate-trimming">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="process" data-term="wettable flank qfn aoi solder">
+        <div class="term-head">
+          <h3 class="term-title">Wettable-flank QFN <small>Wettable-flank QFN</small></h3>
+          <span class="term-badge cat-process">Process</span>
+        </div>
+        <p class="term-def">A QFN with plated steps on the lead sides so solder forms a visible side fillet that AOI can inspect.</p>
+        <div class="term-meta">
+          <span class="term-prop">DS: HVPA comes in a 32-QFN 6 × 6 mm wettable-flank package.</span>
+          <a class="term-link" href="test.html#wettable-flanks">Go to section →</a>
+        </div>
+      </div>
+      <!-- TERMS:END -->
     </div>
   </article>
 </div>

@@ -3,28 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="MCU Notes · 車用與高精度類比 MCU 知識地圖">
+<meta property="og:description" content="車用微控制器與高精度類比 PMIC 整合知識地圖：從 Arm Cortex-M 核心架構、雙通道 Sigma-Delta ADC、車用電池管理系統 (BMS)、高壓半導體製程、車規測試校準到 ISO 26262 功能安全，搭配互動實驗室與規格設計器。以 Infineon PSoC™ 4 HVPA-144K 為實體參考架構。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
 <title>MCU Notes · 車用與高精度類比 MCU 知識地圖</title>
-<meta name="description" content="車用微控制器與高精度類比 PMIC 整合知識地圖：從 Arm Cortex-M 核心架構、雙通道 Sigma-Delta ADC、車用電池管理系統 (BMS)、高壓半導體製程、車規測試校準到 ISO 26262 ASIL-C 功能安全，搭配互動實驗室與規格設計器。以 Infineon PSoC™ 4 HVPA-144K 為實體參考架構。">
+<meta name="description" content="車用微控制器與高精度類比 PMIC 整合知識地圖：從 Arm Cortex-M 核心架構、雙通道 Sigma-Delta ADC、車用電池管理系統 (BMS)、高壓半導體製程、車規測試校準到 ISO 26262 功能安全，搭配互動實驗室與規格設計器。以 Infineon PSoC™ 4 HVPA-144K 為實體參考架構。">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="index">
-<main class="hub">
+<a class="skip" href="#main">跳到主要內容</a>
+<main id="main" class="hub">
   <div class="eyebrow">MCU Notes · 車用微控制器知識地圖</div>
   <h1>車用與高精度類比 MCU：從微架構到電池管理系統</h1>
-  <p class="lead">現代車用微控制器（MCU）不再只是執行程式碼的處理器，而是高度整合了 42V 高壓穩壓器（PMIC）、雙通道 16-bit 差分 ΔΣ 類比前端（AFE）、車載 LIN/CAN 通訊與 ISO 26262 ASIL-C 功能安全的單晶片系統（SoC）。本站以 <b>Infineon PSoC™ 4 HVPA-144K</b> 車用智慧電池感測晶片為基準架構，深入剖析 MCU 每一層核心技術與電路原理。</p>
+  <p class="lead">現代車用微控制器（MCU）不再只是執行程式碼的處理器，而是高度整合了 42V 高壓穩壓器（PMIC）、雙通道 16-bit 差分 ΔΣ 類比前端（AFE）、車載 LIN 通訊與 ISO 26262 功能安全機制的單晶片系統（SoC）。本站以 <b>Infineon PSoC™ 4 HVPA-144K</b> 車用智慧電池感測晶片為基準架構，深入剖析 MCU 每一層核心技術與電路原理。</p>
 
   <div class="badge-row">
     <span class="badge">晶片範例 <b>Infineon PSoC™ 4 HVPA-144K</b></span>
     <span class="badge">核心 <b>Arm® Cortex®-M0+ @ 48 MHz</b></span>
-    <span class="badge">類比前端 <b>Dual 16-bit ΔΣ ADC + AGC</b></span>
+    <span class="badge">類比前端 <b>2 × ΔΣ ADC + AGC (G 1–512)</b></span>
     <span class="badge">高壓電源 <b>3.6V ~ 28V Direct (Survives 42V)</b></span>
     <span class="badge">車規認證 <b>AEC-Q100 Grade 1</b></span>
-    <span class="badge">功能安全 <b>ISO 26262 ASIL-C Ready</b></span>
+    <span class="badge">功能安全 <b>ASIL C 流程 / ASIL B 硬體指標</b></span>
   </div>
 
   <button class="hero-find" type="button" data-open-find>
@@ -38,7 +51,7 @@
     <a href="application.html" style="--c:var(--app)"><span class="st">03 · BMS APP</span><b>車用 BMS 應用</b><small>智慧電池感測器 IBS、庫倫計、SoC/SoH、LIN 匯流排</small></a>
     <a href="process.html" style="--c:var(--fab)"><span class="st">04 · PROCESS</span><b>高壓製程整合</b><small>BCD 智慧功率製程、深溝槽隔離、42V 負載突降防護</small></a>
     <a href="test.html" style="--c:var(--test)"><span class="st">05 · TEST &amp; AEC</span><b>測試校準車規</b><small>晶圓修調 Trim、溫漂補償、AEC-Q100、可潤濕 QFN</small></a>
-    <a href="safety.html" style="--c:var(--safety)"><span class="st">06 · SAFETY</span><b>功能安全</b><small>ISO 26262 ASIL-C、問答看門狗、安全機制、FMEDA</small></a>
+    <a href="safety.html" style="--c:var(--safety)"><span class="st">06 · SAFETY</span><b>功能安全</b><small>ISO 26262、問答看門狗、安全機制、FMEDA</small></a>
   </nav>
 
   <h2 class="grp-h">知識核心章節</h2>
@@ -56,16 +69,16 @@
       <ul><li>IBS 完整電路圖</li><li>BDU 快速消弧</li><li>庫倫積分 SoC</li><li>SoH 內阻追蹤</li><li>LIN 2.2A / CAN FD</li></ul></a>
 
     <a class="card" href="process.html" style="--c:var(--fab)"><span class="k">Chapter 4 · High-Voltage Process</span><h3>高壓半導體製程：在微米級矽片上調和高低壓</h3>
-      <p>探討 BCD（Bipolar-CMOS-DMOS）智慧功率半導體製程。剖析在同一矽晶粒上集成 1.8V 數位邏輯、微伏級類比雙極放大器與 42V 耐壓功率 DMOS，並解密晶片內 42V 拋負載主動動態 LDMOS 雪崩箝位保護電路原理。</p>
-      <ul><li>BCD 智慧功率製程</li><li>42V 主動箝位電路</li><li>深溝槽隔離 DTI</li><li>高低壓雜訊隔離</li><li>矽基封裝散熱</li></ul></a>
+      <p>探討 BCD（Bipolar-CMOS-DMOS）智慧功率半導體製程。剖析在同一矽晶粒上集成 1.8V 數位邏輯、微伏級類比雙極放大器與 42V 耐壓功率 DMOS，並說明拋負載標準與「發電機抑制 → 模組 TVS → 晶片 42 V」的分層保護。</p>
+      <ul><li>BCD 製程</li><li>拋負載 ISO 16750-2</li><li>分層過壓保護</li><li>深溝槽隔離 DTI</li><li>溫度與封裝</li></ul></a>
 
     <a class="card" href="test.html" style="--c:var(--test)"><span class="k">Chapter 5 · Test, Calibration &amp; AEC</span><h3>測試校準與車規：達成零缺陷的工業實踐</h3>
       <p>車用晶片如何從晶圓探針測試（CP）走向百萬分之零缺陷（Zero PPM）：晶片內類比精密電阻雷射/eFuse 修調（Trim）、全溫區溫漂校準演算法、AEC-Q100 嚴格應力環境試驗，以及車載必備的側邊可潤濕側翼 QFN 封裝。</p>
       <ul><li>Wafer Probe CP/FT</li><li>eFuse 類比修調</li><li>溫度漂移校正</li><li>AEC-Q100 Grade 1</li><li>Wettable Flank QFN</li></ul></a>
 
-    <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Chapter 6 · Functional Safety</span><h3>功能安全與可靠度：ISO 26262 ASIL-C 系統實踐</h3>
-      <p>針對車載高危險失效的安全架構設計：分流器焊點斷線（Wire-Break）微電流診斷注入電路、問答式窗口看門狗硬體 LFSR 檢驗電路、RAM/Flash ECC 錯誤注入診斷、隨機硬體故障指標（FIT / SPFM / LFM）與 FMEDA 分析。</p>
-      <ul><li>ISO 26262 ASIL-C</li><li>焊點斷線診斷電路</li><li>LFSR 問答看門狗</li><li>RAM 雙位元中斷</li><li>FMEDA 與 FIT 計算</li></ul></a>
+    <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Chapter 6 · Functional Safety</span><h3>功能安全：ISO 26262 安全機制與 FMEDA</h3>
+      <p>HVPA 的正式安全宣稱（ASIL C 流程、ASIL B 硬體指標）、資料手冊列出的安全機制、分流器斷線診斷、問答式窗口看門狗，以及 SPFM / LFM / PMHF 的計算方法與範例。</p>
+      <ul><li>ISO 26262</li><li>斷線診斷</li><li>問答看門狗</li><li>ECC</li><li>FMEDA 與 FIT</li></ul></a>
   </div>
 
   <h2 class="grp-h">互動工具與專業辭典</h2>
@@ -73,7 +86,7 @@
     <a class="card tool wide" href="glossary.html" style="--c:var(--core)">
       <svg class="ic" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10h28a8 8 0 0 1 8 8v36H16a4 4 0 0 0-4 4V10z"/><path d="M12 50h36M22 22h18M22 30h14" stroke-width="2.5"/></svg>
       <div><span class="k">MCU Glossary · 專業術語辭典</span><h3>車用微控制器與高精度類比 PMIC 核心術語與物理定義</h3>
-      <p>收錄 PACSS、AGC、SECDED、FIT、SPFM、LFM、BCD、LDMOS、Kelvin 4-Wire、Chopper、Sinc³、Coulomb Counting、OCV 等 40+ 項車載關鍵術語，提供即時關鍵字搜尋與分類篩選。</p>
+      <p>收錄 PACSS、AGC、SECDED、FIT、SPFM、LFM、BCD、LDMOS、Kelvin 4-Wire、Chopper、Sinc³、Coulomb Counting、OCV 等 35 項車載關鍵術語，中英文同步，提供即時關鍵字搜尋與分類篩選。</p>
       <ul><li>即時搜尋與分類</li><li>核心數學公式</li><li>章節雙向連結</li></ul></div></a>
 
     <a class="card tool wide" href="lab.html" style="--c:var(--accent)">
@@ -94,11 +107,11 @@
     <tr><th>項目</th><th>傳統通用 MCU</th><th>分離式架構 (通用 MCU + 外掛 AFE)</th><th>高壓高精度整合 MCU (如 PSoC™ 4 HVPA)</th></tr>
     <tr><td><b>架構型式</b></td><td>單晶片數位處理器</td><td>雙晶片或三晶片（MCU + PMIC + AFE）</td><td>單晶片高壓混合訊號 SoC</td></tr>
     <tr><td><b>電源供應</b></td><td>僅限 3.3V / 5.0V，需外接車載降壓 PMIC</td><td>外掛專用車規 PMIC 提供多路低壓</td><td><b>直連 12V/24V 電瓶</b>，耐受 42V 負載突降</td></tr>
-    <tr><td><b>電流量測精度</b></td><td>12-bit SAR ADC，無法辨識微伏訊號</td><td>專用 16-bit / 24-bit 外掛 AFE 晶片</td><td><b>整合雙通道 16-bit 差分 ΔΣ ADC + AGC</b></td></tr>
+    <tr><td><b>電流量測精度</b></td><td>12-bit SAR ADC，無法辨識微伏訊號</td><td>專用 16-bit / 24-bit 外掛 AFE 晶片</td><td><b>整合兩顆 ΔΣ ADC + AGC（增益 1–512）</b></td></tr>
     <tr><td><b>PCB 面積與元件數</b></td><td>周邊元件多，佈線複雜</td><td>高（需額外佈局 SPI/I2C 高速訊號線、隔離元件）</td><td><b>極小（單晶片直裝於電瓶極柱端子夾具上）</b></td></tr>
-    <tr><td><b>功耗與暗電流</b></td><td>待機功耗較大，需外加喚醒邏輯</td><td>需協同多顆晶片休眠狀態，控制複雜</td><td><b>內建深度休眠模式，暗電流 &lt; 15 µA</b></td></tr>
-    <tr><td><b>功能安全 (ISO 26262)</b></td><td>通常僅達 QM 或 ASIL-A</td><td>需針對多晶片通訊介面進行複雜安全診斷</td><td><b>單晶片原生支援 ASIL-C 安全機制與硬體自檢</b></td></tr>
-    <tr><td><b>典型應用場景</b></td><td>車門控制器、車燈、儀表周邊</td><td>動力電池包中央主控制器（BCU）</td><td><b>智慧電池感測器（IBS）、高壓繼電器斷路單元（BDU）</b></td></tr>
+    <tr><td><b>功耗與暗電流</b></td><td>待機功耗較大，需外加喚醒邏輯</td><td>需協同多顆晶片休眠狀態，控制複雜</td><td><b>Deep Sleep 35 µA typ；每秒喚醒量測 85 µA typ</b></td></tr>
+    <tr><td><b>功能安全 (ISO 26262)</b></td><td>通常僅達 QM 或 ASIL-A</td><td>需針對多晶片通訊介面進行複雜安全診斷</td><td><b>ASIL C 流程、ASIL B 硬體指標，內建 ECC、CRWDT、電源監控與類比診斷</b></td></tr>
+    <tr><td><b>典型應用場景</b></td><td>車門控制器、車燈、儀表周邊</td><td>動力電池包中央主控制器（BCU）</td><td><b>12 V / 24 V 鉛酸電池智慧感測器（IBS）</b></td></tr>
   </table></div>
 
   <h2 id="roadmaps" class="grp-h">建議學習與閱讀路線</h2>
@@ -110,10 +123,10 @@
       <p>類比 · 雙通道 ΔΣ ADC 與 AGC → 類比 · 內部 42V 高壓 PMIC → 實驗室 · 分流器動態量測與 AGC → 設計器 · 分流電阻與前端選型。</p></a>
 
     <a class="card" href="application.html" style="--c:var(--app)"><span class="k">BMS 演算法工程師</span><h3>精確電量與健康狀態估算</h3>
-      <p>應用 · 智慧電池感測器 IBS → 應用 · 庫倫計與卡爾曼濾波 → 實驗室 · 庫倫積分 SoC 漂移 → 案例 · 塞貝克熱電效應與接地干擾。</p></a>
+      <p>應用 · 智慧電池感測器 IBS → 應用 · 庫倫積分與 OCV 定錨 → 實驗室 · 庫倫積分 SoC 漂移 → 案例 · 塞貝克熱電效應與接地干擾。</p></a>
 
     <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">車規與安全專員</span><h3>ISO 26262 與零缺陷保證</h3>
-      <p>功能安全 · ASIL-C 系統架構 → 功能安全 · 挑戰應答看門狗與自檢 → 測試 · 晶圓修調與 AEC-Q100 → 案例 · 業界重大失效排查。</p></a>
+      <p>功能安全 · 安全宣稱與安全機制 → 功能安全 · 挑戰應答看門狗 → 測試 · 晶圓修調與 AEC-Q100 → 案例 · 業界重大失效排查。</p></a>
   </div>
 
   <footer class="site-footer">

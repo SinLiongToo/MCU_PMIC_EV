@@ -21,37 +21,36 @@ PAGES = [
 ]
 
 EXTRA = [
-    {"p": "lab.html", "a": "shunt", "t": "分流電阻與快速 AGC 模擬器", "s": "分流器 Shunt AGC 自動增益 PGA 滿量程 150mV LSB 微伏解析度 啟動電流 1500A 暗電流", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "coulomb", "t": "庫倫積分與 SoC 漂移模擬", "s": "安時積分 Coulomb Counting 偏移電壓 Offset 溫漂 Chopping 斬波 OCV 開路電壓校準", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "loaddump", "t": "42V 拋負載突降模擬器", "s": "ISO 7637-2 Pulse 5b 負載突降 42V 箝位 VDDD 3.3V VCCD 1.8V LDO 瞬態保護", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "wdt", "t": "問答式窗口看門狗模擬", "s": "Window WDT Challenge-Response 窗口時間 早餵故障 超時復位 SafeTlib 獨立 ILO 時脈", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "sinc", "t": "Sinc³ 數位濾波頻譜模擬", "s": "Sinc3 Sinc4 OSR 抽取率 50Hz 60Hz 工頻消除 陷波 Notch 逆變器 PWM 抑制", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "ecc", "t": "SECDED ECC 錯誤注入模擬器", "s": "漢明碼 Hamming 單粒子翻轉 SEU 單錯自動修正 雙錯 NMI 中斷 症狀碼 Syndrome", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "lin", "t": "LIN 2.2A 總線實體層傳輸", "s": "LIN 匯流排 Synch Break 0x55 PID Checksum 波特率校準 斜率控制 EMI", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "trim", "t": "類比晶圓修調與良率模擬", "s": "eFuse Laser Trim Offset 偏移校正 常態分佈 晶圓良率提升 CP ATE 測試", "g": "lab", "lv": 1},
-    {"p": "designer.html", "a": "", "t": "BMS 分流與前端選型設計器", "s": "分流電阻計算 峰值跨壓 溫升熱損耗 I2R ADC 裕度 LSB 動態範圍", "g": "designer", "lv": 1},
-    {"p": "designer.html", "a": "", "t": "電瓶休眠與待機壽命評估器", "s": "車載暗電流 Deep Sleep 停放天數 電瓶自放電 剩餘容量 50% 啟動極限", "g": "designer", "lv": 1},
-    {"p": "designer.html", "a": "", "t": "韌體記憶體分區與安全開銷設計器", "s": "Flash SRAM Bootloader SafeTlib 連結腳本 Linker Script 堆疊深度", "g": "designer", "lv": 1},
-    {"p": "quiz.html", "a": "", "t": "MCU 專業知識測驗 (60題)", "s": "車規測驗 題庫 自我檢測 核心 類比 BMS 製程 測試 ISO 26262", "g": "quiz", "lv": 1},
-    {"p": "glossary.html", "a": "", "t": "MCU 專業術語與規範全辭典", "s": "專業術語 詞彙 縮寫 PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc3 Coulomb Counting OCV Pyro-fuse", "g": "glossary", "lv": 1},
+    {"p": "lab.html", "a": "shunt", "t": "分流器與 AGC 模擬", "s": "分流器 Shunt AGC 自動增益 1–512 scaler 512/G 0.715 mA LSB 1.2 V 滿量程 冷啟動 暗電流", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "coulomb", "t": "庫倫積分 SoC 漂移模擬", "s": "安時積分 Coulomb Counting 偏移 虛假電流 斬波 Chopping OCV 定錨 暗電流", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "loaddump", "t": "拋負載與 42 V 絕對最大額定模擬", "s": "ISO 16750-2 Test A Test B 拋負載 Load dump 42V TVS 能量 VBAT", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "wdt", "t": "問答式窗口看門狗模擬", "s": "CRWDT Window WDT Challenge-Response 過早 逾時 金鑰錯誤 Reset Cause PILO", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "sinc", "t": "Sinc³ / Sinc² 抽取濾波模擬", "s": "Sinc3 Sinc2 DR DR2 OSR 3.072 MHz 50Hz 60Hz 陷波 平均 8 kSPS", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "ecc", "t": "SECDED(39,32) ECC 錯誤注入", "s": "漢明碼 Hamming 症狀碼 Syndrome 單錯修正 雙錯偵測 誤修正 SEU", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "lin", "t": "LIN 訊框模擬", "s": "LIN Break Sync 0x55 PID 同位 Enhanced Classic checksum 鮑率", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "trim", "t": "修調與良率 Monte Carlo", "s": "修調 Trim 偏移分佈 良率 量化 步階 ATE 量測雜訊 修調範圍", "g": "lab", "lv": 1},
+    {"p": "designer.html", "a": "", "t": "分流器與前端設計器", "s": "分流電阻 功耗 溫升 TCR AGC 量程 LSB", "g": "designer", "lv": 1},
+    {"p": "designer.html", "a": "", "t": "停車待機耗電評估", "s": "Deep Sleep 35 µA 85 µA 喚醒 暗電流 自放電 50% SoC", "g": "designer", "lv": 1},
+    {"p": "designer.html", "a": "", "t": "Flash/SRAM 記憶體配置", "s": "Code Flash 128 KB Data Flash 8 KB SRAM 8 KB Bootloader linker", "g": "designer", "lv": 1},
+    {"p": "quiz.html", "a": "", "t": "MCU 專業測驗（60 題）", "s": "測驗 題庫 自我檢測 核心 類比 BMS 製程 測試 ISO 26262", "g": "quiz", "lv": 1},
+    {"p": "glossary.html", "a": "", "t": "MCU 術語辭典（35 項）", "s": "術語 PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc OCV LIN AEC-Q100", "g": "glossary", "lv": 1},
 ]
 
 EXTRA_EN = [
-    {"p": "lab.html", "a": "shunt", "t": "Shunt Sensing & Fast AGC Simulator", "s": "Shunt resistor, AGC dynamic range, PGA gains, 150mV FSR, LSB resolution, cranking current", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "coulomb", "t": "Coulomb Counting & SoC Drift Simulator", "s": "Ampere-hour integration, offset drift, Chopping auto-zero, OCV recalibration", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "loaddump", "t": "42V Load Dump Transient Simulator", "s": "ISO 7637-2 Pulse 5b, unsuppressed surge, 42V clamp, VDDD 3.3V, VCCD 1.8V LDO", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "wdt", "t": "Challenge-Response Window WDT Simulator", "s": "Windowed watchdog, Early feed violation, Timeout reset, SafeTlib token, ILO clock", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "sinc", "t": "Sinc³ Decimation Filter Frequency Response", "s": "Sinc3 Sinc4 OSR decimation, 50Hz 60Hz notch rejection, PWM carrier suppression", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "ecc", "t": "SECDED ECC Fault Injection Simulator", "s": "Hamming code, Single Event Upset SEU, 1-bit auto correction, 2-bit fatal NMI interrupt", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "lin", "t": "LIN 2.2A Physical Layer Transceiver Simulator", "s": "LIN bus, Synch Break, 0x55, PID parity, Enhanced checksum, Slew-rate control", "g": "lab", "lv": 1},
-    {"p": "lab.html", "a": "trim", "t": "Analog Trimming & Wafer Yield Simulator", "s": "eFuse laser trim, ADC offset distribution, Gaussian yield upgrade, CP ATE testing", "g": "lab", "lv": 1},
-    {"p": "designer.html", "a": "", "t": "BMS Shunt & Frontend Spec Designer", "s": "Shunt dimensioning, peak Vdiff, thermal dissipation, LSB resolution, dynamic range", "g": "designer", "lv": 1},
-    {"p": "designer.html", "a": "", "t": "Battery Standby & Sleep Budget Calculator", "s": "Dark quiescent current, Deep Sleep, parking duration, self-discharge, cranking threshold", "g": "designer", "lv": 1},
-    {"p": "designer.html", "a": "", "t": "Firmware Memory & Safety Budget Designer", "s": "Flash, SRAM, Bootloader, SafeTlib footprint, linker script, stack depth", "g": "designer", "lv": 1},
-    {"p": "quiz.html", "a": "", "t": "MCU Knowledge Quiz (60 Questions)", "s": "Automotive test, self-check, Core, Analog, BMS, Fab, Test, ISO 26262 FuSa", "g": "quiz", "lv": 1},
-    {"p": "glossary.html", "a": "", "t": "Automotive MCU & Precision Analog Glossary", "s": "Engineering glossary PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc3 Coulomb Counting OCV Pyro-fuse", "g": "glossary", "lv": 1},
+    {"p": "lab.html", "a": "shunt", "t": "Shunt & AGC Simulator", "s": "Shunt AGC gain 1–512 scaler 512/G 0.715 mA LSB 1.2 V full scale cranking parked current", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "coulomb", "t": "Coulomb-Counting SoC Drift Simulator", "s": "Ampere-hour integration offset phantom current chopping OCV anchoring quiescent current", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "loaddump", "t": "Load Dump vs 42 V Absolute Maximum", "s": "ISO 16750-2 Test A Test B load dump 42V TVS energy VBAT", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "wdt", "t": "Challenge-Response Window Watchdog Simulator", "s": "CRWDT window watchdog too early too late wrong key Reset Cause PILO", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "sinc", "t": "Sinc³ / Sinc² Decimation Simulator", "s": "Sinc3 Sinc2 DR DR2 OSR 3.072 MHz 50Hz 60Hz notch averaging 8 kSPS", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "ecc", "t": "SECDED(39,32) ECC Fault Injection", "s": "Hamming syndrome single-error correct double-error detect miscorrection SEU", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "lin", "t": "LIN Frame Simulator", "s": "LIN break sync 0x55 PID parity enhanced classic checksum baud", "g": "lab", "lv": 1},
+    {"p": "lab.html", "a": "trim", "t": "Trim & Yield Monte Carlo", "s": "trim offset distribution yield quantisation step ATE measurement noise trim range", "g": "lab", "lv": 1},
+    {"p": "designer.html", "a": "", "t": "Shunt & Front-End Designer", "s": "shunt resistor dissipation temperature rise TCR AGC range LSB", "g": "designer", "lv": 1},
+    {"p": "designer.html", "a": "", "t": "Parked Standby Budget", "s": "Deep Sleep 35 µA 85 µA wake-up quiescent current self-discharge 50% SoC", "g": "designer", "lv": 1},
+    {"p": "designer.html", "a": "", "t": "Flash / SRAM Memory Layout", "s": "code flash 128 KB data flash 8 KB SRAM 8 KB bootloader linker", "g": "designer", "lv": 1},
+    {"p": "quiz.html", "a": "", "t": "MCU Knowledge Quiz (60 Questions)", "s": "quiz self-check core analog BMS process test ISO 26262", "g": "quiz", "lv": 1},
+    {"p": "glossary.html", "a": "", "t": "MCU Glossary (35 terms)", "s": "glossary PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin chopper Sinc OCV LIN AEC-Q100", "g": "glossary", "lv": 1},
 ]
-
 
 class Collector(HTMLParser):
     def __init__(self):

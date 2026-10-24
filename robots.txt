@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sinliongtoo.github.io/MCU_PMIC_EV/sitemap.xml

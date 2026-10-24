@@ -3,28 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="MCU Notes · Automotive &amp; Precision Analog MCU Knowledge Map">
+<meta property="og:description" content="Automotive microcontroller & precision analog PMIC knowledge platform: From Arm Cortex-M core architecture, dual Sigma-Delta ADC, Battery Management Systems (BMS), high-voltage semiconductor processes, AEC-Q100 qualification to ISO 26262 functional safety, accompanied by interactive simulations and spec designer. Based on Infineon PSoC™ 4 HVPA-144K.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
 <title>MCU Notes · Automotive &amp; Precision Analog MCU Knowledge Map</title>
-<meta name="description" content="Automotive microcontroller & precision analog PMIC knowledge platform: From Arm Cortex-M core architecture, dual Sigma-Delta ADC, Battery Management Systems (BMS), high-voltage BCD semiconductor processes, AEC-Q100 qualification to ISO 26262 ASIL-C functional safety, accompanied by interactive simulations and spec designer. Based on Infineon PSoC™ 4 HVPA-144K.">
+<meta name="description" content="Automotive microcontroller & precision analog PMIC knowledge platform: From Arm Cortex-M core architecture, dual Sigma-Delta ADC, Battery Management Systems (BMS), high-voltage semiconductor processes, AEC-Q100 qualification to ISO 26262 functional safety, accompanied by interactive simulations and spec designer. Based on Infineon PSoC™ 4 HVPA-144K.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body data-page="index">
-<main class="hub">
+<a class="skip" href="#main">Skip to content</a>
+<main id="main" class="hub">
   <div class="eyebrow">MCU Notes · Automotive MCU Knowledge Map</div>
   <h1>Automotive &amp; Precision Analog MCUs: From Microarchitecture to BMS</h1>
-  <p class="lead">Modern automotive microcontrollers (MCUs) are no longer simple code executors; they are fully integrated Systems-on-Chip (SoC) combining a direct 42V battery PMIC regulator, dual 16-bit differential ΔΣ analog front-ends (AFE), in-vehicle LIN/CAN transceivers, and ISO 26262 ASIL-C functional safety. Grounded on the <b>Infineon PSoC™ 4 HVPA-144K</b> architecture, this knowledge map demystifies every critical layer of automotive MCU engineering.</p>
+  <p class="lead">Modern automotive microcontrollers (MCUs) are no longer simple code executors; they are fully integrated Systems-on-Chip (SoC) combining a direct 42V battery PMIC regulator, two ΔΣ ADCs with automatic gain control, an in-vehicle LIN transceiver and ISO 26262 safety mechanisms. Grounded on the <b>Infineon PSoC™ 4 HVPA-144K</b> architecture, this knowledge map demystifies every critical layer of automotive MCU engineering.</p>
 
   <div class="badge-row">
     <span class="badge">Reference SoC <b>Infineon PSoC™ 4 HVPA-144K</b></span>
     <span class="badge">Core <b>Arm® Cortex®-M0+ @ 48 MHz</b></span>
-    <span class="badge">Analog Front-End <b>Dual 16-bit ΔΣ ADC + AGC</b></span>
+    <span class="badge">Analog Front-End <b>2 × ΔΣ ADC + AGC (G 1–512)</b></span>
     <span class="badge">HV Power <b>3.6V ~ 28V Direct (Survives 42V)</b></span>
     <span class="badge">AEC Grade <b>AEC-Q100 Grade 1 (-40°C~+125°C)</b></span>
-    <span class="badge">Safety <b>ISO 26262 ASIL-C Ready</b></span>
+    <span class="badge">Safety <b>ASIL C process / ASIL B HW metrics</b></span>
   </div>
 
   <button class="hero-find" type="button" data-open-find>
@@ -38,7 +51,7 @@
     <a href="application.html" style="--c:var(--app)"><span class="st">03 · BMS APP</span><b>Automotive BMS</b><small>Intelligent Battery Sensor (IBS), Coulomb count, SoC/SoH, LIN</small></a>
     <a href="process.html" style="--c:var(--fab)"><span class="st">04 · PROCESS</span><b>HV Silicon Process</b><small>BCD smart power process, DTI trench isolation, load dump</small></a>
     <a href="test.html" style="--c:var(--test)"><span class="st">05 · TEST &amp; AEC</span><b>Test &amp; Qualification</b><small>Wafer trimming, drift calibration, AEC-Q100, wettable QFN</small></a>
-    <a href="safety.html" style="--c:var(--safety)"><span class="st">06 · SAFETY</span><b>Functional Safety</b><small>ISO 26262 ASIL-C, Window Watchdog, BIST, FMEDA &amp; FIT</small></a>
+    <a href="safety.html" style="--c:var(--safety)"><span class="st">06 · SAFETY</span><b>Functional Safety</b><small>ISO 26262, window watchdog, safety mechanisms, FMEDA</small></a>
   </nav>
 
   <h2 class="grp-h">Knowledge Chapters</h2>
@@ -63,9 +76,9 @@
       <p>From wafer probe (CP) to zero-defect automotive production: on-chip eFuse/laser trimming of analog offset, full-temperature range drift calibration (-40°C to +125°C), AEC-Q100 stress reliability tests, and wettable-flank QFN packaging for 100% AOI optical inspection.</p>
       <ul><li>Wafer Probe CP/FT</li><li>eFuse Analog Trim</li><li>Thermal Drift</li><li>AEC-Q100 Grade 1</li><li>Wettable QFN</li></ul></a>
 
-    <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Chapter 6 · Functional Safety</span><h3>ISO 26262 ASIL-C Functional Safety</h3>
+    <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Chapter 6 · Functional Safety</span><h3>Functional Safety: ISO 26262 Mechanisms &amp; FMEDA</h3>
       <p>Architecting fail-safe automotive electronics: Challenge-Response Window Watchdog Timer, memory ECC fault injection diagnostics, analog loopback and wire-break self-test, FMEDA analysis, and random hardware failure metrics (FIT, SPFM > 97%, LFM > 80%).</p>
-      <ul><li>ISO 26262 ASIL-C</li><li>Window WDT</li><li>Loopback BIST</li><li>ECC Fault Inject</li><li>FMEDA &amp; FIT</li></ul></a>
+      <ul><li>ISO 26262</li><li>Open-wire diagnosis</li><li>Window WDT</li><li>ECC</li><li>FMEDA &amp; FIT</li></ul></a>
   </div>
 
   <h2 class="grp-h">Interactive Tools &amp; References</h2>
@@ -73,7 +86,7 @@
     <a class="card tool wide" href="glossary.html" style="--c:var(--core)">
       <svg class="ic" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10h28a8 8 0 0 1 8 8v36H16a4 4 0 0 0-4 4V10z"/><path d="M12 50h36M22 22h18M22 30h14" stroke-width="2.5"/></svg>
       <div><span class="k">MCU Glossary · Technical Terminology</span><h3>Automotive MCU &amp; Precision Analog PMIC Engineering Definitions</h3>
-      <p>Curated dictionary of 40+ key automotive terms (PACSS, AGC, SECDED, FIT, SPFM, LFM, BCD, LDMOS, Kelvin 4-Wire, Chopper, Sinc³, Coulomb Counting, OCV) with interactive live search and category filters.</p>
+      <p>Curated bilingual dictionary of 35 key automotive terms (PACSS, AGC, SECDED, FIT, SPFM, LFM, BCD, LDMOS, Kelvin 4-Wire, Chopper, Sinc³, Coulomb Counting, OCV) with interactive live search and category filters.</p>
       <ul><li>Live Search &amp; Filter</li><li>Mathematical Models</li><li>Bidirectional Links</li></ul></div></a>
 
     <a class="card tool wide" href="lab.html" style="--c:var(--accent)">
@@ -94,12 +107,24 @@
     <tr><th>Feature</th><th>Standard General MCU</th><th>Discrete Architecture (MCU + External AFE)</th><th>Integrated HV Precision MCU (PSoC™ 4 HVPA)</th></tr>
     <tr><td><b>Form Factor</b></td><td>Single-chip digital processor</td><td>2 or 3 ICs (MCU + PMIC + AFE)</td><td><b>Monolithic high-voltage mixed-signal SoC</b></td></tr>
     <tr><td><b>Power Supply</b></td><td>3.3V / 5.0V only (needs buck regulator)</td><td>External dedicated automotive PMIC</td><td><b>Direct connection to 12V/24V battery</b> (42V dump tolerant)</td></tr>
-    <tr><td><b>Current Accuracy</b></td><td>12-bit SAR ADC (cannot resolve µV)</td><td>Dedicated external 16-bit / 24-bit AFE</td><td><b>Integrated dual 16-bit $\Delta\Sigma$ ADC + fast AGC</b></td></tr>
+    <tr><td><b>Current Accuracy</b></td><td>12-bit SAR ADC (cannot resolve µV)</td><td>Dedicated external 16-bit / 24-bit AFE</td><td><b>Two integrated ΔΣ ADCs + AGC (gain 1–512)</b></td></tr>
     <tr><td><b>PCB Footprint</b></td><td>Many external passives, complex wiring</td><td>Large (needs SPI/I2C isolated bus routing)</td><td><b>Ultra-compact (fits directly on battery terminal clamp)</b></td></tr>
-    <tr><td><b>Quiescent Current</b></td><td>Higher sleep current, external wake logic</td><td>Must coordinate sleep across multiple ICs</td><td><b>Deep Sleep mode with dark current &lt; 15 µA</b></td></tr>
-    <tr><td><b>Functional Safety</b></td><td>QM or ASIL-A typically</td><td>Complex safety diagnosis across chip interfaces</td><td><b>Native ASIL-C certified architecture with hardware BIST</b></td></tr>
-    <tr><td><b>Target Applications</b></td><td>Body controllers, lighting, door units</td><td>High-voltage EV traction battery pack BCU</td><td><b>Intelligent Battery Sensor (IBS), Battery Disconnect (BDU)</b></td></tr>
+    <tr><td><b>Quiescent Current</b></td><td>Higher sleep current, external wake logic</td><td>Must coordinate sleep across multiple ICs</td><td><b>Deep Sleep 35 µA typ; 85 µA typ with 1 Hz measurement</b></td></tr>
+    <tr><td><b>Functional Safety</b></td><td>QM or ASIL-A typically</td><td>Complex safety diagnosis across chip interfaces</td><td><b>ASIL C process, ASIL B HW metrics; ECC, CRWDT, supply monitoring, analog diagnostics</b></td></tr>
+    <tr><td><b>Target Applications</b></td><td>Body controllers, lighting, door units</td><td>High-voltage EV traction battery pack BCU</td><td><b>12 V / 24 V lead-acid intelligent battery sensor (IBS)</b></td></tr>
   </table></div>
+
+  <h2 id="roadmaps" class="grp-h">Suggested Learning Paths</h2>
+  <div class="cards">
+    <a class="card" href="core.html" style="--c:var(--core)"><span class="k">Embedded firmware engineer</span><h3>From core registers to interrupts and DMA</h3>
+      <p>Core · Cortex-M0+ → Core · memory &amp; ECC → Lab · window watchdog → Lab · ECC injection → Designer · memory layout &amp; linker script.</p></a>
+    <a class="card" href="analog.html" style="--c:var(--analog)"><span class="k">Analog &amp; hardware engineer</span><h3>Microvolt sensing and HV power</h3>
+      <p>Analog · ΔΣ ADC &amp; AGC → Analog · HV regulator → Lab · shunt &amp; AGC → Designer · shunt and front-end sizing.</p></a>
+    <a class="card" href="application.html" style="--c:var(--app)"><span class="k">BMS algorithm engineer</span><h3>Accurate SoC and SoH</h3>
+      <p>Apps · IBS → Apps · Coulomb counting &amp; OCV anchoring → Lab · SoC drift → Lessons · Seebeck drift and ground bounce.</p></a>
+    <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Safety &amp; quality engineer</span><h3>ISO 26262 and zero defects</h3>
+      <p>Safety · claim &amp; mechanisms → Safety · challenge-response watchdog → Test · trimming &amp; AEC-Q100 → Lessons · troubleshooting matrix.</p></a>
+  </div>
 
   <footer class="site-footer">
     <div class="lang-switch-bar">
