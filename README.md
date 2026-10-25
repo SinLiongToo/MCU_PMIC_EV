@@ -17,7 +17,7 @@
 | `process.html` | 04 · 半導體高壓製程：BCD（Bipolar-CMOS-DMOS）智慧功率製程、深溝槽隔離（DTI）、ISO 7637-2 Pulse 5b 拋負載 42V 箝位結構、高溫散熱封裝 |
 | `test.html` | 05 · 測試校準與車規：晶圓探針 CP 與 FT、晶片內 eFuse / 雷射類比電阻修調（Trim）、全溫區溫漂校準、AEC-Q100 Grade 1 規範、側邊可潤濕側翼（Wettable Flank）QFN 封裝 AOI 光學驗收 |
 | `safety.html` | 06 · 功能安全：HVPA 安全宣稱（ASIL C 流程 / ASIL B 硬體指標）、資料手冊安全機制、斷線診斷、問答式窗口看門狗、SPFM / LFM / PMHF 公式與範例 |
-| `adas.html` | 07 · ADAS 與鎖步安全 MCU：車用 MCU 光譜對照、Infineon AURIX™ TC39x 雙核延遲鎖步（Delayed Lockstep）、OPTIREG™ TLF35584 外掛安全 PMIC（SS1/SS2 硬體安全關斷）、TI AWR2944 / NXP S32R45 77 GHz FMCW 2D-FFT 與 CFAR 雷達加速器、CAN XL / 車載乙太網 TSN 與 AUTOSAR E2E |
+| `adas.html` | 07 · ADAS 與鎖步安全 MCU：車用 MCU 光譜對照、Infineon AURIX™ TC39x 雙核延遲鎖步（Delayed Lockstep）、OPTIREG™ TLF35584 外掛安全 PMIC（SS1/SS2 硬體安全關斷）、NXP SAF8544 / TI AWR2944 / NXP S32R45 77 GHz FMCW 2D-FFT 與 CFAR 雷達加速器對決、CAN XL / 車載乙太網 TSN 與 AUTOSAR E2E |
 | `lab.html` | MCU 互動實驗室：8 款模擬器（分流器與 AGC 1–512、庫倫積分 SoC 漂移、ISO 16750-2 拋負載 vs 42 V、問答窗口看門狗、Sinc³→Sinc² 抽取濾波、SECDED(39,32) ECC、LIN 訊框、修調良率 Monte Carlo），中英文由同一份 `assets/lab.js` 產生 |
 | `designer.html` | 規格設計器：BMS 分流電阻與前端選型、車載暗電流休眠壽命評估、韌體記憶體分區與安全開銷，支援一鍵複製 C 語言配置標頭檔與 Linker Script |
 | `lessons.html` | 業界案例與排查手冊：實車現場五大重大事故（繼電器地彈、嚴寒冷啟動電壓塌陷、分流電阻塞貝克熱電效應、LIN 短路、看門狗溫漂）與排查決策矩陣 |
