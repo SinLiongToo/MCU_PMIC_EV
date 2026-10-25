@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/adas.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="07 ADAS 與鎖步安全 MCU 架構 · MCU Notes">
+<meta property="og:description" content="剖析 ADAS 先進駕駛輔助系統的車規安全與雷達微控制器：Infineon AURIX TC39x 雙核延遲鎖步（Delayed Lockstep）、TLF35584 外掛安全 PMIC 雙通道安全關斷、TI AWR2944 / NXP S32R45 77 GHz 毫米波雷達 FMCW 2D-FFT 與 CFAR 硬體加速器，以及 CAN XL 與車載乙太網 TSN。">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html">
+<meta property="og:locale" content="zh_TW">
+<!-- meta:END -->
+<title>07 ADAS 與鎖步安全 MCU 架構 · MCU Notes</title>
+<meta name="description" content="剖析 ADAS 先進駕駛輔助系統的車規安全與雷達微控制器：Infineon AURIX TC39x 雙核延遲鎖步（Delayed Lockstep）、TLF35584 外掛安全 PMIC 雙通道安全關斷、TI AWR2944 / NXP S32R45 77 GHz 毫米波雷達 FMCW 2D-FFT 與 CFAR 硬體加速器，以及 CAN XL 與車載乙太網 TSN。">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="adas" data-ch="adas">
+<a class="skip" href="#main">跳到主要內容</a>
+<div class="doc">
+  <aside class="toc" aria-label="本頁章節目錄"></aside>
+  <article id="main">
+    <div class="eyebrow">Chapter 07 · ADAS &amp; Safety Domain MCUs</div>
+    <h1>ADAS 與鎖步安全 MCU：從延遲鎖步核、外掛安全 PMIC 到 77 GHz 雷達訊號鏈</h1>
+    <p class="lead">前六章剖析的 <b>Infineon PSoC™ 4 HVPA-144K</b> 代表車身與電瓶極柱上的「高壓精密類比邊緣感測節點（ASIL B 硬體指標）」。當場景轉向 <b>ADAS（先進駕駛輔助系統）</b> 的自動緊急煞車（AEB）、線控轉向仲裁與 77 GHz 毫米波雷達時，微控制器架構產生了本質躍遷：單核轉為<b>雙核延遲鎖步（Delayed Lockstep，ASIL D）</b>、片內 LDO 轉為<b>外掛獨立安全 PMIC（如 OPTIREG™ TLF35584）</b>，而低頻 \(\Delta\Sigma\) 濾波器則換成了高吞吐量的 <b>2D-FFT 與 CFAR 雷達硬體加速器</b>。</p>
+    <p class="src">晶片規格出處：Infineon PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K、Infineon AURIX™ TC39x Datasheet、Infineon OPTIREG™ PMIC TLF35584 Datasheet、TI AWR2944 Datasheet、NXP S32R45 資料手冊；標準出處：ISO 26262-5:2018、AUTOSAR E2E、IEEE 802.1Qbv。圖 7.1–7.3 為架構原理示意圖。</p>
+
+    <h2 id="adas-spectrum">1. 車用 MCU 光譜：BMS 邊緣感測節點 vs. ADAS 安全域與雷達 MCU</h2>
+    <p>現代區域電子電氣架構（Zonal E/E Architecture）將車用計算分為末端感測節點、專用感測器處理 SoC 與中央安全島（Safety Island）。即使是搭載數百 TOPS AI 算力的自動駕駛主晶片（如 NVIDIA Orin 或 Qualcomm Ride），在板端仍必須配置一顆通過 <b>ISO 26262 ASIL D</b> 的安全微控制器（如 <b>Infineon AURIX™ TC39x / TC4x</b>），負責感測器融合表決、看門狗監控與底盤致動器安全仲裁。</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>架構維度</th><th>BMS 高壓感測節點<br><b>Infineon PSoC™ 4 HVPA-144K</b></th><th>ADAS 安全島 / 域控 MCU<br><b>Infineon AURIX™ TC39x</b></th><th>77 GHz 單晶片雷達 SoC<br><b>TI AWR2944</b></th><th>4D 成像雷達處理器<br><b>NXP S32R45</b></th></tr>
+      <tr><td><b>核心與時脈</b></td><td>1× Arm Cortex-M0+ @ 24/48 MHz</td><td>6× TriCore™ 1.6.2P @ 300 MHz（其中 4 核具 Lockstep 檢查核）</td><td>雙核 Lockstep Cortex-R5F @ 300 MHz + C66x DSP @ 360 MHz</td><td>4× Cortex-A53 @ 800 MHz + 3× Lockstep Cortex-M7 @ 400 MHz</td></tr>
+      <tr><td><b>晶片內建記憶體</b></td><td>≤128 KB Flash、≤8 KB SRAM（全 SECDED ECC）</td><td>最高 16 MB PFlash（支援 A/B 雙區 OTA）、6.9 MB SRAM（ECC）</td><td>最高 4.5 MB 片上共享 RAM（含 L1/L2/L3 Radar Cube）</td><td>8 MB 片上 SRAM（ECC），外接 LPDDR4 / QSPI</td></tr>
+      <tr><td><b>專用訊號 / 類比前端</b></td><td>2× 16–20+ bit \(\Delta\Sigma\) ADC + AGC（G 1–512）+ Sinc³/Sinc²/FIR</td><td>GTM 定時器陣列、多通道 SAR + \(\Delta\Sigma\) ADC、HSM 硬體安全模組</td><td>整合 76–81 GHz 4T4R FMCW 收發器 + HWA 2.1 雷達加速器</td><td>SPT 3.1 雷達訊號處理引擎 + LAX 線性代數加速器</td></tr>
+      <tr><td><b>電源與監控架構</b></td><td><b>片內整合 42 V LDO</b>（直連 12 V 電瓶）+ 內部 OV/BOD</td><td>低壓數位核心供電，搭配<b>外掛安全 PMIC（如 TLF35584）</b></td><td>外掛多軌車規 PMIC（供電 RF、DSP 與 MCU 電源軌）</td><td>外掛多軌 ASIL D 安全 PMIC（支援動態壓降與 BIST）</td></tr>
+      <tr><td><b>功能安全等級</b></td><td>ASIL C 開發流程、<b>ASIL B 硬體架構指標</b></td><td><b>ISO 26262 ASIL D</b>（Delayed Lockstep + SMU 故障管理）</td><td>針對 <b>ASIL B / ASIL D</b> 系統安全機制設計</td><td><b>ISO 26262 ASIL B(D) / ASIL D</b> 安全島監控</td></tr>
+      <tr><td><b>車載通訊介面</b></td><td>整合 LIN 2.2A / ISO 17987 收發器（20 kbit/s）</td><td>12× CAN FD、FlexRay、1 Gbps Ethernet</td><td>CAN FD、100BASE-T1 車載乙太網、CSI-2</td><td>CAN FD、雙千兆車載乙太網、PCIe、CSI-2</td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--adas)"><b>工程洞察：為什麼 PSoC 4 HVPA 把穩壓器與類比做進單晶片，而 AURIX 卻堅持外掛 PMIC？</b><br>HVPA 採用高壓 BCD 製程，目標是極小面積、35 µA 超低暗電流並直接鎖在電瓶負極樁頭上；而 ADAS MCU 採用先進嵌入式快閃記憶體製程（如 40 nm / 28 nm CMOS）以容納上千萬邏輯閘與數 MB SRAM，這類先進製程電晶體無法直接承受 40 V 拋負載高壓，且 ASIL D 要求<b>電源監控與看門狗必須具備與主晶片物理隔離的獨立矽晶片（獨立能隙基準與獨立時脈）</b>，以消除共因失效（Common Cause Failure, CCF）。</div>
+
+    <h2 id="delayed-lockstep">2. 雙核延遲鎖步（Delayed Lockstep）微架構與共模故障防護</h2>
+    <p>在第 6 章我們算過 ISO 26262-5 的單點故障指標（SPFM）：<b>ASIL B 要求 \(\text{SPFM} \ge 90\%\)</b>，依靠記憶體 ECC、MPU 與問答看門狗即可達標；但 <b>ASIL D 要求 \(\text{SPFM} \ge 99\%\)、\(\text{LFM} \ge 90\%\)、\(\text{PMHF} < 10\,\text{FIT}\)</b>。CPU 內部的 ALU、暫存器檔、指令解碼器與管線控制邏輯包含數十萬個正反器（Flip-Flops），若單靠軟體周期性自檢（SBST），既無法攔截當下算錯的剎車指令，診斷涵蓋率也難以突破 99%。</p>
+    <p>因此，AURIX™ TC39x（TriCore Lockstep）、TI AWR2944（Cortex-R5F Lockstep）與 NXP S32R45（Cortex-M7 Lockstep）皆採用<b>硬體雙核延遲鎖步（Dual-Core Delayed Lockstep）</b>架構：</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 360" role="img" aria-label="雙核延遲鎖步 Delayed Lockstep 微架構與 SMU 故障管理示意圖">
+        <!-- Input Instruction & Data Bus -->
+        <rect x="20" y="105" width="125" height="90" rx="6" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts" x="82" y="135" text-anchor="middle" font-weight="700" font-size="12">指令與資料匯流排</text>
+        <text class="ts t-mono" x="82" y="155" text-anchor="middle" font-size="10.5" fill="var(--core)">Flash / SRAM ECC</text>
+        <text class="ts t-mut" x="82" y="175" text-anchor="middle" font-size="10">輸入端 SECDED 保護</text>
+
+        <!-- Master Path (Top) -->
+        <line x1="145" y1="125" x2="295" y2="75" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="295" y="32" width="195" height="86" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2.2"/>
+        <text class="ts" x="392" y="58" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">主運算核心 Master CPU</text>
+        <text class="ts t-mono" x="392" y="78" text-anchor="middle" font-size="11">Cycle k: Exec Inst[n]</text>
+        <text class="ts t-mut" x="392" y="98" text-anchor="middle" font-size="10">直接驅動系統匯流排與外設</text>
+
+        <!-- Master Output to System Bus & Delay -->
+        <line x1="490" y1="60" x2="625" y2="60" stroke="var(--core)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="557" y="50" text-anchor="middle" font-size="10" font-weight="600" fill="var(--core)">系統匯流排輸出</text>
+        <line x1="525" y1="60" x2="525" y2="120" stroke="var(--core)" stroke-width="2"/>
+        <rect x="495" y="120" width="90" height="44" rx="5" fill="var(--sunk)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="540" y="140" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">+2 CLK Delay</text>
+        <text class="ts t-mut" x="540" y="155" text-anchor="middle" font-size="9.5">輸出延遲暫存器</text>
+
+        <!-- Checker Path (Bottom) with Input Delay -->
+        <line x1="145" y1="175" x2="175" y2="235" stroke="var(--adas)" stroke-width="2.2"/>
+        <rect x="175" y="210" width="95" height="52" rx="5" fill="var(--sunk)" stroke="var(--adas)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="222" y="233" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">+2 CLK Delay</text>
+        <text class="ts t-mut" x="222" y="250" text-anchor="middle" font-size="9.5">輸入延遲管線</text>
+
+        <line x1="270" y1="236" x2="295" y2="236" stroke="var(--adas)" stroke-width="2.2"/>
+        <rect x="295" y="193" width="195" height="86" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2" stroke-dasharray="6 3"/>
+        <text class="ts" x="392" y="219" text-anchor="middle" font-weight="700" font-size="13" fill="var(--adas)">影子檢查核 Checker CPU</text>
+        <text class="ts t-mono" x="392" y="239" text-anchor="middle" font-size="11">Cycle k: Exec Inst[n-2]</text>
+        <text class="ts t-mut" x="392" y="259" text-anchor="middle" font-size="10">實體佈局分離 · 鏡像旋轉擺放</text>
+
+        <!-- Comparator Block -->
+        <line x1="585" y1="142" x2="625" y2="165" stroke="var(--core)" stroke-width="2"/>
+        <line x1="490" y1="236" x2="625" y2="195" stroke="var(--adas)" stroke-width="2"/>
+        <rect x="625" y="125" width="190" height="105" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.2"/>
+        <text class="ts" x="720" y="152" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">硬體逐週期比對器</text>
+        <rect x="640" y="162" width="160" height="24" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="720" y="178" text-anchor="middle" font-size="10.5" font-weight="700">Out_M(k-2) == Out_C(k)</text>
+        <text class="ts t-mut" x="720" y="205" text-anchor="middle" font-size="10">比對位址、資料與控制訊號</text>
+        <text class="ts t-mono" x="720" y="220" text-anchor="middle" font-size="10" font-weight="700" fill="var(--bad)">不符 &rarr; 1 週期內觸發告警</text>
+
+        <!-- SMU & FSP Output -->
+        <line x1="720" y1="230" x2="720" y2="268" stroke="var(--bad)" stroke-width="2.5"/>
+        <rect x="555" y="268" width="260" height="68" rx="7" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="685" y="292" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--bad)">SMU 安全管理單元 (Safety Management Unit)</text>
+        <text class="ts t-mono" x="685" y="311" text-anchor="middle" font-size="10.5">執行內部 NMI/Reset + 拉低外部 FSP (ERR 腳位)</text>
+        <text class="ts t-mut" x="685" y="327" text-anchor="middle" font-size="9.5">通知外掛安全 PMIC (TLF35584) 切斷 SS1/SS2 安全路徑</text>
+
+        <!-- Glitch Annotation -->
+        <rect x="25" y="285" width="490" height="50" rx="6" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="270" y="306" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--warn)">為什麼要延遲 2 個時脈週期（時間分集 Time Diversity）？</text>
+        <text class="ts t-mut" x="270" y="324" text-anchor="middle" font-size="10.5">若第 k 週期發生電源毛刺或 EMI 干擾，Master 與 Checker 正處於不同指令階段，不會產生相同的錯誤結果而逃過比對！</text>
+      </svg>
+      <figcaption>圖 7.1：雙核延遲鎖步（2-Cycle Delayed Lockstep）微架構與 SMU 故障管理單元原理示意圖</figcaption>
+    </div>
+
+    <ul>
+      <li><b>影子檢查核（Checker Core）：</b>Checker 核心擁有與 Master 核心完全相同的微架構，但它<b>不直接驅動系統匯流排</b>，只負責執行完全相同的指令流並將輸出送往硬體比對器（Comparator）。</li>
+      <li><b>時間分集（Time Diversity，延遲 \(N=2\) 週期）：</b>輸入給 Checker 核心的指令與資料會先經過 2 個時脈週期的硬體管線延遲（\(\Delta t = 2\,T_{\text{clk}}\)），而 Master 核心的輸出也會延遲 2 個週期再與 Checker 比對。若瞬間的電源壓降（Voltage Droop）或電磁脈衝（EMI）在第 \(k\) 週期擊中晶片，Master 正在算第 \(n\) 條指令，Checker 卻在算第 \(n-2\) 條指令，兩者在比對時間點不會發生對稱的共模錯誤。</li>
+      <li><b>空間分集（Physical Diversity）：</b>在矽晶圓佈局上，Master 與 Checker 保持物理間距，甚至將其中一核旋轉 \(90^\circ\) 或 \(180^\circ\) 擺放，避免單一局部熱點或 \(\alpha\) 粒子同時翻轉兩核的相同暫存器位元。</li>
+    </ul>
+
+    <h2 id="safety-pmic-tlf35584">3. 外掛安全 PMIC（Infineon OPTIREG™ TLF35584）與雙通道安全關斷</h2>
+    <p>在 ASIL D 等級的 ADAS 域控制器中，如果 MCU 本身的時脈鎖相迴路（PLL）失鎖或核心電壓異常導致 MCU 死鎖，MCU 自己無法可靠地執行關斷程式。因此系統必須搭配一顆作為<b>獨立安全元件（SEooC, Safety Element out of Context）</b>的外掛安全電源管理晶片，典型代表即為與 AURIX™ 搭配的 <b>Infineon OPTIREG™ PMIC TLF35584</b>（支援至 ISO 26262 ASIL D，啟動後工作輸入範圍 3.0 V–40 V）：</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 360" role="img" aria-label="AURIX TC39x 與 TLF35584 安全 PMIC 雙向監控與 SS1 SS2 安全關斷電路圖">
+        <!-- Left Block: TLF35584 Safety PMIC -->
+        <rect x="20" y="25" width="320" height="305" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2.2"/>
+        <text class="ts" x="180" y="50" text-anchor="middle" font-weight="700" font-size="13.5" fill="var(--analog)">Infineon OPTIREG™ TLF35584 (ASIL D PMIC)</text>
+
+        <rect x="38" y="65" width="284" height="52" rx="5" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="180" y="86" text-anchor="middle" font-weight="700" font-size="11.5">多軌電源輸出 + 獨立能隙電壓監控 (VMON)</text>
+        <text class="ts t-mono" x="180" y="104" text-anchor="middle" font-size="10.5" fill="var(--ok)">QUC (3.3V/5V) · QVR (ADC Ref) · VCORE (1.25V)</text>
+
+        <rect x="38" y="130" width="284" height="58" rx="5" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="180" y="151" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--warn)">雙重看門狗：WWD (窗口) + FWD (問答式)</text>
+        <text class="ts t-mut" x="180" y="170" text-anchor="middle" font-size="10">獨立時脈源 · 各自具備遞增/遞減錯誤計數器</text>
+
+        <rect x="38" y="202" width="284" height="52" rx="5" fill="var(--sunk)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="180" y="223" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--safety)">ERR 腳位監視器 + 安全狀態控制器 (FSM)</text>
+        <text class="ts t-mut" x="180" y="241" text-anchor="middle" font-size="10">內建 ABIST (類比自檢) + LBIST (邏輯自檢)</text>
+
+        <rect x="38" y="266" width="284" height="46" rx="5" fill="var(--surface)" stroke="var(--bad)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="180" y="286" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--bad)">獨立安全關斷輸出：SS1 &amp; SS2 (Safe State)</text>
+        <text class="ts t-mut" x="180" y="303" text-anchor="middle" font-size="9.5">正常為 HIGH；故障時強制拉 LOW（支援 Δt_SS2 延遲）</text>
+
+        <!-- Interconnects between PMIC and AURIX -->
+        <!-- Power Rails -->
+        <line x1="340" y1="90" x2="465" y2="90" stroke="var(--ok)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="402" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ok)">3.3V / 1.25V Rails</text>
+
+        <!-- SPI WWD/FWD -->
+        <line x1="340" y1="158" x2="465" y2="158" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts t-mono" x="402" y="150" text-anchor="middle" font-size="10" font-weight="700" fill="var(--warn)">SPI (WWD + FWD)</text>
+
+        <!-- FSP / ERR Pin -->
+        <line x1="465" y1="225" x2="340" y2="225" stroke="var(--safety)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="402" y="217" text-anchor="middle" font-size="10" font-weight="700" fill="var(--safety)">&larr; FSP / ERR Pin</text>
+
+        <!-- Right Top Block: AURIX TC39x -->
+        <rect x="465" y="25" width="355" height="225" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2.2"/>
+        <text class="ts" x="642" y="50" text-anchor="middle" font-weight="700" font-size="13.5" fill="var(--core)">Infineon AURIX™ TC39x (ASIL D Safety MCU)</text>
+
+        <rect x="485" y="65" width="315" height="52" rx="5" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="642" y="86" text-anchor="middle" font-weight="700" font-size="11.5">6× TriCore™ 300 MHz（4 核具延遲鎖步核）</text>
+        <text class="ts t-mut" x="642" y="104" text-anchor="middle" font-size="10">感測器融合表決 · 安全軌跡規劃 · 記憶體 ECC + MPU</text>
+
+        <rect x="485" y="130" width="315" height="52" rx="5" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="642" y="151" text-anchor="middle" font-weight="700" font-size="11.5">SPI 主控 + 看門狗服務任務</text>
+        <text class="ts t-mut" x="642" y="169" text-anchor="middle" font-size="10">定時觸發窗口 WWD 並計算 4-bit 問答回應給 FWD</text>
+
+        <rect x="485" y="194" width="315" height="44" rx="5" fill="var(--sunk)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="642" y="214" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--safety)">SMU 安全管理單元 + FSP 故障信令協定</text>
+        <text class="ts t-mut" x="642" y="230" text-anchor="middle" font-size="9.5">鎖步比對錯誤或內部故障時立即釋放 FSP 腳位</text>
+
+        <!-- Bottom Right: Hardware Safe State Isolation Path -->
+        <line x1="340" y1="290" x2="465" y2="290" stroke="var(--bad)" stroke-width="3"/>
+        <text class="ts t-mono" x="402" y="282" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--bad)">SS1 / SS2 &rarr;</text>
+
+        <rect x="465" y="264" width="355" height="66" rx="8" fill="var(--surface)" stroke="var(--bad)" stroke-width="2.2"/>
+        <text class="ts" x="642" y="288" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--bad)">雙通道硬體安全關斷路徑 (Actuator Isolation)</text>
+        <text class="ts t-mut" x="642" y="306" text-anchor="middle" font-size="10.5">不經 MCU 軟體！直接以硬體切斷底盤轉向/煞車驅動器電源</text>
+        <text class="ts t-mono" x="642" y="321" text-anchor="middle" font-size="10" fill="var(--ink)">或將 CAN FD 收發器強制切換至 Listen-Only 靜默安全狀態</text>
+      </svg>
+      <figcaption>圖 7.2：AURIX™ TC39x 與 OPTIREG™ TLF35584 安全 PMIC 的三層監督與 SS1/SS2 硬體安全關斷架構</figcaption>
+    </div>
+
+    <ul>
+      <li><b>獨立類比與邏輯自檢（ABIST / LBIST）：</b>TLF35584 內建第二組獨立能隙基準（Redundant Bandgap），每次上電時會主動對所有過壓（OV）與欠壓（UV）比較器注入測試偏移，執行<b>類比內建自檢（ABIST）</b>與<b>邏輯自檢（LBIST）</b>，確保「監視器本身沒有壞掉」（消除潛伏故障，提升 LFM）。</li>
+      <li><b>雙看門狗（WWD + FWD）：</b>同時提供檢驗時序的<b>窗口看門狗（Window Watchdog）</b>與檢驗邏輯運算的<b>功能型問答看門狗（Functional Watchdog）</b>，兩者各自擁有獨立的錯誤計數器（Error Counter）。</li>
+      <li><b>FSP（Fault Signaling Protocol）與 `SS1` / `SS2` 安全輸出：</b>AURIX 的 SMU 透過 `ERR` 腳位持續輸出故障信令協定（FSP）給 TLF35584。一旦發生鎖步核失配、電壓異常或看門狗超標，TLF35584 的安全狀態控制器會立即將兩個獨立的安全輸出腳位 <b>`SS1` 與 `SS2` 拉為低電位（LOW）</b>（`SS2` 可設定延遲 \(\Delta t_{\text{SS2}}\) 讓系統先完成緊急剎車卸載再斷電），直接由硬體切斷外部致動器電源。</li>
+    </ul>
+
+    <h2 id="radar-signal-chain">4. 77 GHz 毫米波雷達訊號鏈與硬體加速器（FMCW、2D-FFT 與 CFAR）</h2>
+    <p>在第 2 章中，HVPA 的類比訊號鏈處理的是 DC 到數 kHz 的分流器微伏訊號；而在 ADAS 的前向長距雷達与 4D 成像雷達（如 <b>TI AWR2944</b> 與 <b>NXP S32R45</b>）中，MCU/SoC 面對的是 <b>76–81 GHz 調頻連續波（FMCW, Frequency-Modulated Continuous-Wave）</b>的高速數位訊號處理管線：</p>
+
+    <div class="math-block">
+      <b>FMCW 差頻測距與多普勒測速基本公式：</b>
+      \[f_b = \frac{S \cdot 2R}{c} = \frac{2 B R}{c \, T_c}, \qquad \Delta\varphi = \frac{4\pi v T_c}{\lambda}, \qquad \Delta R = \frac{c}{2B}\]
+      其中 \(S = B / T_c\) 為線性調頻斜率（Chirp Slope），\(B\) 為調頻頻寬（最高達 \(4\text{–}5\,\text{GHz}\)，對應距離解析度 \(\Delta R \approx 3.75\,\text{cm}\)），\(T_c\) 為單一 Chirp 時間，\(R\) 為目標距離，\(v\) 為相對徑向速度，\(\lambda \approx 3.9\,\text{mm}\) 為 77 GHz 波長。
+    </div>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 330" role="img" aria-label="77 GHz FMCW 毫米波雷達 SoC 訊號鏈與 2D-FFT CFAR 硬體加速管線圖">
+        <!-- Stage 1: RF Front-End & Mixer -->
+        <rect x="18" y="45" width="175" height="190" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="105" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--analog)">1. 76–81 GHz RF 與 IF ADC</text>
+        <rect x="30" y="86" width="151" height="38" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="105" y="103" text-anchor="middle" font-size="10.5" font-weight="700">4 TX / 4 RX FMCW</text>
+        <text class="ts t-mut" x="105" y="117" text-anchor="middle" font-size="9.5">混頻器 Mixer &rarr; 中頻 IF 訊號</text>
+        <rect x="30" y="134" width="151" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts" x="105" y="152" text-anchor="middle" font-weight="700" font-size="10.5">高速 IF ADC 取樣</text>
+        <text class="ts t-mut" x="105" y="167" text-anchor="middle" font-size="9.5">數十 MSPS 擷取拍頻 f_b</text>
+        <text class="ts t-mono" x="105" y="212" text-anchor="middle" font-size="10" fill="var(--analog)">Fast-Time Samples</text>
+
+        <!-- Arrow 1 -> 2 -->
+        <line x1="193" y1="140" x2="220" y2="140" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Stage 2: Radar Cube & 1D/2D FFT Accelerator -->
+        <rect x="220" y="45" width="215" height="190" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2"/>
+        <text class="ts" x="327" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--adas)">2. 雷達硬體加速器 (HWA / SPT)</text>
+        <rect x="234" y="86" width="187" height="40" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="327" y="103" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--adas)">1D Range FFT (快時間維度)</text>
+        <text class="ts t-mut" x="327" y="118" text-anchor="middle" font-size="9.5">解析拍頻 f_b &rarr; 目標距離 R</text>
+
+        <rect x="234" y="134" width="187" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="327" y="151" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--adas)">2D Doppler FFT (慢時間維度)</text>
+        <text class="ts t-mut" x="327" y="167" text-anchor="middle" font-size="9.5">跨 Chirp 相位差 Δφ &rarr; 徑向速度 v</text>
+
+        <rect x="234" y="184" width="187" height="36" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+        <text class="ts t-mono" x="327" y="206" text-anchor="middle" font-size="10" font-weight="600">L3 Radar Cube SRAM (4.5–8 MB)</text>
+
+        <!-- Arrow 2 -> 3 -->
+        <line x1="435" y1="140" x2="462" y2="140" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Stage 3: CFAR & AoA DSP -->
+        <rect x="462" y="45" width="180" height="190" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="552" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--fab)">3. CFAR 檢測與角度估計</text>
+        <rect x="475" y="86" width="154" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="552" y="103" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--fab)">CA-CFAR / OS-CFAR</text>
+        <text class="ts t-mut" x="552" y="118" text-anchor="middle" font-size="9.5">隨背景雜訊動態浮動門檻</text>
+
+        <rect x="475" y="138" width="154" height="44" rx="4" fill="var(--sunk)"/>
+        <text class="ts" x="552" y="156" text-anchor="middle" font-weight="700" font-size="10.5">3D-FFT / AoA 波束成形</text>
+        <text class="ts t-mut" x="552" y="172" text-anchor="middle" font-size="9.5">C66x DSP / LAX 矩陣運算</text>
+        <text class="ts t-mono" x="552" y="212" text-anchor="middle" font-size="10" fill="var(--fab)">Point Cloud (R, v, θ, φ)</text>
+
+        <!-- Arrow 3 -> 4 -->
+        <line x1="642" y1="140" x2="668" y2="140" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Stage 4: Lockstep Safety MCU Tracking -->
+        <rect x="668" y="45" width="154" height="190" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="745" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--safety)">4. 鎖步安全核追蹤</text>
+        <rect x="680" y="86" width="130" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="745" y="103" text-anchor="middle" font-size="10" font-weight="700">Lockstep R5F / M7</text>
+        <text class="ts t-mut" x="745" y="118" text-anchor="middle" font-size="9.5">Extended Kalman 追蹤</text>
+
+        <rect x="680" y="138" width="130" height="44" rx="4" fill="var(--sunk)"/>
+        <text class="ts" x="745" y="156" text-anchor="middle" font-weight="700" font-size="10">AUTOSAR E2E 封裝</text>
+        <text class="ts t-mono" x="745" y="172" text-anchor="middle" font-size="9.5" fill="var(--ok)">CAN FD / 100BASE-T1</text>
+        <text class="ts t-mut" x="745" y="212" text-anchor="middle" font-size="9.5">送往 ADAS 域控制器</text>
+
+        <!-- Bottom Summary Bar -->
+        <rect x="18" y="255" width="804" height="50" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="420" y="276" text-anchor="middle" font-weight="700" font-size="11.5">為什麼通用 CPU 無法直接算雷達？ — 記憶體頻寬與確定性延遲瓶頸</text>
+        <text class="ts t-mut" x="420" y="294" text-anchor="middle" font-size="10.5">單一雷達訊框（Radar Cube）即佔數 MB，每 20–50 ms 需完成數萬點 2D-FFT 與矩陣轉置，必須靠專用硬體加速器（HWA 2.1 / SPT 3.1）卸載。</text>
+      </svg>
+      <figcaption>圖 7.3：77 GHz 毫米波雷達 SoC（TI AWR2944 / NXP S32R45）從中頻取樣、Radar Cube 2D-FFT、CFAR 到鎖步核目標追蹤之硬體管線</figcaption>
+    </div>
+
+    <ul>
+      <li><b>Radar Cube（雷達資料立方體）與大容量片上 SRAM：</b>每根接收天線（RX）在單一 Chirp 內取樣數百點（快時間維度 Fast-Time），一個訊框包含上百個 Chirp（慢時間維度 Slow-Time），乘上多根虛擬天線通道（MIMO），形成數 MB 的三維複數陣列（Radar Cube）。這正是為何 TI AWR2944 內建高達 <b>4.5 MB RAM</b>、NXP S32R45 內建 <b>8 MB SRAM</b>——若把 Radar Cube 放在片外 DRAM，匯流排頻寬與功耗都會成為瓶頸。</li>
+      <li><b>1D / 2D-FFT 硬體加速器（TI HWA 2.1 / NXP SPT 3.1）：</b>硬體加速器直接從 Radar Cube 讀取資料，先對每個 Chirp 做 <b>1D Range FFT</b> 解出距離，完成硬體矩陣轉置（Corner Turn）後，再跨 Chirp 做 <b>2D Doppler FFT</b> 解出相對速度，並支援資料壓縮以節省 L3 RAM 空間。</li>
+      <li><b>CFAR（恆虛警率檢測，Constant False Alarm Rate）：</b>路面上充滿護欄、地面雜波與雨霧干擾，固定門檻會導致大量誤煞車（False Positive）。硬體加速器內建 <b>CA-CFAR（單元平均）</b>或 <b>OS-CFAR（有序統計）</b>引擎，即時計算待測格（Cell Under Test）周圍參考格的局部雜訊功率並動態墊高門檻，將有效點雲（Point Cloud）交給 DSP 與鎖步 Cortex-R5F/M7 進行角度估計（AoA）與卡爾曼濾波追蹤。</li>
+    </ul>
+
+    <h2 id="adas-networking">5. 高速安全通訊與分區架構：CAN FD、CAN XL 與車載乙太網 TSN</h2>
+    <p>在第 3 章中，電池感測器透過 20 kbit/s 的單線 <b>LIN 2.2A</b> 每秒回報一次電瓶狀態即可；但 ADAS 雷達點雲、感測器融合與線控底盤指令要求極高頻寬、微秒級確定性延遲（Deterministic Latency）與端到端功能安全保護：</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>車載網路技術</th><th>最高速率</th><th>單訊框酬載 (Payload)</th><th>在車用 / ADAS 架構中的角色</th></tr>
+      <tr><td><b>LIN 2.2A / ISO 17987</b></td><td>20 kbit/s（HVPA 另支援 100 kbit/s Fast Mode）</td><td>2 / 4 / 8 Bytes</td><td>12 V 智慧電池感測器（IBS）、車窗、座椅等低速車身邊緣節點</td></tr>
+      <tr><td><b>CAN FD (ISO 11898-1)</b></td><td>仲裁段 1 Mbit/s；資料段 2–5 Mbit/s（最高 8 Mbit/s）</td><td>64 Bytes</td><td>目前主流 ADAS 目標列表傳輸、底盤控制（ESP/EPS）與安全島互連</td></tr>
+      <tr><td><b>CAN XL (CiA 610 / ISO 11898-1)</b></td><td>最高 10–20 Mbit/s</td><td>1–2048 Bytes</td><td>新一代區域控制器（Zonal MCU 如 AURIX TC4x），可直接承載乙太網訊框隧道</td></tr>
+      <tr><td><b>車載乙太網 (100BASE-T1 / 1000BASE-T1 + TSN)</b></td><td>100 Mbit/s – 10 Gbit/s</td><td>1500 Bytes</td><td>4D 成像雷達點雲、環視攝影機、中央計算平台與安全島高速骨幹網</td></tr>
+    </table></div>
+
+    <ul>
+      <li><b>時間敏感網路（TSN, Time-Sensitive Networking）：</b>車載乙太網透過 <b>IEEE 802.1AS（gPTP 精確時間同步）</b>讓全車雷達、相機與安全 MCU 對齊至亞微秒級時鐘，並藉由 <b>IEEE 802.1Qbv（Time-Aware Shaper 時間感知整形器）</b>為 ADAS 緊急煞車與轉向控制保留專屬的時間窗口，避免高畫質影音或診斷封包造成排隊延遲。</li>
+      <li><b>AUTOSAR E2E（End-to-End）端到端安全保護：</b>無論底層走 CAN FD 或車載乙太網，匯流排本身皆可能遭遇位元翻轉、封包遺失、重複或延遲。根據 ISO 26262 通訊安全要求，ADAS 鎖步核在發送關鍵控制訊息前，必須附加 <b>E2E Profile Header（包含硬體 CRC 校驗碼、遞增 Sequence Counter 序號與 Data ID）</b>；接收端安全 MCU 驗證通過後才允許驅動底盤致動器。</li>
+    </ul>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

@@ -10,6 +10,7 @@
     {id:'process',     href:'process.html',     label:t('04 半導體製程', '04 Process'),     ch:'fab',    en:'HV Process & Silicon'},
     {id:'test',        href:'test.html',        label:t('05 測試校準', '05 Test & AEC'),   ch:'test',   en:'Test, Calibration & AEC'},
     {id:'safety',      href:'safety.html',      label:t('06 功能安全', '06 FuSa & Rel'),    ch:'safety', en:'Functional Safety & Rel'},
+    {id:'adas',        href:'adas.html',        label:t('07 ADAS 安全核', '07 ADAS & Lockstep'),ch:'adas',  en:'ADAS & Lockstep MCUs'},
     {sep:true},
     {id:'glossary',    href:'glossary.html',    label:t('術語辭典', 'Glossary')},
     {id:'lab',         href:'lab.html',         label:t('互動實驗室', 'MCU Lab')},
@@ -112,8 +113,8 @@
   }
 
   /* ---------- find (Ctrl+K) ---------- */
-  const PAGE_LABEL = EN ? {core:'Core', analog:'Analog', app:'Apps', fab:'Process', test:'Test', safety:'FuSa', glossary:'Glossary', lab:'Lab', designer:'Designer', roles:'Careers', quiz:'Quiz', lessons:'Lessons', index:'Home'}
-    : {core:'核心', analog:'類比', app:'應用', fab:'製程', test:'測試', safety:'安全', glossary:'辭典', lab:'實驗室', designer:'設計器', roles:'職務', quiz:'測驗', lessons:'案例', index:'首頁'};
+  const PAGE_LABEL = EN ? {core:'Core', analog:'Analog', app:'Apps', fab:'Process', test:'Test', safety:'FuSa', adas:'ADAS', glossary:'Glossary', lab:'Lab', designer:'Designer', roles:'Careers', quiz:'Quiz', lessons:'Lessons', index:'Home'}
+    : {core:'核心', analog:'類比', app:'應用', fab:'製程', test:'測試', safety:'安全', adas:'ADAS', glossary:'辭典', lab:'實驗室', designer:'設計器', roles:'職務', quiz:'測驗', lessons:'案例', index:'首頁'};
 
   function openFind(){
     let modal = document.getElementById('findModal');

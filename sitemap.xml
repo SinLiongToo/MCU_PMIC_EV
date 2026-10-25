@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/analog.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/application.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/core.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/designer.html</loc></url>
+  <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/en/adas.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/en/analog.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/en/application.html</loc></url>
   <url><loc>https://sinliongtoo.github.io/MCU_PMIC_EV/en/core.html</loc></url>

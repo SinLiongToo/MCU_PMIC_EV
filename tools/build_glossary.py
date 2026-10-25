@@ -17,6 +17,7 @@ CAT = {
     "app":     ("車用與電池", "BMS"),
     "safety":  ("功能安全", "FuSa"),
     "process": ("製程與車規", "Process"),
+    "adas":    ("ADAS 與雷達", "ADAS"),
 }
 
 # (category, search keys, title, (zh subtitle, en subtitle), (zh def, en def), (zh fact, en fact), link)
@@ -232,6 +233,30 @@ TERMS = [
       "A QFN with plated steps on the lead sides so solder forms a visible side fillet that AOI can inspect."),
      ("DS：HVPA 為 32-QFN 6 × 6 mm wettable flank。", "DS: HVPA comes in a 32-QFN 6 × 6 mm wettable-flank package."),
      "test.html#wettable-flanks"),
+    ("adas", "delayed lockstep checker core smu aurix r5f m7 asil d", "Delayed Lockstep",
+     ("雙核延遲鎖步", "Dual-core delayed lockstep"),
+     ("主核心與影子檢查核執行相同指令流並由硬體逐週期比對輸出；檢查核延遲 2 個時脈週期且實體分離佈局，以消除電源毛刺與 EMI 造成的共模錯誤。",
+      "A master core and a shadow checker core run the same instruction stream while hardware compares their outputs every cycle; a 2-clock delay and physical floorplan separation prevent common-mode glitches from corrupting both identically."),
+     ("常見於 ASIL D MCU（如 AURIX TC39x、Cortex-R5F/M7 lockstep）。", "Used in ASIL D MCUs such as AURIX TC39x and lockstep Cortex-R5F/M7."),
+     "adas.html#delayed-lockstep"),
+    ("adas", "safety pmic tlf35584 ss1 ss2 fsp err wwd fwd abist", "Safety PMIC (SS1 / SS2)",
+     ("外掛安全電源管理晶片", "External safety PMIC &amp; safe-state outputs"),
+     ("以獨立矽晶粒提供多軌電源、冗餘能隙電壓監控（含上電 ABIST/LBIST）、窗口+問答雙看門狗與 FSP 故障腳位監控；異常時由硬體直接拉低 SS1/SS2 切斷致動器。",
+      "An independent SEooC power IC providing multi-rail supplies, redundant bandgap voltage monitors (with startup ABIST/LBIST), window + functional watchdogs and FSP error-pin monitoring; drives SS1/SS2 low in hardware on fault."),
+     ("例：Infineon OPTIREG™ TLF35584（ISO 26262 ASIL D）。", "Example: Infineon OPTIREG™ TLF35584 (ISO 26262 ASIL D)."),
+     "adas.html#safety-pmic-tlf35584"),
+    ("adas", "fmcw radar cube 2d fft cfar hwa spt 77 ghz awr2944 s32r45", "FMCW Radar Cube &amp; CFAR",
+     ("77 GHz 調頻連續波雷達立方體與恆虛警率檢測", "77 GHz FMCW Radar Cube &amp; CFAR detection"),
+     ("76–81 GHz 混頻拍頻經高速 IF ADC 取樣存入數 MB 片上 SRAM（Radar Cube），由硬體加速器執行 1D 距離 FFT、2D 多普勒 FFT 與 CA/OS-CFAR 動態背景雜訊門檻檢測。",
+      "76–81 GHz beat signals are digitized by IF ADCs into multi-MB on-chip SRAM (the Radar Cube), where hardware accelerators run 1D Range FFT, 2D Doppler FFT and CA/OS-CFAR adaptive thresholding."),
+     ("例：TI AWR2944（HWA 2.1，4.5 MB RAM）、NXP S32R45（SPT 3.1，8 MB SRAM）。", "Examples: TI AWR2944 (HWA 2.1, 4.5 MB RAM), NXP S32R45 (SPT 3.1, 8 MB SRAM)."),
+     "adas.html#radar-signal-chain"),
+    ("adas", "autosar e2e tsn 802.1qbv can fd can xl ethernet", "AUTOSAR E2E &amp; Ethernet TSN",
+     ("端到端通訊安全保護與時間敏感網路", "End-to-end safety protection &amp; Time-Sensitive Networking"),
+     ("E2E 在安全關鍵訊框加入 CRC、序號計數器與 Data ID 以偵測封包遺失、重複或篡改；IEEE 802.1Qbv 時間感知整形器則為車載乙太網保留確定性低延遲通道。",
+      "AUTOSAR E2E adds a CRC, sequence counter and Data ID to safety frames to detect loss, repetition or corruption; IEEE 802.1Qbv time-aware shaping reserves deterministic low-latency windows over Automotive Ethernet."),
+     ("搭配 CAN FD（64 B）、CAN XL（2048 B）與 100/1000BASE-T1。", "Used across CAN FD (64 B), CAN XL (2048 B) and 100/1000BASE-T1."),
+     "adas.html#adas-networking"),
 ]
 
 

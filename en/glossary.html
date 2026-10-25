@@ -41,6 +41,7 @@
         <button class="term-chip" data-filter="app" type="button">BMS &amp; Power</button>
         <button class="term-chip" data-filter="safety" type="button">ISO 26262 FuSa</button>
         <button class="term-chip" data-filter="process" type="button">Process &amp; AEC</button>
+        <button class="term-chip" data-filter="adas" type="button">ADAS &amp; Radar</button>
       </div>
     </div>
 
@@ -429,6 +430,50 @@
         <div class="term-meta">
           <span class="term-prop">DS: HVPA comes in a 32-QFN 6 × 6 mm wettable-flank package.</span>
           <a class="term-link" href="test.html#wettable-flanks">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="delayed lockstep checker core smu aurix r5f m7 asil d">
+        <div class="term-head">
+          <h3 class="term-title">Delayed Lockstep <small>Dual-core delayed lockstep</small></h3>
+          <span class="term-badge cat-adas">ADAS</span>
+        </div>
+        <p class="term-def">A master core and a shadow checker core run the same instruction stream while hardware compares their outputs every cycle; a 2-clock delay and physical floorplan separation prevent common-mode glitches from corrupting both identically.</p>
+        <div class="term-meta">
+          <span class="term-prop">Used in ASIL D MCUs such as AURIX TC39x and lockstep Cortex-R5F/M7.</span>
+          <a class="term-link" href="adas.html#delayed-lockstep">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="safety pmic tlf35584 ss1 ss2 fsp err wwd fwd abist">
+        <div class="term-head">
+          <h3 class="term-title">Safety PMIC (SS1 / SS2) <small>External safety PMIC &amp; safe-state outputs</small></h3>
+          <span class="term-badge cat-adas">ADAS</span>
+        </div>
+        <p class="term-def">An independent SEooC power IC providing multi-rail supplies, redundant bandgap voltage monitors (with startup ABIST/LBIST), window + functional watchdogs and FSP error-pin monitoring; drives SS1/SS2 low in hardware on fault.</p>
+        <div class="term-meta">
+          <span class="term-prop">Example: Infineon OPTIREG™ TLF35584 (ISO 26262 ASIL D).</span>
+          <a class="term-link" href="adas.html#safety-pmic-tlf35584">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="fmcw radar cube 2d fft cfar hwa spt 77 ghz awr2944 s32r45">
+        <div class="term-head">
+          <h3 class="term-title">FMCW Radar Cube &amp; CFAR <small>77 GHz FMCW Radar Cube &amp; CFAR detection</small></h3>
+          <span class="term-badge cat-adas">ADAS</span>
+        </div>
+        <p class="term-def">76–81 GHz beat signals are digitized by IF ADCs into multi-MB on-chip SRAM (the Radar Cube), where hardware accelerators run 1D Range FFT, 2D Doppler FFT and CA/OS-CFAR adaptive thresholding.</p>
+        <div class="term-meta">
+          <span class="term-prop">Examples: TI AWR2944 (HWA 2.1, 4.5 MB RAM), NXP S32R45 (SPT 3.1, 8 MB SRAM).</span>
+          <a class="term-link" href="adas.html#radar-signal-chain">Go to section →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="autosar e2e tsn 802.1qbv can fd can xl ethernet">
+        <div class="term-head">
+          <h3 class="term-title">AUTOSAR E2E &amp; Ethernet TSN <small>End-to-end safety protection &amp; Time-Sensitive Networking</small></h3>
+          <span class="term-badge cat-adas">ADAS</span>
+        </div>
+        <p class="term-def">AUTOSAR E2E adds a CRC, sequence counter and Data ID to safety frames to detect loss, repetition or corruption; IEEE 802.1Qbv time-aware shaping reserves deterministic low-latency windows over Automotive Ethernet.</p>
+        <div class="term-meta">
+          <span class="term-prop">Used across CAN FD (64 B), CAN XL (2048 B) and 100/1000BASE-T1.</span>
+          <a class="term-link" href="adas.html#adas-networking">Go to section →</a>
         </div>
       </div>
       <!-- TERMS:END -->

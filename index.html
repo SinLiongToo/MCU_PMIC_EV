@@ -52,6 +52,7 @@
     <a href="process.html" style="--c:var(--fab)"><span class="st">04 · PROCESS</span><b>高壓製程整合</b><small>BCD 智慧功率製程、深溝槽隔離、42V 負載突降防護</small></a>
     <a href="test.html" style="--c:var(--test)"><span class="st">05 · TEST &amp; AEC</span><b>測試校準車規</b><small>晶圓修調 Trim、溫漂補償、AEC-Q100、可潤濕 QFN</small></a>
     <a href="safety.html" style="--c:var(--safety)"><span class="st">06 · SAFETY</span><b>功能安全</b><small>ISO 26262、問答看門狗、安全機制、FMEDA</small></a>
+    <a href="adas.html" style="--c:var(--adas)"><span class="st">07 · ADAS MCU</span><b>ADAS 安全與雷達</b><small>AURIX 延遲鎖步、TLF35584 PMIC、77 GHz 雷達</small></a>
   </nav>
 
   <h2 class="grp-h">知識核心章節</h2>
@@ -79,6 +80,10 @@
     <a class="card" href="safety.html" style="--c:var(--safety)"><span class="k">Chapter 6 · Functional Safety</span><h3>功能安全：ISO 26262 安全機制與 FMEDA</h3>
       <p>HVPA 的正式安全宣稱（ASIL C 流程、ASIL B 硬體指標）、資料手冊列出的安全機制、分流器斷線診斷、問答式窗口看門狗，以及 SPFM / LFM / PMHF 的計算方法與範例。</p>
       <ul><li>ISO 26262</li><li>斷線診斷</li><li>問答看門狗</li><li>ECC</li><li>FMEDA 與 FIT</li></ul></a>
+
+    <a class="card" href="adas.html" style="--c:var(--adas)"><span class="k">Chapter 7 · ADAS &amp; Safety Domain MCUs</span><h3>ADAS 與鎖步安全 MCU：延遲鎖步核、安全 PMIC 與 77 GHz 雷達訊號鏈</h3>
+      <p>從 12V 電池感測邊緣節點躍升至 ASIL D 自動駕駛安全島與毫米波雷達 SoC：剖析 Infineon AURIX™ TC39x 雙核延遲鎖步（Delayed Lockstep）、OPTIREG™ TLF35584 外掛安全 PMIC（SS1/SS2 硬體關斷），以及 TI AWR2944 / NXP S32R45 的 77 GHz FMCW 2D-FFT 與 CFAR 硬體加速器。</p>
+      <ul><li>Delayed Lockstep</li><li>AURIX TC39x</li><li>TLF35584 PMIC</li><li>77 GHz FMCW 2D-FFT</li><li>CAN XL / TSN</li></ul></a>
   </div>
 
   <h2 class="grp-h">互動工具與專業辭典</h2>
@@ -86,7 +91,7 @@
     <a class="card tool wide" href="glossary.html" style="--c:var(--core)">
       <svg class="ic" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10h28a8 8 0 0 1 8 8v36H16a4 4 0 0 0-4 4V10z"/><path d="M12 50h36M22 22h18M22 30h14" stroke-width="2.5"/></svg>
       <div><span class="k">MCU Glossary · 專業術語辭典</span><h3>車用微控制器與高精度類比 PMIC 核心術語與物理定義</h3>
-      <p>收錄 PACSS、AGC、SECDED、FIT、SPFM、LFM、BCD、LDMOS、Kelvin 4-Wire、Chopper、Sinc³、Coulomb Counting、OCV 等 35 項車載關鍵術語，中英文同步，提供即時關鍵字搜尋與分類篩選。</p>
+      <p>收錄 PACSS、AGC、SECDED、FIT、SPFM、LFM、BCD、LDMOS、Kelvin 4-Wire、Chopper、Sinc³、Coulomb Counting、OCV、Delayed Lockstep、TLF35584、FMCW 等 39 項車載關鍵術語，中英文同步，提供即時關鍵字搜尋與分類篩選。</p>
       <ul><li>即時搜尋與分類</li><li>核心數學公式</li><li>章節雙向連結</li></ul></div></a>
 
     <a class="card tool wide" href="lab.html" style="--c:var(--accent)">

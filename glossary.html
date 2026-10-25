@@ -41,6 +41,7 @@
         <button class="term-chip" type="button" data-filter="app">車用與電池 (BMS &amp; Power)</button>
         <button class="term-chip" type="button" data-filter="safety">功能安全 (ISO 26262)</button>
         <button class="term-chip" type="button" data-filter="process">製程與車規 (Process &amp; AEC)</button>
+        <button class="term-chip" type="button" data-filter="adas">ADAS 與雷達 (ADAS &amp; Radar)</button>
       </div>
     </div>
 
@@ -429,6 +430,50 @@
         <div class="term-meta">
           <span class="term-prop">DS：HVPA 為 32-QFN 6 × 6 mm wettable flank。</span>
           <a class="term-link" href="test.html#wettable-flanks">前往相關章節 →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="delayed lockstep checker core smu aurix r5f m7 asil d">
+        <div class="term-head">
+          <h3 class="term-title">Delayed Lockstep <small>雙核延遲鎖步</small></h3>
+          <span class="term-badge cat-adas">ADAS 與雷達</span>
+        </div>
+        <p class="term-def">主核心與影子檢查核執行相同指令流並由硬體逐週期比對輸出；檢查核延遲 2 個時脈週期且實體分離佈局，以消除電源毛刺與 EMI 造成的共模錯誤。</p>
+        <div class="term-meta">
+          <span class="term-prop">常見於 ASIL D MCU（如 AURIX TC39x、Cortex-R5F/M7 lockstep）。</span>
+          <a class="term-link" href="adas.html#delayed-lockstep">前往相關章節 →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="safety pmic tlf35584 ss1 ss2 fsp err wwd fwd abist">
+        <div class="term-head">
+          <h3 class="term-title">Safety PMIC (SS1 / SS2) <small>外掛安全電源管理晶片</small></h3>
+          <span class="term-badge cat-adas">ADAS 與雷達</span>
+        </div>
+        <p class="term-def">以獨立矽晶粒提供多軌電源、冗餘能隙電壓監控（含上電 ABIST/LBIST）、窗口+問答雙看門狗與 FSP 故障腳位監控；異常時由硬體直接拉低 SS1/SS2 切斷致動器。</p>
+        <div class="term-meta">
+          <span class="term-prop">例：Infineon OPTIREG™ TLF35584（ISO 26262 ASIL D）。</span>
+          <a class="term-link" href="adas.html#safety-pmic-tlf35584">前往相關章節 →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="fmcw radar cube 2d fft cfar hwa spt 77 ghz awr2944 s32r45">
+        <div class="term-head">
+          <h3 class="term-title">FMCW Radar Cube &amp; CFAR <small>77 GHz 調頻連續波雷達立方體與恆虛警率檢測</small></h3>
+          <span class="term-badge cat-adas">ADAS 與雷達</span>
+        </div>
+        <p class="term-def">76–81 GHz 混頻拍頻經高速 IF ADC 取樣存入數 MB 片上 SRAM（Radar Cube），由硬體加速器執行 1D 距離 FFT、2D 多普勒 FFT 與 CA/OS-CFAR 動態背景雜訊門檻檢測。</p>
+        <div class="term-meta">
+          <span class="term-prop">例：TI AWR2944（HWA 2.1，4.5 MB RAM）、NXP S32R45（SPT 3.1，8 MB SRAM）。</span>
+          <a class="term-link" href="adas.html#radar-signal-chain">前往相關章節 →</a>
+        </div>
+      </div>
+      <div class="term-card" data-cat="adas" data-term="autosar e2e tsn 802.1qbv can fd can xl ethernet">
+        <div class="term-head">
+          <h3 class="term-title">AUTOSAR E2E &amp; Ethernet TSN <small>端到端通訊安全保護與時間敏感網路</small></h3>
+          <span class="term-badge cat-adas">ADAS 與雷達</span>
+        </div>
+        <p class="term-def">E2E 在安全關鍵訊框加入 CRC、序號計數器與 Data ID 以偵測封包遺失、重複或篡改；IEEE 802.1Qbv 時間感知整形器則為車載乙太網保留確定性低延遲通道。</p>
+        <div class="term-meta">
+          <span class="term-prop">搭配 CAN FD（64 B）、CAN XL（2048 B）與 100/1000BASE-T1。</span>
+          <a class="term-link" href="adas.html#adas-networking">前往相關章節 →</a>
         </div>
       </div>
       <!-- TERMS:END -->

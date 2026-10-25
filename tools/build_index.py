@@ -16,6 +16,7 @@ PAGES = [
     ("process.html", "fab"),
     ("test.html", "test"),
     ("safety.html", "safety"),
+    ("adas.html", "adas"),
     ("roles.html", "roles"),
     ("lessons.html", "lessons"),
 ]
@@ -33,7 +34,7 @@ EXTRA = [
     {"p": "designer.html", "a": "", "t": "停車待機耗電評估", "s": "Deep Sleep 35 µA 85 µA 喚醒 暗電流 自放電 50% SoC", "g": "designer", "lv": 1},
     {"p": "designer.html", "a": "", "t": "Flash/SRAM 記憶體配置", "s": "Code Flash 128 KB Data Flash 8 KB SRAM 8 KB Bootloader linker", "g": "designer", "lv": 1},
     {"p": "quiz.html", "a": "", "t": "MCU 專業測驗（60 題）", "s": "測驗 題庫 自我檢測 核心 類比 BMS 製程 測試 ISO 26262", "g": "quiz", "lv": 1},
-    {"p": "glossary.html", "a": "", "t": "MCU 術語辭典（35 項）", "s": "術語 PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc OCV LIN AEC-Q100", "g": "glossary", "lv": 1},
+    {"p": "glossary.html", "a": "", "t": "MCU 術語辭典（39 項）", "s": "術語 PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin Chopper Sinc OCV LIN AEC-Q100 Lockstep TLF35584 FMCW CFAR TSN", "g": "glossary", "lv": 1},
 ]
 
 EXTRA_EN = [
@@ -49,7 +50,7 @@ EXTRA_EN = [
     {"p": "designer.html", "a": "", "t": "Parked Standby Budget", "s": "Deep Sleep 35 µA 85 µA wake-up quiescent current self-discharge 50% SoC", "g": "designer", "lv": 1},
     {"p": "designer.html", "a": "", "t": "Flash / SRAM Memory Layout", "s": "code flash 128 KB data flash 8 KB SRAM 8 KB bootloader linker", "g": "designer", "lv": 1},
     {"p": "quiz.html", "a": "", "t": "MCU Knowledge Quiz (60 Questions)", "s": "quiz self-check core analog BMS process test ISO 26262", "g": "quiz", "lv": 1},
-    {"p": "glossary.html", "a": "", "t": "MCU Glossary (35 terms)", "s": "glossary PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin chopper Sinc OCV LIN AEC-Q100", "g": "glossary", "lv": 1},
+    {"p": "glossary.html", "a": "", "t": "MCU Glossary (39 terms)", "s": "glossary PACSS AGC SECDED FIT SPFM LFM BCD LDMOS Kelvin chopper Sinc OCV LIN AEC-Q100 Lockstep TLF35584 FMCW CFAR TSN", "g": "glossary", "lv": 1},
 ]
 
 class Collector(HTMLParser):

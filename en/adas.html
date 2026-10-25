@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- meta:BEGIN -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23205CB8' stroke-width='1.8'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1317" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/adas.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html">
+<link rel="alternate" hreflang="en" href="https://sinliongtoo.github.io/MCU_PMIC_EV/en/adas.html">
+<link rel="alternate" hreflang="x-default" href="https://sinliongtoo.github.io/MCU_PMIC_EV/adas.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCU Notes">
+<meta property="og:title" content="07 ADAS &amp; Lockstep Safety MCU Architecture · MCU Notes">
+<meta property="og:description" content="In-depth guide to ADAS safety and radar microcontrollers: Infineon AURIX TC39x dual-core delayed lockstep, OPTIREG TLF35584 safety PMIC with SS1/SS2 hardware shutdown, TI AWR2944 / NXP S32R45 77 GHz FMCW 2D-FFT and CFAR radar accelerators, and CAN XL / Ethernet TSN.">
+<meta property="og:url" content="https://sinliongtoo.github.io/MCU_PMIC_EV/en/adas.html">
+<meta property="og:locale" content="en_US">
+<!-- meta:END -->
+<title>07 ADAS &amp; Lockstep Safety MCU Architecture · MCU Notes</title>
+<meta name="description" content="In-depth guide to ADAS safety and radar microcontrollers: Infineon AURIX TC39x dual-core delayed lockstep, OPTIREG TLF35584 safety PMIC with SS1/SS2 hardware shutdown, TI AWR2944 / NXP S32R45 77 GHz FMCW 2D-FFT and CFAR radar accelerators, and CAN XL / Ethernet TSN.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-page="adas" data-ch="adas">
+<a class="skip" href="#main">Skip to content</a>
+<div class="doc">
+  <aside class="toc" aria-label="On this page"></aside>
+  <article id="main">
+    <div class="eyebrow">Chapter 07 · ADAS &amp; Safety Domain MCUs</div>
+    <h1>ADAS &amp; Lockstep Safety MCUs: From Delayed Lockstep &amp; Safety PMICs to 77 GHz Radar Chains</h1>
+    <p class="lead">The <b>Infineon PSoC™ 4 HVPA-144K</b> covered in Chapters 1–6 represents a monolithic high-voltage precision-analog edge sensor node (ASIL B hardware metrics) mounted directly on a 12 V battery post. Moving to <b>ADAS (Advanced Driver Assistance Systems)</b>—autonomous emergency braking (AEB), steer-by-wire arbitration and 77 GHz millimeter-wave radar—triggers a fundamental architectural shift: single-core execution gives way to <b>dual-core delayed lockstep (ASIL D)</b>, the on-chip LDO is replaced by an <b>external independent safety PMIC (such as OPTIREG™ TLF35584)</b>, and low-frequency \(\Delta\Sigma\) decimators are replaced by high-throughput <b>2D-FFT and CFAR radar hardware accelerators</b>.</p>
+    <p class="src">Device sources: Infineon PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K, Infineon AURIX™ TC39x datasheet, Infineon OPTIREG™ PMIC TLF35584 datasheet, TI AWR2944 datasheet, NXP S32R45 product documentation; standards: ISO 26262-5:2018, AUTOSAR E2E, IEEE 802.1Qbv. Figures 7.1–7.3 are architectural concept diagrams.</p>
+
+    <h2 id="adas-spectrum">1. Automotive MCU Spectrum: BMS Edge Sensor vs. ADAS Safety Island &amp; Radar MCUs</h2>
+    <p>Modern zonal electrical/electronic (E/E) architectures divide vehicle compute into edge sensing nodes, dedicated sensor-processing SoCs and central safety islands. Even when an automated driving domain controller carries a multi-hundred-TOPS AI SoC (such as NVIDIA Orin or Qualcomm Ride), the board still pairs it with an <b>ISO 26262 ASIL D</b> safety microcontroller (such as <b>Infineon AURIX™ TC39x / TC4x</b>) to perform sensor-fusion voting, watchdog supervision and chassis actuator arbitration.</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>Dimension</th><th>BMS HV Edge Sensor<br><b>Infineon PSoC™ 4 HVPA-144K</b></th><th>ADAS Safety Island / Domain MCU<br><b>Infineon AURIX™ TC39x</b></th><th>77 GHz Single-Chip Radar SoC<br><b>TI AWR2944</b></th><th>4D Imaging Radar Processor<br><b>NXP S32R45</b></th></tr>
+      <tr><td><b>Cores &amp; Clocks</b></td><td>1× Arm Cortex-M0+ @ 24/48 MHz</td><td>6× TriCore™ 1.6.2P @ 300 MHz (4 with lockstep checker cores)</td><td>Dual-core lockstep Cortex-R5F @ 300 MHz + C66x DSP @ 360 MHz</td><td>4× Cortex-A53 @ 800 MHz + 3× lockstep Cortex-M7 @ 400 MHz</td></tr>
+      <tr><td><b>On-Chip Memory</b></td><td>≤128 KB Flash, ≤8 KB SRAM (all SECDED ECC)</td><td>Up to 16 MB PFlash (A/B swap OTA), 6.9 MB SRAM (ECC)</td><td>Up to 4.5 MB on-chip shared RAM (L1/L2/L3 Radar Cube)</td><td>8 MB on-chip SRAM (ECC), external LPDDR4 / QSPI</td></tr>
+      <tr><td><b>Dedicated Signal / Analog Front-End</b></td><td>2× 16–20+ bit \(\Delta\Sigma\) ADCs + AGC (G 1–512) + Sinc³/Sinc²/FIR</td><td>GTM timer array, multi-channel SAR + \(\Delta\Sigma\) ADCs, HSM security module</td><td>Integrated 76–81 GHz 4T4R FMCW transceiver + HWA 2.1 radar accelerator</td><td>SPT 3.1 radar processing engine + LAX linear algebra accelerator</td></tr>
+      <tr><td><b>Power &amp; Supervision</b></td><td><b>On-chip 42 V LDO</b> (direct 12 V battery connection) + internal OV/BOD</td><td>Low-voltage core supply paired with <b>external safety PMIC (e.g. TLF35584)</b></td><td>External multi-rail automotive PMIC (RF, DSP and MCU rails)</td><td>External multi-rail ASIL D safety PMIC with BIST monitoring</td></tr>
+      <tr><td><b>Functional Safety</b></td><td>ASIL C process, <b>ASIL B hardware architectural metrics</b></td><td><b>ISO 26262 ASIL D</b> (Delayed Lockstep + SMU fault handling)</td><td>Designed for <b>ASIL B / ASIL D</b> safety mechanisms</td><td><b>ISO 26262 ASIL B(D) / ASIL D</b> safety island supervision</td></tr>
+      <tr><td><b>Vehicle Networking</b></td><td>Integrated LIN 2.2A / ISO 17987 PHY (20 kbit/s)</td><td>12× CAN FD, FlexRay, 1 Gbps Ethernet</td><td>CAN FD, 100BASE-T1 Automotive Ethernet, CSI-2</td><td>CAN FD, dual 1 Gbps Automotive Ethernet, PCIe, CSI-2</td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--adas)"><b>Engineering insight: Why does PSoC 4 HVPA integrate its regulator on-chip while AURIX uses an external safety PMIC?</b><br>The HVPA uses a high-voltage BCD process to minimize footprint and achieve 35 µA deep-sleep current directly on the battery clamp. By contrast, an ADAS MCU uses a dense embedded-flash CMOS node (such as 40 nm or 28 nm) to pack millions of logic gates and megabytes of SRAM; those nanoscale transistors cannot withstand 40 V load-dump transients directly. Moreover, ASIL D requires <b>physical separation between the main processor and its supply/watchdog supervisor (separate silicon die, independent bandgap reference and independent clock)</b> to eliminate common-cause failures (CCF).</div>
+
+    <h2 id="delayed-lockstep">2. Dual-Core Delayed Lockstep Microarchitecture &amp; Common-Cause Fault Mitigation</h2>
+    <p>In Chapter 6 we saw that ISO 26262-5 sets the Single-Point Fault Metric target for <b>ASIL B at \(\text{SPFM} \ge 90\%\)</b>, which memory ECC, an MPU and a challenge-response watchdog can satisfy. However, <b>ASIL D demands \(\text{SPFM} \ge 99\%\), \(\text{LFM} \ge 90\%\) and \(\text{PMHF} < 10\,\text{FIT}\)</b>. A CPU’s ALU, register file, instruction decoder and pipeline control contain hundreds of thousands of flip-flops; periodic software self-test (SBST) alone cannot catch a corrupted braking calculation in the exact cycle it happens, nor easily reach 99% diagnostic coverage.</p>
+    <p>Consequently, AURIX™ TC39x (TriCore lockstep), TI AWR2944 (Cortex-R5F lockstep) and NXP S32R45 (Cortex-M7 lockstep) all implement <b>hardware Dual-Core Delayed Lockstep</b>:</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 360" role="img" aria-label="Dual-Core Delayed Lockstep Microarchitecture and SMU Fault Management Diagram">
+        <!-- Input Instruction & Data Bus -->
+        <rect x="20" y="105" width="125" height="90" rx="6" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text class="ts" x="82" y="135" text-anchor="middle" font-weight="700" font-size="12">Inst &amp; Data Bus</text>
+        <text class="ts t-mono" x="82" y="155" text-anchor="middle" font-size="10.5" fill="var(--core)">Flash / SRAM ECC</text>
+        <text class="ts t-mut" x="82" y="175" text-anchor="middle" font-size="10">SECDED Bus Protection</text>
+
+        <!-- Master Path (Top) -->
+        <line x1="145" y1="125" x2="295" y2="75" stroke="var(--core)" stroke-width="2.5"/>
+        <rect x="295" y="32" width="195" height="86" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2.2"/>
+        <text class="ts" x="392" y="58" text-anchor="middle" font-weight="700" font-size="13" fill="var(--core)">Master CPU Core</text>
+        <text class="ts t-mono" x="392" y="78" text-anchor="middle" font-size="11">Cycle k: Exec Inst[n]</text>
+        <text class="ts t-mut" x="392" y="98" text-anchor="middle" font-size="10">Drives system bus &amp; peripherals</text>
+
+        <!-- Master Output to System Bus & Delay -->
+        <line x1="490" y1="60" x2="625" y2="60" stroke="var(--core)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="557" y="50" text-anchor="middle" font-size="10" font-weight="600" fill="var(--core)">System Bus Out</text>
+        <line x1="525" y1="60" x2="525" y2="120" stroke="var(--core)" stroke-width="2"/>
+        <rect x="495" y="120" width="90" height="44" rx="5" fill="var(--sunk)" stroke="var(--core)" stroke-width="1.5"/>
+        <text class="ts t-mono" x="540" y="140" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">+2 CLK Delay</text>
+        <text class="ts t-mut" x="540" y="155" text-anchor="middle" font-size="9.5">Output delay stages</text>
+
+        <!-- Checker Path (Bottom) with Input Delay -->
+        <line x1="145" y1="175" x2="175" y2="235" stroke="var(--adas)" stroke-width="2.2"/>
+        <rect x="175" y="210" width="95" height="52" rx="5" fill="var(--sunk)" stroke="var(--adas)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="222" y="233" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">+2 CLK Delay</text>
+        <text class="ts t-mut" x="222" y="250" text-anchor="middle" font-size="9.5">Input delay stages</text>
+
+        <line x1="270" y1="236" x2="295" y2="236" stroke="var(--adas)" stroke-width="2.2"/>
+        <rect x="295" y="193" width="195" height="86" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2" stroke-dasharray="6 3"/>
+        <text class="ts" x="392" y="219" text-anchor="middle" font-weight="700" font-size="13" fill="var(--adas)">Shadow Checker Core</text>
+        <text class="ts t-mono" x="392" y="239" text-anchor="middle" font-size="11">Cycle k: Exec Inst[n-2]</text>
+        <text class="ts t-mut" x="392" y="259" text-anchor="middle" font-size="10">Physically separated &amp; rotated</text>
+
+        <!-- Comparator Block -->
+        <line x1="585" y1="142" x2="625" y2="165" stroke="var(--core)" stroke-width="2"/>
+        <line x1="490" y1="236" x2="625" y2="195" stroke="var(--adas)" stroke-width="2"/>
+        <rect x="625" y="125" width="190" height="105" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.2"/>
+        <text class="ts" x="720" y="152" text-anchor="middle" font-weight="700" font-size="13" fill="var(--safety)">Cycle-by-Cycle Comparator</text>
+        <rect x="640" y="162" width="160" height="24" rx="3" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="720" y="178" text-anchor="middle" font-size="10.5" font-weight="700">Out_M(k-2) == Out_C(k)</text>
+        <text class="ts t-mut" x="720" y="205" text-anchor="middle" font-size="10">Compares address, data &amp; control</text>
+        <text class="ts t-mono" x="720" y="220" text-anchor="middle" font-size="10" font-weight="700" fill="var(--bad)">Mismatch &rarr; 1-cycle fault alarm</text>
+
+        <!-- SMU & FSP Output -->
+        <line x1="720" y1="230" x2="720" y2="268" stroke="var(--bad)" stroke-width="2.5"/>
+        <rect x="555" y="268" width="260" height="68" rx="7" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="685" y="292" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--bad)">SMU (Safety Management Unit)</text>
+        <text class="ts t-mono" x="685" y="311" text-anchor="middle" font-size="10.5">Triggers NMI/Reset + asserts FSP (ERR pin)</text>
+        <text class="ts t-mut" x="685" y="327" text-anchor="middle" font-size="9.5">Alerts external PMIC (TLF35584) to drop SS1/SS2</text>
+
+        <!-- Glitch Annotation -->
+        <rect x="25" y="285" width="490" height="50" rx="6" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="270" y="306" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--warn)">Why delay by 2 clock cycles (Time Diversity)?</text>
+        <text class="ts t-mut" x="270" y="324" text-anchor="middle" font-size="10">A supply glitch or EMI burst at cycle k hits Master and Checker at different instructions, preventing identical errors!</text>
+      </svg>
+      <figcaption>Figure 7.1: 2-Cycle Delayed Lockstep Microarchitecture and Safety Management Unit (SMU) Principle</figcaption>
+    </div>
+
+    <ul>
+      <li><b>Shadow Checker Core:</b> The checker core shares the exact microarchitecture of the master core, but <b>never drives the system bus directly</b>; it executes the identical instruction stream solely to feed a cycle-by-cycle hardware comparator.</li>
+      <li><b>Temporal Diversity (\(N=2\) clock cycle delay):</b> Instructions and data entering the checker core pass through a 2-cycle pipeline delay (\(\Delta t = 2\,T_{\text{clk}}\)), while the master core’s outputs are also delayed by 2 cycles before reaching the comparator. If a transient voltage droop or EMI spike hits the die at cycle \(k\), the master is executing instruction \(n\) while the checker is executing instruction \(n-2\), preventing symmetrical common-mode corruption at the comparator.</li>
+      <li><b>Physical Diversity:</b> On the silicon floorplan, the master and checker cores are physically separated and often rotated by \(90^\circ\) or \(180^\circ\) relative to each other so a localized hotspot or single alpha-particle strike cannot flip the same register bit in both cores simultaneously.</li>
+    </ul>
+
+    <h2 id="safety-pmic-tlf35584">3. External Safety PMIC (Infineon OPTIREG™ TLF35584) &amp; Dual Safe-State Shutdown</h2>
+    <p>In an ASIL D ADAS domain controller, if the MCU’s clock PLL loses lock or a core supply rail drifts out of spec, the MCU cannot be trusted to execute a software shutdown routine reliably. The system therefore pairs the MCU with an external safety power management IC developed as an independent <b>Safety Element out of Context (SEooC)</b>—classically the <b>Infineon OPTIREG™ PMIC TLF35584</b> alongside AURIX™ (compliant up to ISO 26262 ASIL D, operating across 3.0 V–40 V after startup):</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 360" role="img" aria-label="AURIX TC39x and TLF35584 Safety PMIC Handshake and SS1 SS2 Safe State Shutdown Schematic">
+        <!-- Left Block: TLF35584 Safety PMIC -->
+        <rect x="20" y="25" width="320" height="305" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2.2"/>
+        <text class="ts" x="180" y="50" text-anchor="middle" font-weight="700" font-size="13.5" fill="var(--analog)">Infineon OPTIREG™ TLF35584 (ASIL D PMIC)</text>
+
+        <rect x="38" y="65" width="284" height="52" rx="5" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="180" y="86" text-anchor="middle" font-weight="700" font-size="11.5">Multi-Rail Supply + Redundant Bandgap VMON</text>
+        <text class="ts t-mono" x="180" y="104" text-anchor="middle" font-size="10.5" fill="var(--ok)">QUC (3.3V/5V) · QVR (ADC Ref) · VCORE (1.25V)</text>
+
+        <rect x="38" y="130" width="284" height="58" rx="5" fill="var(--sunk)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text class="ts" x="180" y="151" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--warn)">Dual Watchdogs: WWD (Window) + FWD (Q&amp;A)</text>
+        <text class="ts t-mut" x="180" y="170" text-anchor="middle" font-size="10">Independent clock · Separate fault error counters</text>
+
+        <rect x="38" y="202" width="284" height="52" rx="5" fill="var(--sunk)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="180" y="223" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--safety)">ERR Pin Monitor + Safe State Controller (FSM)</text>
+        <text class="ts t-mut" x="180" y="241" text-anchor="middle" font-size="10">Built-in ABIST (analog) + LBIST (logic self-test)</text>
+
+        <rect x="38" y="266" width="284" height="46" rx="5" fill="var(--surface)" stroke="var(--bad)" stroke-width="1.8"/>
+        <text class="ts t-mono" x="180" y="286" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--bad)">Safe State Outputs: SS1 &amp; SS2</text>
+        <text class="ts t-mut" x="180" y="303" text-anchor="middle" font-size="9.5">HIGH when healthy; forced LOW on fault (programmable Δt_SS2)</text>
+
+        <!-- Interconnects between PMIC and AURIX -->
+        <!-- Power Rails -->
+        <line x1="340" y1="90" x2="465" y2="90" stroke="var(--ok)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="402" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ok)">3.3V / 1.25V Rails</text>
+
+        <!-- SPI WWD/FWD -->
+        <line x1="340" y1="158" x2="465" y2="158" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts t-mono" x="402" y="150" text-anchor="middle" font-size="10" font-weight="700" fill="var(--warn)">SPI (WWD + FWD)</text>
+
+        <!-- FSP / ERR Pin -->
+        <line x1="465" y1="225" x2="340" y2="225" stroke="var(--safety)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="402" y="217" text-anchor="middle" font-size="10" font-weight="700" fill="var(--safety)">&larr; FSP / ERR Pin</text>
+
+        <!-- Right Top Block: AURIX TC39x -->
+        <rect x="465" y="25" width="355" height="225" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2.2"/>
+        <text class="ts" x="642" y="50" text-anchor="middle" font-weight="700" font-size="13.5" fill="var(--core)">Infineon AURIX™ TC39x (ASIL D Safety MCU)</text>
+
+        <rect x="485" y="65" width="315" height="52" rx="5" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="642" y="86" text-anchor="middle" font-weight="700" font-size="11.5">6× TriCore™ 300 MHz (4 with Delayed Lockstep)</text>
+        <text class="ts t-mut" x="642" y="104" text-anchor="middle" font-size="10">Sensor-fusion voting · Trajectory check · ECC + MPU</text>
+
+        <rect x="485" y="130" width="315" height="52" rx="5" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="642" y="151" text-anchor="middle" font-weight="700" font-size="11.5">SPI Master + Watchdog Service Task</text>
+        <text class="ts t-mut" x="642" y="169" text-anchor="middle" font-size="10">Triggers WWD in window &amp; replies to FWD questions</text>
+
+        <rect x="485" y="194" width="315" height="44" rx="5" fill="var(--sunk)" stroke="var(--safety)" stroke-width="1.5"/>
+        <text class="ts" x="642" y="214" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--safety)">SMU + Fault Signaling Protocol (FSP)</text>
+        <text class="ts t-mut" x="642" y="230" text-anchor="middle" font-size="9.5">Releases FSP pin immediately on lockstep or internal fault</text>
+
+        <!-- Bottom Right: Hardware Safe State Isolation Path -->
+        <line x1="340" y1="290" x2="465" y2="290" stroke="var(--bad)" stroke-width="3"/>
+        <text class="ts t-mono" x="402" y="282" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--bad)">SS1 / SS2 &rarr;</text>
+
+        <rect x="465" y="264" width="355" height="66" rx="8" fill="var(--surface)" stroke="var(--bad)" stroke-width="2.2"/>
+        <text class="ts" x="642" y="288" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--bad)">Dual-Channel Hardware Safe-State Isolation</text>
+        <text class="ts t-mut" x="642" y="306" text-anchor="middle" font-size="10.5">Bypasses MCU software! Directly cuts steering/braking gate power</text>
+        <text class="ts t-mono" x="642" y="321" text-anchor="middle" font-size="10" fill="var(--ink)">or forces CAN FD transceivers into Listen-Only safe mode</text>
+      </svg>
+      <figcaption>Figure 7.2: Three-Layer Supervision Between AURIX™ TC39x and OPTIREG™ TLF35584 with SS1/SS2 Hardware Safe-State Outputs</figcaption>
+    </div>
+
+    <ul>
+      <li><b>Built-In Self-Test (ABIST / LBIST):</b> The TLF35584 contains a second, independent bandgap reference and runs an <b>Analog Built-In Self-Test (ABIST)</b> plus <b>Logic Built-In Self-Test (LBIST)</b> at startup, intentionally exercising its over-voltage (OV) and under-voltage (UV) comparators to verify that the supervisor itself is not latent-faulted (raising LFM).</li>
+      <li><b>Dual Watchdogs (WWD + FWD):</b> It combines a timing-based <b>Window Watchdog (WWD)</b> with a logical question–answer <b>Functional Watchdog (FWD)</b> over SPI, each maintaining an independent error counter.</li>
+      <li><b>FSP (`ERR` pin) and `SS1` / `SS2` Safe-State Pins:</b> The AURIX SMU drives the TLF35584’s `ERR` pin using the Fault Signaling Protocol (FSP). If a lockstep mismatch, supply fault or watchdog overflow occurs, the TLF35584 Safe State Controller immediately drives both independent safe-state outputs <b>`SS1` and `SS2` LOW</b> (with an optional programmable delay \(\Delta t_{\text{SS2}}\) on `SS2` for controlled actuator ramp-down), isolating external power stages directly in hardware.</li>
+    </ul>
+
+    <h2 id="radar-signal-chain">4. 77 GHz Millimeter-Wave Radar Signal Chain &amp; Hardware Accelerators (FMCW, 2D-FFT &amp; CFAR)</h2>
+    <p>Whereas Chapter 2 examined a DC-to-kHz microvolt shunt signal chain, ADAS corner and long-range imaging radars (such as <b>TI AWR2944</b> and <b>NXP S32R45</b>) process a <b>76–81 GHz Frequency-Modulated Continuous-Wave (FMCW)</b> radar pipeline in real time:</p>
+
+    <div class="math-block">
+      <b>FMCW beat-frequency range and Doppler velocity equations:</b>
+      \[f_b = \frac{S \cdot 2R}{c} = \frac{2 B R}{c \, T_c}, \qquad \Delta\varphi = \frac{4\pi v T_c}{\lambda}, \qquad \Delta R = \frac{c}{2B}\]
+      where \(S = B / T_c\) is the chirp slope, \(B\) is the sweep bandwidth (up to \(4\text{–}5\,\text{GHz}\), yielding a range resolution \(\Delta R \approx 3.75\,\text{cm}\)), \(T_c\) is the chirp duration, \(R\) is target range, \(v\) is radial velocity and \(\lambda \approx 3.9\,\text{mm}\) is the 77 GHz wavelength.
+    </div>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 840 330" role="img" aria-label="77 GHz FMCW Radar SoC Signal Chain and 2D-FFT CFAR Hardware Accelerator Pipeline">
+        <!-- Stage 1: RF Front-End & Mixer -->
+        <rect x="18" y="45" width="175" height="190" rx="8" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="105" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--analog)">1. 76–81 GHz RF &amp; IF ADC</text>
+        <rect x="30" y="86" width="151" height="38" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="105" y="103" text-anchor="middle" font-size="10.5" font-weight="700">4 TX / 4 RX FMCW</text>
+        <text class="ts t-mut" x="105" y="117" text-anchor="middle" font-size="9.5">Mixer &rarr; IF beat signal</text>
+        <rect x="30" y="134" width="151" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts" x="105" y="152" text-anchor="middle" font-weight="700" font-size="10.5">High-Speed IF ADCs</text>
+        <text class="ts t-mut" x="105" y="167" text-anchor="middle" font-size="9.5">Tens of MSPS digitizing f_b</text>
+        <text class="ts t-mono" x="105" y="212" text-anchor="middle" font-size="10" fill="var(--analog)">Fast-Time Samples</text>
+
+        <!-- Arrow 1 -> 2 -->
+        <line x1="193" y1="140" x2="220" y2="140" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Stage 2: Radar Cube & 1D/2D FFT Accelerator -->
+        <rect x="220" y="45" width="215" height="190" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2"/>
+        <text class="ts" x="327" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--adas)">2. Radar Accelerator (HWA / SPT)</text>
+        <rect x="234" y="86" width="187" height="40" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="327" y="103" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--adas)">1D Range FFT (Fast-Time)</text>
+        <text class="ts t-mut" x="327" y="118" text-anchor="middle" font-size="9.5">Resolves beat freq f_b &rarr; Range R</text>
+
+        <rect x="234" y="134" width="187" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="327" y="151" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--adas)">2D Doppler FFT (Slow-Time)</text>
+        <text class="ts t-mut" x="327" y="167" text-anchor="middle" font-size="9.5">Cross-chirp phase Δφ &rarr; Velocity v</text>
+
+        <rect x="234" y="184" width="187" height="36" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+        <text class="ts t-mono" x="327" y="206" text-anchor="middle" font-size="10" font-weight="600">L3 Radar Cube SRAM (4.5–8 MB)</text>
+
+        <!-- Arrow 2 -> 3 -->
+        <line x1="435" y1="140" x2="462" y2="140" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Stage 3: CFAR & AoA DSP -->
+        <rect x="462" y="45" width="180" height="190" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="552" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--fab)">3. CFAR &amp; Angle Estimation</text>
+        <rect x="475" y="86" width="154" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="552" y="103" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--fab)">CA-CFAR / OS-CFAR</text>
+        <text class="ts t-mut" x="552" y="118" text-anchor="middle" font-size="9.5">Adaptive noise floor threshold</text>
+
+        <rect x="475" y="138" width="154" height="44" rx="4" fill="var(--sunk)"/>
+        <text class="ts" x="552" y="156" text-anchor="middle" font-weight="700" font-size="10.5">3D-FFT / AoA Beamforming</text>
+        <text class="ts t-mut" x="552" y="172" text-anchor="middle" font-size="9.5">C66x DSP / LAX linear algebra</text>
+        <text class="ts t-mono" x="552" y="212" text-anchor="middle" font-size="10" fill="var(--fab)">Point Cloud (R, v, θ, φ)</text>
+
+        <!-- Arrow 3 -> 4 -->
+        <line x1="642" y1="140" x2="668" y2="140" stroke="var(--ink)" stroke-width="2"/>
+
+        <!-- Stage 4: Lockstep Safety MCU Tracking -->
+        <rect x="668" y="45" width="154" height="190" rx="8" fill="var(--surface)" stroke="var(--safety)" stroke-width="2"/>
+        <text class="ts" x="745" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--safety)">4. Lockstep MCU Tracking</text>
+        <rect x="680" y="86" width="130" height="42" rx="4" fill="var(--sunk)"/>
+        <text class="ts t-mono" x="745" y="103" text-anchor="middle" font-size="10" font-weight="700">Lockstep R5F / M7</text>
+        <text class="ts t-mut" x="745" y="118" text-anchor="middle" font-size="9.5">Extended Kalman tracking</text>
+
+        <rect x="680" y="138" width="130" height="44" rx="4" fill="var(--sunk)"/>
+        <text class="ts" x="745" y="156" text-anchor="middle" font-weight="700" font-size="10">AUTOSAR E2E Framing</text>
+        <text class="ts t-mono" x="745" y="172" text-anchor="middle" font-size="9.5" fill="var(--ok)">CAN FD / 100BASE-T1</text>
+        <text class="ts t-mut" x="745" y="212" text-anchor="middle" font-size="9.5">To ADAS Domain Controller</text>
+
+        <!-- Bottom Summary Bar -->
+        <rect x="18" y="255" width="804" height="50" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <text class="ts" x="420" y="276" text-anchor="middle" font-weight="700" font-size="11.5">Why can’t a general-purpose CPU run the radar cube directly? — Memory bandwidth &amp; deterministic latency</text>
+        <text class="ts t-mut" x="420" y="294" text-anchor="middle" font-size="10.5">A single radar frame occupies megabytes and requires tens of thousands of 2D-FFTs and matrix transposes every 20–50 ms, demanding HWA 2.1 / SPT 3.1 offload.</text>
+      </svg>
+      <figcaption>Figure 7.3: 77 GHz FMCW Radar SoC (TI AWR2944 / NXP S32R45) Hardware Pipeline from IF Sampling and Radar Cube 2D-FFT to CFAR and Lockstep Object Tracking</figcaption>
+    </div>
+
+    <ul>
+      <li><b>The Radar Cube &amp; Multi-Megabyte On-Chip SRAM:</b> Each receiver (RX) digitizes hundreds of fast-time samples per chirp across hundreds of slow-time chirps per frame and multiple virtual MIMO antennas, forming a multi-megabyte 3D complex array called the <b>Radar Cube</b>. This is why the TI AWR2944 integrates up to <b>4.5 MB of RAM</b> and the NXP S32R45 integrates <b>8 MB of SRAM</b> on-die: streaming the Radar Cube off-chip would saturate external memory bandwidth and power budgets.</li>
+      <li><b>1D / 2D-FFT Hardware Accelerators (TI HWA 2.1 / NXP SPT 3.1):</b> Dedicated radar engines stream directly from the Radar Cube, executing a <b>1D Range FFT</b> across each chirp, performing a hardware matrix transpose (corner turn), and executing a <b>2D Doppler FFT</b> across chirps—often with hardware block floating-point compression to save L3 RAM.</li>
+      <li><b>Constant False Alarm Rate (CFAR) Detection:</b> Road environments produce heavy clutter from guardrails, asphalt and rain; a fixed threshold would trigger false braking events. Hardware <b>CA-CFAR (Cell-Averaging)</b> or <b>OS-CFAR (Ordered-Statistic)</b> engines estimate the local noise floor around each Cell Under Test (CUT) and adapt the detection threshold dynamically before passing the point cloud to the DSP and lockstep Cortex-R5F/M7 cores for Angle-of-Arrival (AoA) estimation and Kalman tracking.</li>
+    </ul>
+
+    <h2 id="adas-networking">5. High-Speed Safety Networking &amp; Zonal Architecture: CAN FD, CAN XL &amp; Automotive Ethernet TSN</h2>
+    <p>While a 12 V battery sensor in Chapter 3 needs only a 20 kbit/s single-wire <b>LIN 2.2A</b> bus reporting once per second, ADAS radar point clouds, sensor fusion and chassis actuation require high bandwidth, microsecond-level deterministic latency and end-to-end functional safety protection:</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>In-Vehicle Network</th><th>Peak Bit Rate</th><th>Payload per Frame</th><th>Role in Automotive / ADAS Architecture</th></tr>
+      <tr><td><b>LIN 2.2A / ISO 17987</b></td><td>20 kbit/s (HVPA also supports 100 kbit/s fast mode)</td><td>2 / 4 / 8 Bytes</td><td>12 V Intelligent Battery Sensor (IBS), window lifters, seat nodes</td></tr>
+      <tr><td><b>CAN FD (ISO 11898-1)</b></td><td>1 Mbit/s arbitration; 2–5 Mbit/s data (up to 8 Mbit/s)</td><td>64 Bytes</td><td>Mainstream ADAS object-track lists, chassis control (ESP/EPS) and safety islands</td></tr>
+      <tr><td><b>CAN XL (CiA 610 / ISO 11898-1)</b></td><td>Up to 10–20 Mbit/s</td><td>1–2048 Bytes</td><td>Next-generation zonal MCUs (e.g. AURIX TC4x), capable of tunneling Ethernet frames</td></tr>
+      <tr><td><b>Automotive Ethernet (100BASE-T1 / 1000BASE-T1 + TSN)</b></td><td>100 Mbit/s – 10 Gbit/s</td><td>1500 Bytes</td><td>4D imaging radar point clouds, surround cameras, central compute backbone</td></tr>
+    </table></div>
+
+    <ul>
+      <li><b>Time-Sensitive Networking (TSN):</b> Automotive Ethernet uses <b>IEEE 802.1AS (gPTP precision time synchronization)</b> to align radars, cameras and safety MCUs to sub-microsecond accuracy, paired with <b>IEEE 802.1Qbv (Time-Aware Shaper)</b> to reserve dedicated transmission windows for safety-critical braking and steering frames so bulk camera or diagnostic traffic cannot introduce queuing jitter.</li>
+      <li><b>AUTOSAR E2E (End-to-End) Safety Protection:</b> Any physical bus can suffer bit flips, dropped frames, repetition or out-of-order delivery. To satisfy ISO 26262 communication safety requirements, the ADAS lockstep core wraps every critical actuation message in an <b>E2E Profile header (hardware CRC, monotonic Sequence Counter and Data ID)</b>, which the receiving safety MCU validates before energizing chassis actuators.</li>
+    </ul>
+
+    <div class="pager"></div>
+  </article>
+</div>
+<script src="../assets/search-index-en.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>
