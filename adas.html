@@ -35,7 +35,7 @@
     <div class="eyebrow">Chapter 07 · ADAS &amp; Safety Domain MCUs</div>
     <h1>ADAS 與鎖步安全 MCU：從延遲鎖步核、外掛安全 PMIC 到 77 GHz 雷達訊號鏈</h1>
     <p class="lead">前六章剖析的 <b>Infineon PSoC™ 4 HVPA-144K</b> 代表車身與電瓶極柱上的「高壓精密類比邊緣感測節點（ASIL B 硬體指標）」。當場景轉向 <b>ADAS（先進駕駛輔助系統）</b> 的自動緊急煞車（AEB）、線控轉向仲裁與 77 GHz 毫米波雷達時，微控制器架構產生了本質躍遷：單核轉為<b>雙核延遲鎖步（Delayed Lockstep，ASIL D）</b>、片內 LDO 轉為<b>外掛獨立安全 PMIC（如 OPTIREG™ TLF35584）</b>，而低頻 \(\Delta\Sigma\) 濾波器則換成了高吞吐量的 <b>2D-FFT 與 CFAR 雷達硬體加速器</b>。</p>
-    <p class="src">晶片規格出處：Infineon PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K、Infineon AURIX™ TC39x Datasheet、Infineon OPTIREG™ PMIC TLF35584 Datasheet、TI AWR2944 Datasheet、NXP SAF8544 (SAF85xx) 與 S32R45 資料手冊；標準出處：ISO 26262-5:2018、AUTOSAR E2E、IEEE 802.1Qbv。圖 7.1–7.3 為架構原理示意圖。</p>
+    <p class="src">晶片規格出處：Infineon PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K、Infineon AURIX™ TC39x / TC4x 與 RASIC™ CTRX8191F 資料手冊、Infineon OPTIREG™ PMIC TLF35584 Datasheet、TI AWR2944 Datasheet、NXP SAF8544 (SAF85xx) 與 S32R45 資料手冊；標準出處：ISO 26262-5:2018、ISO 26262-9:2018、AUTOSAR E2E、IEEE 802.1Qbv。圖 7.1–7.3 為架構原理示意圖。</p>
 
     <h2 id="adas-spectrum">1. 車用 MCU 光譜：BMS 邊緣感測節點 vs. ADAS 安全域與雷達 MCU</h2>
     <p>現代區域電子電氣架構（Zonal E/E Architecture）將車用計算分為末端感測節點、專用感測器處理 SoC 與中央安全島（Safety Island）。即使是搭載數百 TOPS AI 算力的自動駕駛主晶片（如 NVIDIA Orin 或 Qualcomm Ride），在板端仍必須配置一顆通過 <b>ISO 26262 ASIL D</b> 的安全微控制器（如 <b>Infineon AURIX™ TC39x / TC4x</b>），負責感測器融合表決、看門狗監控與底盤致動器安全仲裁。</p>
@@ -44,13 +44,31 @@
       <tr><th>架構維度</th><th>BMS 高壓感測節點<br><b>Infineon PSoC™ 4 HVPA-144K</b></th><th>ADAS 安全島 / 域控 MCU<br><b>Infineon AURIX™ TC39x</b></th><th>77 GHz 單晶片雷達 SoC<br><b>TI AWR2944</b></th><th>77 GHz 28 nm 單晶片雷達 SoC<br><b>NXP SAF8544</b></th><th>4D 成像雷達處理器<br><b>NXP S32R45</b></th></tr>
       <tr><td><b>核心與時脈</b></td><td>1× Arm Cortex-M0+ @ 24/48 MHz</td><td>6× TriCore™ 1.6.2P @ 300 MHz（其中 4 核具 Lockstep 檢查核）</td><td>雙核 Lockstep Cortex-R5F @ 300 MHz + C66x DSP @ 360 MHz</td><td>Arm Cortex-A53（應用/追蹤）+ Lockstep Cortex-M7（即時安全/AUTOSAR，@ ~320 MHz）</td><td>4× Cortex-A53 @ 800 MHz + 3× Lockstep Cortex-M7 @ 400 MHz</td></tr>
       <tr><td><b>晶片內建記憶體</b></td><td>≤128 KB Flash、≤8 KB SRAM（全 SECDED ECC）</td><td>最高 16 MB PFlash（支援 A/B 雙區 OTA）、6.9 MB SRAM（ECC）</td><td>最高 4.5 MB 片上共享 RAM（含 L1/L2/L3 Radar Cube）</td><td>&gt;5.5 MB 片上共享 SRAM（全 ECC 保護）</td><td>8 MB 片上 SRAM（ECC），外接 LPDDR4 / QSPI</td></tr>
-      <tr><td><b>專用訊號 / 類比前端</b></td><td>2× 16–20+ bit \(\Delta\Sigma\) ADC + AGC（G 1–512）+ Sinc³/Sinc²/FIR</td><td>GTM 定時器陣列、多通道 SAR + \(\Delta\Sigma\) ADC、HSM 硬體安全模組</td><td>整合 76–81 GHz 4T4R FMCW 收發器 + HWA 2.1 雷達加速器</td><td>28 nm RFCMOS 整合 76–81 GHz 4T4R 收發器 + SPT 3.4 雷達加速器 + BBE32EP 向量 DSP</td><td>SPT 3.1 雷達訊號處理引擎 + LAX 線性代數加速器（外接多顆 TEF82xx 射頻前端）</td></tr>
+      <tr><td><b>專用訊號 / 類比前端</b></td><td>2× 16–20+ bit \(\Delta\Sigma\) ADC + AGC（G 1–512）+ Sinc³/Sinc²/FIR</td><td><b>SPU 雷達訊號處理單元</b>（FFT/CFAR）+ GTM 定時器、SAR/\(\Delta\Sigma\) ADC、HSM（可接 RASIC™ 雷達前端）</td><td>整合 76–81 GHz 4T4R FMCW 收發器 + HWA 2.1 雷達加速器</td><td>28 nm RFCMOS 整合 76–81 GHz 4T4R 收發器 + SPT 3.4 雷達加速器 + BBE32EP 向量 DSP</td><td>SPT 3.1 雷達訊號處理引擎 + LAX 線性代數加速器（外接多顆 TEF82xx 射頻前端）</td></tr>
       <tr><td><b>電源與監控架構</b></td><td><b>片內整合 42 V LDO</b>（直連 12 V 電瓶）+ 內部 OV/BOD</td><td>低壓數位核心供電，搭配<b>外掛安全 PMIC（如 TLF35584）</b></td><td>外掛多軌車規 PMIC（供電 RF、DSP 與 MCU 電源軌）</td><td>外掛安全 PMIC（如 NXP PF502x / FS85 系列供電 RF 與數位核）</td><td>外掛多軌 ASIL D 安全 PMIC（支援動態壓降與 BIST）</td></tr>
       <tr><td><b>功能安全等級</b></td><td>ASIL C 開發流程、<b>ASIL B 硬體架構指標</b></td><td><b>ISO 26262 ASIL D</b>（Delayed Lockstep + SMU 故障管理）</td><td>針對 <b>ASIL B / ASIL D</b> 系統安全機制設計</td><td><b>ISO 26262 ASIL B</b>（SEooC）+ HSE-M 硬體資安引擎（ISO/SAE 21434）</td><td><b>ISO 26262 ASIL B(D) / ASIL D</b> 安全島監控</td></tr>
       <tr><td><b>車載通訊介面</b></td><td>整合 LIN 2.2A / ISO 17987 收發器（20 kbit/s）</td><td>12× CAN FD、FlexRay、1 Gbps Ethernet</td><td>CAN FD、100BASE-T1 車載乙太網、CSI-2</td><td>SGMII 10/100/1000 Mbps 千兆乙太網、CAN FD、SPI/UART</td><td>CAN FD、雙千兆車載乙太網、PCIe、CSI-2</td></tr>
     </table></div>
 
     <div class="callout" style="--c:var(--adas)"><b>工程洞察：為什麼 PSoC 4 HVPA 把穩壓器與類比做進單晶片，而 AURIX 卻堅持外掛 PMIC？</b><br>HVPA 採用高壓 BCD 製程，目標是極小面積、35 µA 超低暗電流並直接鎖在電瓶負極樁頭上；而 ADAS MCU 採用先進嵌入式快閃記憶體製程（如 40 nm / 28 nm CMOS）以容納上千萬邏輯閘與數 MB SRAM，這類先進製程電晶體無法直接承受 40 V 拋負載高壓，且 ASIL D 要求<b>電源監控與看門狗必須具備與主晶片物理隔離的獨立矽晶片（獨立能隙基準與獨立時脈）</b>，以消除共因失效（Common Cause Failure, CCF）。</div>
+
+    <h3 id="asil-b-vs-d">為什麼許多邊緣感測與單晶片雷達是 ASIL B？— ISO 26262 等級與 ASIL 分解（Decomposition）</h3>
+    <p><b>ASIL（Automotive Safety Integrity Level，汽車安全完整性等級）</b>是 ISO 26262 標準用來衡量車電系統故障風險與硬體診斷嚴苛度的指標，由低到高分為 <b>QM（一般品質管理，無安全要求）、ASIL A、ASIL B、ASIL C、ASIL D（最高安全等級）</b>。每個功能的等級由危害分析與風險評估（HARA）的三個維度決定：</p>
+    <ul>
+      <li><b>嚴重度（Severity, S0–S3）：</b>故障發生時對人員造成的傷害程度（S3 為危及生命或致命傷害）。</li>
+      <li><b>暴露率（Exposure, E0–E4）：</b>車輛處於該運作場景的頻率（E4 為每次行駛幾乎都會發生的高機率場景）。</li>
+      <li><b>可控性（Controllability, C0–C3）：</b>一般駕駛人在故障發生時能否憑藉反應避免事故（C3 為極難控制或無法控制，如高速煞車失效或轉向鎖死）。</li>
+    </ul>
+
+    <div class="tblwrap"><table>
+      <tr><th>ISO 26262 等級</th><th>單點故障指標 (SPFM)</th><th>潛伏故障指標 (LFM)</th><th>隨機硬體失效率 (PMHF)</th><th>典型硬體微架構成本與車用代表場景</th></tr>
+      <tr><td><b>QM / ASIL A</b></td><td>無強制硬體指標門檻</td><td>無強制硬體指標門檻</td><td>無強制門檻</td><td>單核 CPU + 基本奇偶校驗（車內照明、空調風門、娛樂資訊系統）</td></tr>
+      <tr><td><b>ASIL B</b></td><td><b>≥ 90%</b></td><td><b>≥ 60%</b></td><td><b>&lt; 100 FIT</b></td><td><b>單核或局部鎖步 + SECDED ECC + 問答看門狗 + 內建自檢</b>（12 V 電瓶感測 <b>PSoC™ 4 HVPA</b>、單顆角雷達/前雷達 <b>NXP SAF8544</b>、車身控制）</td></tr>
+      <tr><td><b>ASIL C</b></td><td><b>≥ 97%</b></td><td><b>≥ 80%</b></td><td><b>&lt; 100 FIT</b></td><td>高覆蓋率硬體診斷或雙通道監控（高壓動力電池主控制器 BCU、主動懸吊控制）</td></tr>
+      <tr><td><b>ASIL D</b></td><td><b>≥ 99%</b></td><td><b>≥ 90%</b></td><td><b>&lt; 10 FIT</b></td><td><b>全硬體雙核延遲鎖步（Delayed Lockstep）+ 外掛獨立安全 PMIC (SS1/SS2)</b>（線控轉向 EPS、煞車 ESP、ADAS 中央安全島 <b>AURIX™ TC39x/TC4x</b>）</td></tr>
+    </table></div>
+
+    <div class="callout" style="--c:var(--safety)"><b>關鍵系統觀念：既然自動緊急煞車（AEB）是 ASIL D，為什麼單顆雷達晶片（如 NXP SAF8544）只需做到 ASIL B？</b><br>這正是 <b>ISO 26262-9 的 ASIL 分解（ASIL Decomposition）</b>原則：一個 <b>ASIL D</b> 的安全目標，可以拆解為兩個<b>物理原理完全獨立、無共因失效（No Common Cause Failure）</b>的子通道——例如「<b>77 GHz 毫米波雷達（ASIL B(D)）</b>」加上「<b>前向視覺攝影機（ASIL B(D)）</b>」：\[\text{ASIL D} \;\longrightarrow\; \text{ASIL B(D)}_{\text{Radar}} \;+\; \text{ASIL B(D)}_{\text{Camera}}\]如此一來，車廠不需在保險桿四角塞入昂貴且高功耗的全鎖步 ASIL D 雷達晶片，只要讓多顆 <b>ASIL B</b> 的雷達與攝影機將點雲送回中央 <b>ASIL D 安全島（如 AURIX™ TC39x/TC4x）</b>進行異質交叉表決，整車就能以最佳成本達成 ASIL D！</div>
 
     <h2 id="delayed-lockstep">2. 雙核延遲鎖步（Delayed Lockstep）微架構與共模故障防護</h2>
     <p>在第 6 章我們算過 ISO 26262-5 的單點故障指標（SPFM）：<b>ASIL B 要求 \(\text{SPFM} \ge 90\%\)</b>，依靠記憶體 ECC、MPU 與問答看門狗即可達標；但 <b>ASIL D 要求 \(\text{SPFM} \ge 99\%\)、\(\text{LFM} \ge 90\%\)、\(\text{PMHF} < 10\,\text{FIT}\)</b>。CPU 內部的 ALU、暫存器檔、指令解碼器與管線控制邏輯包含數十萬個正反器（Flip-Flops），若單靠軟體周期性自檢（SBST），既無法攔截當下算錯的剎車指令，診斷涵蓋率也難以突破 99%。</p>
@@ -195,7 +213,7 @@
     </ul>
 
     <h2 id="radar-signal-chain">4. 77 GHz 毫米波雷達訊號鏈與硬體加速器（FMCW、2D-FFT 與 CFAR）</h2>
-    <p>在第 2 章中，HVPA 的類比訊號鏈處理的是 DC 到數 kHz 的分流器微伏訊號；而在 ADAS 的前向長距雷達與 4D 成像雷達（如 <b>TI AWR2944</b>、<b>NXP SAF8544</b> 與 <b>NXP S32R45</b>）中，MCU/SoC 面對的是 <b>76–81 GHz 調頻連續波（FMCW, Frequency-Modulated Continuous-Wave）</b>的高速數位訊號處理管線：</p>
+    <p>在第 2 章中，HVPA 的類比訊號鏈處理的是 DC 到數 kHz 的分流器微伏訊號；而在 ADAS 的前向長距雷達與 4D 成像雷達（如 <b>Infineon RASIC™ CTRX8191F + AURIX™ SPU</b>、<b>TI AWR2944</b>、<b>NXP SAF8544</b> 與 <b>NXP S32R45</b>）中，MCU/SoC 面對的是 <b>76–81 GHz 調頻連續波（FMCW, Frequency-Modulated Continuous-Wave）</b>的高速數位訊號處理管線：</p>
 
     <div class="math-block">
       <b>FMCW 差頻測距與多普勒測速基本公式：</b>
@@ -221,7 +239,7 @@
 
         <!-- Stage 2: Radar Cube & 1D/2D FFT Accelerator -->
         <rect x="220" y="45" width="215" height="190" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2"/>
-        <text class="ts" x="327" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--adas)">2. 雷達硬體加速器 (HWA / SPT)</text>
+        <text class="ts" x="327" y="72" text-anchor="middle" font-weight="700" font-size="12.5" fill="var(--adas)">2. 雷達硬體加速器 (SPU/SPT/HWA)</text>
         <rect x="234" y="86" width="187" height="40" rx="4" fill="var(--sunk)"/>
         <text class="ts t-mono" x="327" y="103" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--adas)">1D Range FFT (快時間維度)</text>
         <text class="ts t-mut" x="327" y="118" text-anchor="middle" font-size="9.5">解析拍頻 f_b &rarr; 目標距離 R</text>
@@ -268,28 +286,30 @@
         <text class="ts" x="420" y="276" text-anchor="middle" font-weight="700" font-size="11.5">為什麼通用 CPU 無法直接算雷達？ — 記憶體頻寬與確定性延遲瓶頸</text>
         <text class="ts t-mut" x="420" y="294" text-anchor="middle" font-size="10.5">單一雷達訊框（Radar Cube）即佔數 MB，每 20–50 ms 需完成數萬點 2D-FFT 與矩陣轉置，必須靠專用硬體加速器（HWA 2.1 / SPT 3.1）卸載。</text>
       </svg>
-      <figcaption>圖 7.3：77 GHz 毫米波雷達 SoC（TI AWR2944 / NXP SAF8544 / NXP S32R45）從中頻取樣、Radar Cube 2D-FFT、CFAR 到鎖步核目標追蹤之硬體管線</figcaption>
+      <figcaption>圖 7.3：77 GHz 毫米波雷達（Infineon AURIX™ SPU / TI AWR2944 / NXP SAF8544 &amp; S32R45）從中頻取樣、Radar Cube 2D-FFT、CFAR 到鎖步核目標追蹤之硬體管線</figcaption>
     </div>
 
     <ul>
       <li><b>Radar Cube（雷達資料立方體）與大容量片上 SRAM：</b>每根接收天線（RX）在單一 Chirp 內取樣數百點（快時間維度 Fast-Time），一個訊框包含上百個 Chirp（慢時間維度 Slow-Time），乘上多根虛擬天線通道（MIMO），形成數 MB 的三維複數陣列（Radar Cube）。這正是為何 TI AWR2944 內建高達 <b>4.5 MB RAM</b>、NXP SAF8544 內建 <b>&gt;5.5 MB SRAM</b>、NXP S32R45 內建 <b>8 MB SRAM</b>——若把 Radar Cube 放在片外 DRAM，匯流排頻寬與功耗都會成為瓶頸。</li>
-      <li><b>1D / 2D-FFT 硬體加速器（TI HWA 2.1 / NXP SPT 3.4 &amp; 3.1）：</b>硬體加速器直接從 Radar Cube 讀取資料，先對每個 Chirp 做 <b>1D Range FFT</b> 解出距離，完成硬體矩陣轉置（Corner Turn）後，再跨 Chirp 做 <b>2D Doppler FFT</b> 解出相對速度，並支援資料壓縮以節省 L3 RAM 空間。</li>
+      <li><b>1D / 2D-FFT 硬體加速器（Infineon SPU / NXP SPT 3.4 &amp; 3.1 / TI HWA 2.1）：</b>硬體加速器直接從 Radar Cube 讀取資料，先對每個 Chirp 做 <b>1D Range FFT</b>（例如 AURIX SPU 支援 8–2048 點 FFT 與硬體加窗）解出距離，完成硬體矩陣轉置（Corner Turn）後，再跨 Chirp 做 <b>2D Doppler FFT</b> 解出相對速度，並支援資料壓縮以節省 L3 RAM 空間。</li>
       <li><b>CFAR（恆虛警率檢測，Constant False Alarm Rate）：</b>路面上充滿護欄、地面雜波與雨霧干擾，固定門檻會導致大量誤煞車（False Positive）。硬體加速器內建 <b>CA-CFAR（單元平均）</b>或 <b>OS-CFAR（有序統計）</b>引擎，即時計算待測格（Cell Under Test）周圍參考格的局部雜訊功率並動態墊高門檻，將有效點雲（Point Cloud）交給 DSP（C66x / BBE32EP）與鎖步 Cortex-R5F/M7 進行角度估計（AoA）與卡爾曼濾波追蹤。</li>
     </ul>
 
-    <h3 id="radar-soc-comparison">雷達處理器深度對決：NXP SAF8544 vs. TI AWR2944 vs. NXP S32R45</h3>
-    <p>在毫米波雷達晶片選型中，工程師最常需要在<b>「RFCMOS 單晶片整合 SoC（NXP SAF8544 vs. TI AWR2944）」</b>與<b>「多晶片級聯 4D 成像雷達處理器（NXP S32R45）」</b>之間做出取捨：</p>
+    <h3 id="radar-soc-comparison">四大車用雷達方案對決：Infineon (RASIC™ + AURIX™) vs. NXP (SAF8544 / S32R45) vs. TI (AWR2944)</h3>
+    <p>Infineon、NXP 與 TI 三大車用半導體廠在 77 GHz 雷達市場採取了截然不同的架構路線：<b>Infineon 主打「高階雙晶片/級聯（RASIC™ CTRX8191F 射頻 MMIC + 內建 SPU/PPU 的 AURIX™ ASIL D 鎖步 MCU）」</b>，而 <b>NXP 則同時佈局「28 nm 單晶片 SoC（SAF8544）」與「4D 成像雷達專用 MPU（S32R45 + TEF82xx）」</b>：</p>
 
     <div class="tblwrap"><table>
-      <tr><th>比較項目</th><th><b>NXP SAF8544</b><br>（28 nm RFCMOS 單晶片雷達 SoC）</th><th><b>TI AWR2944</b><br>（RFCMOS 單晶片雷達 SoC）</th><th><b>NXP S32R45</b><br>（4D 成像雷達專用 MPU）</th></tr>
-      <tr><td><b>晶片定位与製程</b></td><td><b>28 nm RFCMOS 單晶片</b>（射頻 + 基頻 + MCU 全整合，模組體積縮小約 30%）</td><td><b>RFCMOS 單晶片</b>（整合 76–81 GHz 射頻收發器與數位處理器）</td><td><b>純數位雷達 MPU</b>（不規則大陣列，透過 MIPI CSI-2 級聯多顆外掛 TEF82xx 射頻晶片）</td></tr>
-      <tr><td><b>RF 天線通道</b></td><td>片內整合 <b>4 TX / 4 RX</b>（支援 4×4 MIMO 與 7-bit 相位旋轉器）</td><td>片內整合 <b>4 TX / 4 RX</b>（支援 PCB 或 Launch-on-Package 波導天線）</td><td>無片內 RF；常見級聯 3–4 顆 3T4R 收發器構成 <b>12 TX / 16 RX（192 虛擬通道）</b></td></tr>
-      <tr><td><b>應用與安全 CPU</b></td><td><b>Arm Cortex-A53</b>（追蹤/分類）+ <b>Lockstep Cortex-M7</b>（AUTOSAR / 即時控制，~320 MHz）</td><td><b>雙核 Lockstep Arm Cortex-R5F</b> @ 300 MHz（即時追蹤與安全通訊）</td><td><b>4× Cortex-A53</b> @ 800 MHz + <b>3× Lockstep Cortex-M7</b> @ 400 MHz</td></tr>
-      <tr><td><b>雷達加速與 DSP</b></td><td><b>SPT 3.4</b> 雷達加速器 + <b>Tensilica BBE32EP 向量 DSP</b></td><td><b>HWA 2.1</b> 雷達加速器 + <b>TI C66x 浮點/定點 DSP</b> @ 360 MHz</td><td><b>SPT 3.1</b> 雷達加速器 + <b>LAX 線性代數加速器</b>（搭配 BBE32 DSP）</td></tr>
-      <tr><td><b>片上記憶體 (Radar Cube)</b></td><td><b>&gt;5.5 MB</b> 片上共享 SRAM（附 ECC）</td><td>最高 <b>4.5 MB</b> 片上共享 RAM（L1/L2/L3）</td><td><b>8 MB</b> 片上 SRAM（ECC）+ 外接高速 LPDDR4</td></tr>
-      <tr><td><b>安全、資安與耐溫</b></td><td>ISO 26262 <b>ASIL B (SEooC)</b>、HSE-M 資安引擎、AEC-Q100 Grade 1（\(T_J\) −40…+150 °C）</td><td>針對 <b>ASIL B / ASIL D</b> 系統安全機制設計、硬體 HSM、AEC-Q100</td><td>ISO 26262 <b>ASIL B(D) / ASIL D</b>、HSE 資安引擎、AEC-Q100 Grade 1</td></tr>
-      <tr><td><b>典型應用場景</b></td><td>超小型智慧角雷達、前向雷達，或透過千兆乙太網串流原始 FFT 資料的<b>衛星雷達頭（Satellite Radar）</b></td><td>高性價比 4T4R 角雷達（盲點偵測 BSD、變道輔助）與前向中長距雷達</td><td>高解析度 <b>4D 成像前向主雷達</b>（同時解算距離、速度、方位角與俯仰高度角）</td></tr>
+      <tr><th>比較項目</th><th><b>Infineon RASIC™ CTRX8191F + AURIX™ TC3xx/TC4x</b></th><th><b>NXP SAF8544</b><br>（28 nm RFCMOS 單晶片 SoC）</th><th><b>TI AWR2944</b><br>（RFCMOS 單晶片 SoC）</th><th><b>NXP S32R45 + TEF82xx</b><br>（4D 成像雷達 MPU 套片）</th></tr>
+      <tr><td><b>晶片定位與製程</b></td><td><b>28 nm CMOS 射頻 MMIC (CTRX8191F) + ASIL D 雷達 MCU</b>（雙晶片或級聯 8T8R/16T16R）</td><td><b>28 nm RFCMOS 單晶片</b>（射頻 + 基頻 + MCU 全整合，模組體積縮小約 30%）</td><td><b>RFCMOS 單晶片</b>（整合 76–81 GHz 射頻收發器與數位處理器）</td><td><b>純數位雷達 MPU</b>（透過 MIPI CSI-2 級聯多顆外掛 TEF82xx 射頻晶片）</td></tr>
+      <tr><td><b>RF 天線通道與特色</b></td><td>CTRX8191F 具 <b>4 TX / 4 RX</b>（數位 PLL 飛回時間 &lt;1 µs，高訊噪比，可多顆級聯）</td><td>片內整合 <b>4 TX / 4 RX</b>（支援 4×4 MIMO 與 7-bit 相位旋轉器）</td><td>片內整合 <b>4 TX / 4 RX</b>（支援 PCB 或 Launch-on-Package 波導天線）</td><td>無片內 RF；常見級聯 3–4 顆 3T4R 收發器構成 <b>12 TX / 16 RX（192 虛擬通道）</b></td></tr>
+      <tr><td><b>應用與安全 CPU</b></td><td>最高 <b>6× TriCore™</b>（300–500 MHz，<b>4–6 核全 Delayed Lockstep</b>）</td><td><b>Arm Cortex-A53</b>（追蹤/分類）+ <b>Lockstep Cortex-M7</b>（AUTOSAR / 即時控制，~320 MHz）</td><td><b>雙核 Lockstep Arm Cortex-R5F</b> @ 300 MHz（即時追蹤與安全通訊）</td><td><b>4× Cortex-A53</b> @ 800 MHz + <b>3× Lockstep Cortex-M7</b> @ 400 MHz</td></tr>
+      <tr><td><b>雷達加速與 DSP</b></td><td><b>SPU（訊號處理單元，8–2048 點 FFT + CA/GOS-CFAR）</b>+ TC4x 新增 <b>PPU 向量 DSP/AI 加速器</b></td><td><b>SPT 3.4</b> 雷達加速器 + <b>Tensilica BBE32EP 向量 DSP</b></td><td><b>HWA 2.1</b> 雷達加速器 + <b>TI C66x 浮點/定點 DSP</b> @ 360 MHz</td><td><b>SPT 3.1</b> 雷達加速器 + <b>LAX 線性代數加速器</b>（搭配 BBE32 DSP）</td></tr>
+      <tr><td><b>片上記憶體</b></td><td>高達 <b>6.9 MB – 20+ MB SRAM</b>（依 TC39x / TC49x 型號，具完整 ECC + EMEM 雷達專用記憶體）</td><td><b>&gt;5.5 MB</b> 片上共享 SRAM（附 ECC）</td><td>最高 <b>4.5 MB</b> 片上共享 RAM（L1/L2/L3）</td><td><b>8 MB</b> 片上 SRAM（ECC）+ 外接高速 LPDDR4</td></tr>
+      <tr><td><b>功能安全與資安</b></td><td>MCU 原生達最高 <b>ISO 26262 ASIL D</b>、內建 HSM / CSRM 資安模組</td><td>ISO 26262 <b>ASIL B (SEooC)</b>、HSE-M 資安引擎、AEC-Q100 Grade 1（\(T_J\) −40…+150 °C）</td><td>針對 <b>ASIL B / ASIL D</b> 系統安全機制設計、硬體 HSM、AEC-Q100</td><td>ISO 26262 <b>ASIL B(D) / ASIL D</b>、HSE 資安引擎、AEC-Q100 Grade 1</td></tr>
+      <tr><td><b>典型應用場景</b></td><td>需要 <b>單模組原生 ASIL D</b> 的前向主雷達、4D 成像雷達，或同時兼任雷達處理與 ADAS 區域控制</td><td>超小型智慧角雷達、前向雷達，或透過千兆乙太網串流原始 FFT 資料的<b>衛星雷達頭（Satellite Radar）</b></td><td>高性價比 4T4R 角雷達（盲點偵測 BSD、變道輔助）與前向中長距雷達</td><td>高解析度 <b>4D 成像前向主雷達</b>（同時解算距離、速度、方位角與俯仰高度角）</td></tr>
     </table></div>
+
+    <div class="callout" style="--c:var(--adas)"><b>Infineon vs. NXP 車用產品線核心差異總結：</b><br>1. <b>處理器架構哲學：</b><b>Infineon AURIX™</b> 堅持自主研發的 <b>TriCore™ 架構</b>（將 RISC 處理器、MCU 即時中斷控制與 DSP 指令集三合一），並內建高達 16–24 MB 的車規 eFlash/RRAM 非揮發性記憶體，強調<b>「單晶片原生 ASIL D 強時序確定性控制」</b>；而 <b>NXP S32 / SAF85xx</b> 則全面擁抱 <b>Arm® 生態系（Cortex-A53 跑 Linux/高階追蹤 + Lockstep Cortex-M7 跑 AUTOSAR 安全控制）</b>，跨產品線軟體重用度極高。<br>2. <b>雷達整合路線：</b><b>NXP SAF8544</b> 將 28 nm 77 GHz 4T4R 射頻與處理器塞進同一顆 RFCMOS 單晶片（極致縮小角雷達體積）；<b>Infineon</b> 則透過 <b>RASIC™ CTRX8191F（純射頻 28 nm CMOS MMIC）+ AURIX™（內建 SPU/PPU 的雷達安全 MCU）</b> 的分離/級聯組合，讓射頻晶片專注於最高發射功率與最低雜訊指數，而數位端直接具備 <b>ASIL D</b> 安全等級與大容量快閃記憶體。</div>
 
     <h2 id="adas-networking">5. 高速安全通訊與分區架構：CAN FD、CAN XL 與車載乙太網 TSN</h2>
     <p>在第 3 章中，電池感測器透過 20 kbit/s 的單線 <b>LIN 2.2A</b> 每秒回報一次電瓶狀態即可；但 ADAS 雷達點雲、感測器融合與線控底盤指令要求極高頻寬、微秒級確定性延遲（Deterministic Latency）與端到端功能安全保護：</p>
