@@ -65,7 +65,7 @@
       <tr><td><b>QM / ASIL A</b></td><td>無強制硬體指標門檻</td><td>無強制硬體指標門檻</td><td>無強制門檻</td><td>單核 CPU + 基本奇偶校驗（車內照明、空調風門、娛樂資訊系統）</td></tr>
       <tr><td><b>ASIL B</b></td><td><b>≥ 90%</b></td><td><b>≥ 60%</b></td><td><b>&lt; 100 FIT</b></td><td><b>單核或局部鎖步 + SECDED ECC + 問答看門狗 + 內建自檢</b>（12 V 電瓶感測 <b>PSoC™ 4 HVPA</b>、單顆角雷達/前雷達 <b>NXP SAF8544</b>、車身控制）</td></tr>
       <tr><td><b>ASIL C</b></td><td><b>≥ 97%</b></td><td><b>≥ 80%</b></td><td><b>&lt; 100 FIT</b></td><td>高覆蓋率硬體診斷或雙通道監控（高壓動力電池主控制器 BCU、主動懸吊控制）</td></tr>
-      <tr><td><b>ASIL D</b></td><td><b>≥ 99%</b></td><td><b>≥ 90%</b></td><td><b>&lt; 10 FIT</b></td><td><b>全硬體雙核延遲鎖步（Delayed Lockstep）+ 外掛獨立安全 PMIC (SS1/SS2)</b>（線控轉向 EPS、煞車 ESP、ADAS 中央安全島 <b>AURIX™ TC39x/TC4x</b>）</td></tr>
+      <tr><td><b>ASIL D</b></td><td><b>≥ 99%</b></td><td><b>≥ 90%</b></td><td><b>&lt; 10 FIT</b></td><td><b>全硬體雙核延遲鎖步（Delayed Lockstep）+ 外掛獨立安全 PMIC (SS1/SS2 或 FS0b)</b>（線控轉向 EPS、煞車 ESP、ADAS 中央安全島：<b>Infineon AURIX™ TC39x/TC4x</b>、<b>NXP S32G3 / S32K3 / S32Z2 / S32R45</b>）</td></tr>
     </table></div>
 
     <div class="callout" style="--c:var(--safety)"><b>關鍵系統觀念：既然自動緊急煞車（AEB）是 ASIL D，為什麼單顆雷達晶片（如 NXP SAF8544）只需做到 ASIL B？</b><br>這正是 <b>ISO 26262-9 的 ASIL 分解（ASIL Decomposition）</b>原則：一個 <b>ASIL D</b> 的安全目標，可以拆解為兩個<b>物理原理完全獨立、無共因失效（No Common Cause Failure）</b>的子通道——例如「<b>77 GHz 毫米波雷達（ASIL B(D)）</b>」加上「<b>前向視覺攝影機（ASIL B(D)）</b>」：\[\text{ASIL D} \;\longrightarrow\; \text{ASIL B(D)}_{\text{Radar}} \;+\; \text{ASIL B(D)}_{\text{Camera}}\]如此一來，車廠不需在保險桿四角塞入昂貴且高功耗的全鎖步 ASIL D 雷達晶片，只要讓多顆 <b>ASIL B</b> 的雷達與攝影機將點雲送回中央 <b>ASIL D 安全島（如 AURIX™ TC39x/TC4x）</b>進行異質交叉表決，整車就能以最佳成本達成 ASIL D！</div>
@@ -309,7 +309,20 @@
       <tr><td><b>典型應用場景</b></td><td>需要 <b>單模組原生 ASIL D</b> 的前向主雷達、4D 成像雷達，或同時兼任雷達處理與 ADAS 區域控制</td><td>超小型智慧角雷達、前向雷達，或透過千兆乙太網串流原始 FFT 資料的<b>衛星雷達頭（Satellite Radar）</b></td><td>高性價比 4T4R 角雷達（盲點偵測 BSD、變道輔助）與前向中長距雷達</td><td>高解析度 <b>4D 成像前向主雷達</b>（同時解算距離、速度、方位角與俯仰高度角）</td></tr>
     </table></div>
 
-    <div class="callout" style="--c:var(--adas)"><b>Infineon vs. NXP 車用產品線核心差異總結：</b><br>1. <b>處理器架構哲學：</b><b>Infineon AURIX™</b> 堅持自主研發的 <b>TriCore™ 架構</b>（將 RISC 處理器、MCU 即時中斷控制與 DSP 指令集三合一），並內建高達 16–24 MB 的車規 eFlash/RRAM 非揮發性記憶體，強調<b>「單晶片原生 ASIL D 強時序確定性控制」</b>；而 <b>NXP S32 / SAF85xx</b> 則全面擁抱 <b>Arm® 生態系（Cortex-A53 跑 Linux/高階追蹤 + Lockstep Cortex-M7 跑 AUTOSAR 安全控制）</b>，跨產品線軟體重用度極高。<br>2. <b>雷達整合路線：</b><b>NXP SAF8544</b> 將 28 nm 77 GHz 4T4R 射頻與處理器塞進同一顆 RFCMOS 單晶片（極致縮小角雷達體積）；<b>Infineon</b> 則透過 <b>RASIC™ CTRX8191F（純射頻 28 nm CMOS MMIC）+ AURIX™（內建 SPU/PPU 的雷達安全 MCU）</b> 的分離/級聯組合，讓射頻晶片專注於最高發射功率與最低雜訊指數，而數位端直接具備 <b>ASIL D</b> 安全等級與大容量快閃記憶體。</div>
+    <h3 id="infineon-vs-nxp">Infineon（英飛凌）vs. NXP（恩智浦）車用與 ADAS 全產品線對照表</h3>
+    <p><b>NXP 當然也有完整的 ISO 26262 ASIL D 產品線！</b>前面提到的 <b>NXP SAF8544</b> 之所以是 <b>ASIL B</b>，是因為它定位於「單顆 28 nm RFCMOS 角雷達 / 前雷達邊緣感測器」（等同於 Infineon PSoC™ 4 HVPA-144K 在電瓶端屬於 ASIL B 硬體指標）；而在中央安全島、車載網關、底盤控制、BMS 主控與 4D 成像雷達領域，NXP 的 <b>S32G、S32K3、S32Z/E 與 S32R45</b> 以及安全電源 <b>FS85/FS86</b> 全部都是原生 <b>ISO 26262 ASIL D</b> 等級。下表完整對照兩大廠的設計哲學與對應型號：</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>比較維度 / 產品層級</th><th><b>Infineon（英飛凌）</b></th><th><b>NXP（恩智浦）</b></th></tr>
+      <tr><td><b>CPU 核心微架構哲學</b></td><td><b>自主研發 TriCore™ 架構</b>（將 RISC 處理器 + 即時 MCU 中斷控制 + DSP 指令集三合一），強調<b>極致的硬體確定性延遲</b>（高階邊緣控制另用 Arm Cortex-M）</td><td><b>全面統一採用 Arm® 標準核心</b>（Cortex-A53 跑 Linux/高階應用 + Lockstep Cortex-M7 / R52 跑 AUTOSAR 安全控制），強調<b>跨平台軟體生態重用</b></td></tr>
+      <tr><td><b>記憶體架構路線</b></td><td>AURIX™ 堅持內建大容量 <b>16–24 MB 車規 eFlash / RRAM</b>（不需外掛 Flash 即可跑完整套安全韌體與 OTA A/B 雙分區）</td><td>S32K3 內建 eFlash（最高 8 MB）；高階 S32G / S32R45 / SAF8544 則採 <b>大容量片上 SRAM（5.5–64 MB）+ 外掛 Flash/LPDDR4</b> 以最佳化先進製程面積</td></tr>
+      <tr><td><b>ADAS 安全島 / 域控與網關<br>（ISO 26262 ASIL D）</b></td><td><b>AURIX™ TC39x / TC49x</b>（6× TriCore™ 300–500 MHz，4–6 核 Delayed Lockstep + PPU 向量加速器，<b>原生 ASIL D</b>）</td><td><b>S32G2 / S32G3</b>（最高 8× Cortex-A53 + 4× 雙核 Lockstep Cortex-M7 + LLCE 通訊加速器，<b>原生 ASIL D</b>）與 <b>S32Z2 / S32E2</b>（8× Split-Lock Cortex-R52，<b>ASIL D</b>）</td></tr>
+      <tr><td><b>動力底盤 / BMS 主控 / 區域控制<br>（ISO 26262 ASIL D）</b></td><td><b>AURIX™ TC36x / TC37x / TC38x</b> 與 <b>TRAVEO™ T2G</b>（ASIL B/D）</td><td><b>S32K3 系列（如 S32K344 / S32K358 / S32K388 / S32K396）</b>（Lockstep Cortex-M7，<b>原生 ASIL D</b>）</td></tr>
+      <tr><td><b>77 GHz 單晶片角雷達 / 前雷達<br>（ISO 26262 ASIL B / B(D)）</b></td><td><b>RASIC™ RXS8160 / CTRX8191F</b>（28 nm 4T4R 純射頻 MMIC）+ <b>AURIX™ TC33x/TC35x</b>（雙晶片方案，MCU 端可達 ASIL D）</td><td><b>SAF8544 (SAF85xx)</b>：<b>28 nm RFCMOS 單晶片 4T4R SoC</b>（射頻 + SPT 3.4 + BBE32EP + A53/Lockstep M7 全合一，<b>ASIL B SEooC</b>）</td></tr>
+      <tr><td><b>4D 成像雷達處理器<br>（ISO 26262 ASIL B(D) / ASIL D）</b></td><td><b>AURIX™ TC397XX / TC45x / TC49x</b>（內建 <b>SPU 2.0 + PPU</b>，級聯多顆 CTRX8191F，<b>原生 ASIL D</b>）</td><td><b>S32R45</b>（內建 <b>SPT 3.1 + LAX 線性代數加速器</b> + 4× A53 + <b>3× Lockstep Cortex-M7</b>，級聯多顆 TEF82xx，<b>ASIL B(D) / ASIL D</b>）</td></tr>
+      <tr><td><b>外掛 ASIL D 安全電源 PMIC</b></td><td><b>OPTIREG™ TLF35584 / TLF4D985</b>（WWD+FWD 雙看門狗、FSP `ERR` 監控、<b>`SS1` / `SS2` 安全關斷輸出，ASIL D</b>）</td><td><b>VR5510 / FS85 / FS86 / PF502x</b>（視窗/問答看門狗、FCCU 雙線故障監控、<b>`FS0b` / `PGOOD` 硬體安全關斷輸出，ASIL D</b>）</td></tr>
+      <tr><td><b>12 V 高壓精密類比邊緣節點<br>（ISO 26262 ASIL B）</b></td><td><b>PSoC™ 4 HVPA-144K</b>（Cortex-M0+ + 42 V LDO + 雙 \(\Delta\Sigma\) ADC + LIN，ASIL C 流程 / <b>ASIL B 硬體指標</b>）</td><td><b>S12ZVM / S32K1 + MM9Z1_638</b>（MCU + 高壓類比/LIN 雙晶粒封裝或分離方案，<b>ASIL B</b>）</td></tr>
+    </table></div>
 
     <h2 id="adas-networking">5. 高速安全通訊與分區架構：CAN FD、CAN XL 與車載乙太網 TSN</h2>
     <p>在第 3 章中，電池感測器透過 20 kbit/s 的單線 <b>LIN 2.2A</b> 每秒回報一次電瓶狀態即可；但 ADAS 雷達點雲、感測器融合與線控底盤指令要求極高頻寬、微秒級確定性延遲（Deterministic Latency）與端到端功能安全保護：</p>
