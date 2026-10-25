@@ -61,11 +61,11 @@
     </ul>
 
     <div class="tblwrap"><table>
-      <tr><th>ISO 26262 等級</th><th>單點故障指標 (SPFM)</th><th>潛伏故障指標 (LFM)</th><th>隨機硬體失效率 (PMHF)</th><th>典型硬體微架構成本與車用代表場景</th></tr>
-      <tr><td><b>QM / ASIL A</b></td><td>無強制硬體指標門檻</td><td>無強制硬體指標門檻</td><td>無強制門檻</td><td>單核 CPU + 基本奇偶校驗（車內照明、空調風門、娛樂資訊系統）</td></tr>
-      <tr><td><b>ASIL B</b></td><td><b>≥ 90%</b></td><td><b>≥ 60%</b></td><td><b>&lt; 100 FIT</b></td><td><b>單核或局部鎖步 + SECDED ECC + 問答看門狗 + 內建自檢</b>（12 V 電瓶感測 <b>PSoC™ 4 HVPA</b>、單顆角雷達/前雷達 <b>NXP SAF8544</b>、車身控制）</td></tr>
-      <tr><td><b>ASIL C</b></td><td><b>≥ 97%</b></td><td><b>≥ 80%</b></td><td><b>&lt; 100 FIT</b></td><td>高覆蓋率硬體診斷或雙通道監控（高壓動力電池主控制器 BCU、主動懸吊控制）</td></tr>
-      <tr><td><b>ASIL D</b></td><td><b>≥ 99%</b></td><td><b>≥ 90%</b></td><td><b>&lt; 10 FIT</b></td><td><b>全硬體雙核延遲鎖步（Delayed Lockstep）+ 外掛獨立安全 PMIC (SS1/SS2 或 FS0b)</b>（線控轉向 EPS、煞車 ESP、ADAS 中央安全島：<b>Infineon AURIX™ TC39x/TC4x</b>、<b>NXP S32G3 / S32K3 / S32Z2 / S32R45</b>）</td></tr>
+      <tr><th>ISO 26262 等級</th><th>單點故障涵蓋率 (SPFM)</th><th>潛伏故障涵蓋率 (LFM)</th><th>隨機失效率 (PMHF)</th><th>晶片需要什麼硬體設計與成本？</th><th>代表晶片與車用場景</th></tr>
+      <tr><td><b>QM / ASIL A</b></td><td>無強制硬體門檻</td><td>無強制硬體門檻</td><td>無強制門檻</td><td>單核 CPU + 基本奇偶校驗（成本最低）</td><td>車內照明、空調風門、一般娛樂資訊系統</td></tr>
+      <tr><td><b>ASIL B</b></td><td><b>≥ 90%</b></td><td><b>≥ 60%</b></td><td><b>&lt; 100 FIT</b></td><td><b>單核（或局部鎖步）+ SRAM/Flash ECC + 問答看門狗 + BIST</b>（面積小、省電、成本適中）</td><td>12 V 電瓶感測器 <b>PSoC™ 4 HVPA-144K</b>、單晶片角雷達/前雷達 <b>NXP SAF8544</b>、車身控制</td></tr>
+      <tr><td><b>ASIL C</b></td><td><b>≥ 97%</b></td><td><b>≥ 80%</b></td><td><b>&lt; 100 FIT</b></td><td>高涵蓋率雙通道類比診斷或局部硬體冗餘</td><td>高壓動力電池主控 BCU、主動懸吊控制</td></tr>
+      <tr><td><b>ASIL D</b></td><td><b>≥ 99%</b></td><td><b>≥ 90%</b></td><td><b>&lt; 10 FIT</b></td><td><b>全硬體雙核延遲鎖步（Delayed Lockstep）+ 外掛獨立安全 PMIC（SS1/SS2 或 FS0b）</b>（邏輯面積與功耗加倍）</td><td>線控轉向 EPS、煞車 ESP、ADAS 安全島 <b>Infineon AURIX™ TC39x/TC4x</b>、<b>NXP S32G3 / S32K3 / S32Z2 / S32R45</b></td></tr>
     </table></div>
 
     <div class="callout" style="--c:var(--safety)"><b>關鍵系統觀念：既然自動緊急煞車（AEB）是 ASIL D，為什麼單顆雷達晶片（如 NXP SAF8544）只需做到 ASIL B？</b><br>這正是 <b>ISO 26262-9 的 ASIL 分解（ASIL Decomposition）</b>原則：一個 <b>ASIL D</b> 的安全目標，可以拆解為兩個<b>物理原理完全獨立、無共因失效（No Common Cause Failure）</b>的子通道——例如「<b>77 GHz 毫米波雷達（ASIL B(D)）</b>」加上「<b>前向視覺攝影機（ASIL B(D)）</b>」：\[\text{ASIL D} \;\longrightarrow\; \text{ASIL B(D)}_{\text{Radar}} \;+\; \text{ASIL B(D)}_{\text{Camera}}\]如此一來，車廠不需在保險桿四角塞入昂貴且高功耗的全鎖步 ASIL D 雷達晶片，只要讓多顆 <b>ASIL B</b> 的雷達與攝影機將點雲送回中央 <b>ASIL D 安全島（如 AURIX™ TC39x/TC4x）</b>進行異質交叉表決，整車就能以最佳成本達成 ASIL D！</div>
