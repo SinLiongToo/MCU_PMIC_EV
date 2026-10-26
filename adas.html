@@ -35,7 +35,7 @@
     <div class="eyebrow">Chapter 07 · ADAS &amp; Safety Domain MCUs</div>
     <h1>ADAS 與鎖步安全 MCU：從延遲鎖步核、外掛安全 PMIC 到 77 GHz 雷達訊號鏈</h1>
     <p class="lead">前六章剖析的 <b>Infineon PSoC™ 4 HVPA-144K</b> 代表車身與電瓶極柱上的「高壓精密類比邊緣感測節點（ASIL B 硬體指標）」。當場景轉向 <b>ADAS（先進駕駛輔助系統）</b> 的自動緊急煞車（AEB）、線控轉向仲裁與 77 GHz 毫米波雷達時，微控制器架構產生了本質躍遷：單核轉為<b>雙核延遲鎖步（Delayed Lockstep，ASIL D）</b>、片內 LDO 轉為<b>外掛獨立安全 PMIC（如 OPTIREG™ TLF35584）</b>，而低頻 \(\Delta\Sigma\) 濾波器則換成了高吞吐量的 <b>2D-FFT 與 CFAR 雷達硬體加速器</b>。</p>
-    <p class="src">晶片規格出處：Infineon PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K、Infineon AURIX™ TC39x / TC4x 與 RASIC™ CTRX8191F 資料手冊、Infineon OPTIREG™ PMIC TLF35584 Datasheet、TI AWR2944 Datasheet、NXP SAF8544 (SAF85xx) 與 S32R45 資料手冊；標準出處：ISO 26262-5:2018、ISO 26262-9:2018、AUTOSAR E2E、IEEE 802.1Qbv。圖 7.1–7.3 為架構原理示意圖。</p>
+    <p class="src">晶片規格出處：Infineon PSoC™ 4 HVPA-144K Datasheet 002-28660 Rev. *K、Infineon AURIX™ TC39x / TC4x 與 RASIC™ CTRX8191F 資料手冊、Infineon OPTIREG™ PMIC TLF35584 Datasheet、TI AWR2944 Datasheet、NXP SAF8544 (SAF85xx) 與 S32R45 資料手冊；標準出處：ISO 26262-5:2018、ISO 26262-9:2018、AUTOSAR E2E、IEEE 802.1Qbv。圖 7.1–7.4 為架構原理示意圖。</p>
 
     <h2 id="adas-spectrum">1. 車用 MCU 光譜：BMS 邊緣感測節點 vs. ADAS 安全域與雷達 MCU</h2>
     <p>現代區域電子電氣架構（Zonal E/E Architecture）將車用計算分為末端感測節點、專用感測器處理 SoC 與中央安全島（Safety Island）。即使是搭載數百 TOPS AI 算力的自動駕駛主晶片（如 NVIDIA Orin 或 Qualcomm Ride），在板端仍必須配置一顆通過 <b>ISO 26262 ASIL D</b> 的安全微控制器（如 <b>Infineon AURIX™ TC39x / TC4x</b>），負責感測器融合表決、看門狗監控與底盤致動器安全仲裁。</p>
@@ -88,6 +88,170 @@
       <li><b>趨勢 4：從 L2「Fail-Safe（故障即斷電）」邁向 L3+「Fail-Operational（故障後繼續安全運作）」：</b>L2 輔助駕駛遇到故障可直接透過 PMIC 的 `SS1/SS2` 或 `FS0b` 切斷致動器並交還人類駕駛；但在 L3/L4 自動駕駛與線控轉向（Steer-by-Wire）中，人類無法瞬間接手，架構必須升級為<b>雙通道異質冗餘（2× ASIL D 或 ASIL D + ASIL B 降級備援通道 + 雙安全 PMIC）</b>，在主通道故障時無縫執行最小風險操作（MRM）安全靠邊停車。</li>
       <li><b>趨勢 5：AI / NPU 與 ASIL D 安全島的「Doer / Checker」分工（ISO/PAS 8800）：</b>深度神經網路（CNN/Transformer）屬於機率型黑盒子，難以直接滿足決定論的 ASIL D（SPFM ≥ 99%）。因此產業標準做法是由高算力 <b>AI SoC（QM / ASIL B）擔任 Doer（規劃軌跡）</b>，再由板載 <b>ASIL D 鎖步安全 MCU 擔任 Checker（以物理安全包絡線驗證軌跡並掌管底盤致動器）</b>。</li>
     </ul>
+
+    <h3 id="vehicle-mcu-pmic-radar-map">整車俯視架構圖：全車 MCU、安全 PMIC 與 77 GHz 雷達互連拓撲</h3>
+    <p>將上述「邊緣 ASIL B 感測衛星 + 中央 ASIL D 安全島 + 外掛安全 PMIC 硬體關斷」放到一輛現代智慧電動車的俯視底盤上，可以清楚看出各顆 MCU、PMIC 與 77 GHz 雷達在車上的物理位置與匯流排互連關係：</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 880 545" role="img" aria-label="整車俯視架構圖：全車 MCU、外掛安全 PMIC、12V 電瓶感測與 77 GHz 毫米波雷達互連拓撲">
+        <!-- Direction Headers -->
+        <text class="ts" x="120" y="24" font-weight="700" font-size="11.5" fill="var(--adas)">&#9664; 車頭前方 FRONT（77 GHz 雷達波束 + 前視相機異質融合）</text>
+        <text class="ts" x="800" y="24" text-anchor="end" font-weight="700" font-size="11.5" fill="var(--core)">車尾 REAR（BSD 盲點雷達 + 800V 電驅） &#9654;</text>
+
+        <!-- 4 Vehicle Wheels -->
+        <rect x="220" y="38" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+        <rect x="625" y="38" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+        <rect x="220" y="444" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+        <rect x="625" y="444" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+
+        <!-- Vehicle Chassis Silhouette & Cabin Roof -->
+        <rect x="120" y="56" width="685" height="388" rx="64" fill="var(--sunk)" stroke="var(--line)" stroke-width="2.5" stroke-dasharray="8 4"/>
+        <rect x="265" y="142" width="355" height="216" rx="24" fill="none" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+        <!-- 77 GHz Radar Beams (Arcs) -->
+        <path d="M 10 184 A 32 32 0 0 0 10 230" fill="none" stroke="var(--adas)" stroke-width="2.2" opacity="0.8"/>
+        <path d="M 3 172 A 46 46 0 0 0 3 242" fill="none" stroke="var(--adas)" stroke-width="1.6" opacity="0.5"/>
+        <path d="M 134 95 A 28 28 0 0 1 164 62" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+        <path d="M 134 405 A 28 28 0 0 0 164 438" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+        <path d="M 786 62 A 28 28 0 0 1 814 95" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+        <path d="M 786 438 A 28 28 0 0 0 814 405" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+
+        <!-- Interconnect Wiring (drawn before nodes for clean layering) -->
+        <!-- Front 4D Radar & Camera to Central ECU -->
+        <line x1="214" y1="200" x2="275" y2="200" stroke="var(--adas)" stroke-width="2.8"/>
+        <text class="ts t-mono" x="244" y="191" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--adas)">Eth/CSI2</text>
+        <line x1="214" y1="300" x2="275" y2="300" stroke="var(--fab)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="244" y="291" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--fab)">GMSL2</text>
+
+        <!-- 4 Corner Radars to Central ECU -->
+        <line x1="235" y1="132" x2="310" y2="156" stroke="var(--adas)" stroke-width="2.2"/>
+        <line x1="235" y1="368" x2="310" y2="344" stroke="var(--adas)" stroke-width="2.2"/>
+        <line x1="660" y1="132" x2="580" y2="156" stroke="var(--adas)" stroke-width="2.2"/>
+        <line x1="660" y1="368" x2="580" y2="344" stroke="var(--adas)" stroke-width="2.2"/>
+
+        <!-- 12V Battery IBS to Central ECU -->
+        <line x1="452" y1="136" x2="452" y2="156" stroke="var(--analog)" stroke-width="2.2" stroke-dasharray="4 2"/>
+        <text class="ts t-mono" x="505" y="150" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--analog)">LIN 2.2A + 12V</text>
+
+        <!-- Central ECU to Chassis EPS/ESP (Safety Cutoff SS1/SS2 + CAN FD) -->
+        <line x1="360" y1="344" x2="395" y2="364" stroke="var(--bad)" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <text class="ts t-mono" x="330" y="358" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--bad)">SS1/SS2 (FS0b)</text>
+        <line x1="525" y1="344" x2="525" y2="364" stroke="var(--core)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="568" y="358" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--core)">CAN FD (E2E)</text>
+
+        <!-- Central ECU to Rear 800V Inverter / Zonal -->
+        <line x1="610" y1="250" x2="632" y2="250" stroke="var(--core)" stroke-width="2.8"/>
+
+        <!-- 1. Front-Left Corner Radar -->
+        <rect x="142" y="68" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="231" y="87" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">左前角雷達 FL Radar (ASIL B)</text>
+        <text class="ts t-mono" x="231" y="104" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="231" y="120" text-anchor="middle" font-size="9.5">+ 外掛 PMIC (FS85 / PF502x)</text>
+
+        <!-- 2. Front-Right Corner Radar -->
+        <rect x="142" y="368" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="231" y="387" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">右前角雷達 FR Radar (ASIL B)</text>
+        <text class="ts t-mono" x="231" y="404" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="231" y="420" text-anchor="middle" font-size="9.5">+ 外掛 PMIC (FS85 / PF502x)</text>
+
+        <!-- 3. Front Long-Range 4D Imaging Radar -->
+        <rect x="12" y="156" width="202" height="88" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2"/>
+        <text class="ts" x="113" y="176" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">前向 4D 成像主雷達 (ASIL B(D)/D)</text>
+        <text class="ts t-mono" x="113" y="194" text-anchor="middle" font-size="9.5" font-weight="600">IFX: CTRX8191F ×2 + AURIX TC4x</text>
+        <text class="ts t-mono" x="113" y="210" text-anchor="middle" font-size="9.5" font-weight="600">NXP: TEF82xx ×3 + S32R45</text>
+        <text class="ts t-mut" x="113" y="228" text-anchor="middle" font-size="9.5">外掛安全 PMIC (TLF35584 / FS86)</text>
+
+        <!-- 4. Forward ADAS Vision Camera -->
+        <rect x="12" y="262" width="202" height="78" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="113" y="282" text-anchor="middle" font-weight="700" font-size="11" fill="var(--fab)">前視 ADAS 視覺相機 (ASIL B(D))</text>
+        <text class="ts t-mono" x="113" y="300" text-anchor="middle" font-size="9.5">8MP CMOS + ISP (GMSL / FPD-Link)</text>
+        <text class="ts t-mut" x="113" y="318" text-anchor="middle" font-size="9.5">與前雷達異質分解合成系統級 ASIL D</text>
+
+        <!-- 5. 12V Battery + IBS Sensor -->
+        <rect x="345" y="68" width="215" height="68" rx="7" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="452" y="87" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">12 V 電瓶感測 IBS (ASIL B)</text>
+        <text class="ts t-mono" x="452" y="105" text-anchor="middle" font-size="10" font-weight="700">Infineon PSoC™ 4 HVPA-144K</text>
+        <text class="ts t-mut" x="452" y="122" text-anchor="middle" font-size="9.5">片內 42 V LDO (免外掛 PMIC) + 雙 ΔΣ ADC</text>
+
+        <!-- 6. Central ADAS & Safety Domain Controller ECU -->
+        <rect x="275" y="156" width="335" height="188" rx="10" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.4"/>
+        <text class="ts" x="442" y="177" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">中央 ADAS 域控制器 / 安全島主板 (ISO 26262 ASIL D)</text>
+
+        <!-- Left Chip: Safety PMIC -->
+        <rect x="287" y="188" width="143" height="142" rx="6" fill="var(--sunk)" stroke="var(--analog)" stroke-width="1.8"/>
+        <text class="ts" x="358" y="207" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">外掛安全 PMIC (ASIL D)</text>
+        <text class="ts t-mono" x="358" y="224" text-anchor="middle" font-size="10" font-weight="600">IFX TLF35584</text>
+        <text class="ts t-mono" x="358" y="239" text-anchor="middle" font-size="10" font-weight="600">NXP FS86 / VR5510</text>
+        <text class="ts t-mut" x="358" y="257" text-anchor="middle" font-size="9.5">雙能隙基準 + ABIST/LBIST</text>
+        <text class="ts t-mut" x="358" y="273" text-anchor="middle" font-size="9.5">WWD + FWD 雙看門狗</text>
+        <text class="ts" x="358" y="291" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--bad)">SS1/SS2 (FS0b) 硬體斷電</text>
+        <text class="ts t-mut" x="358" y="309" text-anchor="middle" font-size="9">獨立矽晶粒消除共因失效</text>
+
+        <!-- Board-level traces between PMIC and Safety MCU -->
+        <line x1="430" y1="220" x2="462" y2="220" stroke="var(--ok)" stroke-width="2.2"/>
+        <text class="ts t-mono" x="446" y="213" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--ok)">Vcore</text>
+        <line x1="430" y1="258" x2="462" y2="258" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts t-mono" x="446" y="251" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--warn)">SPI</text>
+        <line x1="462" y1="295" x2="430" y2="295" stroke="var(--bad)" stroke-width="2.2"/>
+        <text class="ts t-mono" x="446" y="288" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--bad)">FSP</text>
+
+        <!-- Right Chip: Lockstep Safety MCU + AI SoC -->
+        <rect x="462" y="188" width="136" height="142" rx="6" fill="var(--sunk)" stroke="var(--core)" stroke-width="1.8"/>
+        <text class="ts" x="530" y="207" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">鎖步安全島 MCU</text>
+        <text class="ts t-mono" x="530" y="224" text-anchor="middle" font-size="10" font-weight="600">AURIX TC39x / TC4x</text>
+        <text class="ts t-mono" x="530" y="239" text-anchor="middle" font-size="10" font-weight="600">NXP S32G3 / S32Z2</text>
+        <text class="ts t-mut" x="530" y="257" text-anchor="middle" font-size="9.5">雙核延遲鎖步 (Checker)</text>
+        <text class="ts t-mut" x="530" y="273" text-anchor="middle" font-size="9.5">雷達+相機異質融合表決</text>
+        <text class="ts" x="530" y="291" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--adas)">+ AI SoC (Doer 軌跡規劃)</text>
+        <text class="ts t-mut" x="530" y="309" text-anchor="middle" font-size="9">AUTOSAR E2E 安全封裝</text>
+
+        <!-- 7. Chassis EPS Steering & ESP Braking -->
+        <rect x="345" y="364" width="215" height="68" rx="7" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="452" y="383" text-anchor="middle" font-weight="700" font-size="11" fill="var(--bad)">線控轉向 EPS / 煞車 ESP (ASIL D)</text>
+        <text class="ts t-mono" x="452" y="401" text-anchor="middle" font-size="10" font-weight="600">AURIX TC37x / NXP S32K3 + PMIC</text>
+        <text class="ts t-mut" x="452" y="418" text-anchor="middle" font-size="9.5">受 SS1/SS2 (FS0b) 硬體安全關斷保護</text>
+
+        <!-- 8. Rear-Left Corner Radar -->
+        <rect x="612" y="68" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="701" y="87" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">左後角雷達 RL Radar (ASIL B)</text>
+        <text class="ts t-mono" x="701" y="104" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="701" y="120" text-anchor="middle" font-size="9.5">+ 外掛 PMIC · 盲點偵測 BSD</text>
+
+        <!-- 9. Rear-Right Corner Radar -->
+        <rect x="612" y="368" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="701" y="387" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">右後角雷達 RR Radar (ASIL B)</text>
+        <text class="ts t-mono" x="701" y="404" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="701" y="420" text-anchor="middle" font-size="9.5">+ 外掛 PMIC · 倒車橫向 RCTA</text>
+
+        <!-- 10. Rear 800V Inverter / Zonal Gateway -->
+        <rect x="632" y="186" width="158" height="128" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="711" y="207" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">後軸 800V 電驅 / 區域控制</text>
+        <text class="ts t-mono" x="711" y="224" text-anchor="middle" font-size="10" font-weight="700" fill="var(--safety)">ISO 26262 ASIL D</text>
+        <text class="ts t-mono" x="711" y="242" text-anchor="middle" font-size="9.5" font-weight="600">AURIX TC4x / NXP S32K396</text>
+        <text class="ts t-mono" x="711" y="258" text-anchor="middle" font-size="9.5">+ TLF35584 / FS85 PMIC</text>
+        <text class="ts t-mut" x="711" y="276" text-anchor="middle" font-size="9">SiC 隔離驅動 + 旋變解碼</text>
+        <text class="ts t-mono" x="711" y="294" text-anchor="middle" font-size="9" fill="var(--core)">1000BASE-T1 TSN / CAN XL</text>
+
+        <!-- Bottom Legend Bar -->
+        <rect x="12" y="472" width="856" height="58" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <line x1="26" y1="493" x2="56" y2="493" stroke="var(--adas)" stroke-width="3"/>
+        <text class="ts" x="64" y="497" font-weight="700" font-size="10" fill="var(--adas)">77 GHz 雷達 / 視覺鏈路：</text>
+        <text class="ts t-mut" x="195" y="497" font-size="9.5">100/1000BASE-T1 TSN · CSI-2 · GMSL2</text>
+
+        <line x1="455" y1="493" x2="485" y2="493" stroke="var(--core)" stroke-width="3"/>
+        <text class="ts" x="493" y="497" font-weight="700" font-size="10" fill="var(--core)">安全控制骨幹：</text>
+        <text class="ts t-mut" x="572" y="497" font-size="9.5">CAN FD / CAN XL (含 AUTOSAR E2E CRC)</text>
+
+        <line x1="26" y1="515" x2="56" y2="515" stroke="var(--analog)" stroke-width="2.5" stroke-dasharray="4 2"/>
+        <text class="ts" x="64" y="519" font-weight="700" font-size="10" fill="var(--analog)">12 V 電瓶感測與供電：</text>
+        <text class="ts t-mut" x="182" y="519" font-size="9.5">12 V 匯流排 + LIN 2.2A (HVPA 內建 42V LDO)</text>
+
+        <line x1="455" y1="515" x2="485" y2="515" stroke="var(--bad)" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <text class="ts" x="493" y="519" font-weight="700" font-size="10" fill="var(--bad)">PMIC 安全關斷：</text>
+        <text class="ts t-mut" x="582" y="519" font-size="9.5">SPI WWD/FWD + FSP/ERR + SS1/SS2 (FS0b) 斷電</text>
+      </svg>
+      <figcaption>圖 7.1：整車俯視電子電氣拓撲概念圖 — 展示 4 顆角雷達（ASIL B）、前向 4D 成像雷達與前視相機（異質合成 ASIL D）、12 V 電瓶感測器（PSoC™ 4 HVPA-144K）、中央 ADAS 安全島 MCU（AURIX™ / S32G3）與外掛安全 PMIC（TLF35584 / FS86）以及底盤致動器之互連關係</figcaption>
+    </div>
 
     <h2 id="delayed-lockstep">2. 雙核延遲鎖步（Delayed Lockstep）微架構與共模故障防護</h2>
     <p>在第 6 章我們算過 ISO 26262-5 的單點故障指標（SPFM）：<b>ASIL B 要求 \(\text{SPFM} \ge 90\%\)</b>，依靠記憶體 ECC、MPU 與問答看門狗即可達標；但 <b>ASIL D 要求 \(\text{SPFM} \ge 99\%\)、\(\text{LFM} \ge 90\%\)、\(\text{PMHF} < 10\,\text{FIT}\)</b>。CPU 內部的 ALU、暫存器檔、指令解碼器與管線控制邏輯包含數十萬個正反器（Flip-Flops），若單靠軟體周期性自檢（SBST），既無法攔截當下算錯的剎車指令，診斷涵蓋率也難以突破 99%。</p>
@@ -150,7 +314,7 @@
         <text class="ts" x="270" y="306" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--warn)">為什麼要延遲 2 個時脈週期（時間分集 Time Diversity）？</text>
         <text class="ts t-mut" x="270" y="324" text-anchor="middle" font-size="10.5">若第 k 週期發生電源毛刺或 EMI 干擾，Master 與 Checker 正處於不同指令階段，不會產生相同的錯誤結果而逃過比對！</text>
       </svg>
-      <figcaption>圖 7.1：雙核延遲鎖步（2-Cycle Delayed Lockstep）微架構與 SMU 故障管理單元原理示意圖</figcaption>
+      <figcaption>圖 7.2：雙核延遲鎖步（2-Cycle Delayed Lockstep）微架構與 SMU 故障管理單元原理示意圖</figcaption>
     </div>
 
     <ul>
@@ -222,7 +386,7 @@
         <text class="ts t-mut" x="642" y="306" text-anchor="middle" font-size="10.5">不經 MCU 軟體！直接以硬體切斷底盤轉向/煞車驅動器電源</text>
         <text class="ts t-mono" x="642" y="321" text-anchor="middle" font-size="10" fill="var(--ink)">或將 CAN FD 收發器強制切換至 Listen-Only 靜默安全狀態</text>
       </svg>
-      <figcaption>圖 7.2：AURIX™ TC39x 與 OPTIREG™ TLF35584 安全 PMIC 的三層監督與 SS1/SS2 硬體安全關斷架構</figcaption>
+      <figcaption>圖 7.3：AURIX™ TC39x 與 OPTIREG™ TLF35584 安全 PMIC 的三層監督與 SS1/SS2 硬體安全關斷架構</figcaption>
     </div>
 
     <ul>
@@ -305,7 +469,7 @@
         <text class="ts" x="420" y="276" text-anchor="middle" font-weight="700" font-size="11.5">為什麼通用 CPU 無法直接算雷達？ — 記憶體頻寬與確定性延遲瓶頸</text>
         <text class="ts t-mut" x="420" y="294" text-anchor="middle" font-size="10.5">單一雷達訊框（Radar Cube）即佔數 MB，每 20–50 ms 需完成數萬點 2D-FFT 與矩陣轉置，必須靠專用硬體加速器（HWA 2.1 / SPT 3.1）卸載。</text>
       </svg>
-      <figcaption>圖 7.3：77 GHz 毫米波雷達（Infineon AURIX™ SPU / TI AWR2944 / NXP SAF8544 &amp; S32R45）從中頻取樣、Radar Cube 2D-FFT、CFAR 到鎖步核目標追蹤之硬體管線</figcaption>
+      <figcaption>圖 7.4：77 GHz 毫米波雷達（Infineon AURIX™ SPU / TI AWR2944 / NXP SAF8544 &amp; S32R45）從中頻取樣、Radar Cube 2D-FFT、CFAR 到鎖步核目標追蹤之硬體管線</figcaption>
     </div>
 
     <ul>

@@ -35,7 +35,7 @@
     <div class="eyebrow">Chapter 07 · ADAS &amp; Safety Domain MCUs</div>
     <h1>ADAS &amp; Lockstep Safety MCUs: From Delayed Lockstep &amp; Safety PMICs to 77 GHz Radar Chains</h1>
     <p class="lead">The <b>Infineon PSoC™ 4 HVPA-144K</b> covered in Chapters 1–6 represents a monolithic high-voltage precision-analog edge sensor node (ASIL B hardware metrics) mounted directly on a 12 V battery post. Moving to <b>ADAS (Advanced Driver Assistance Systems)</b>—autonomous emergency braking (AEB), steer-by-wire arbitration and 77 GHz millimeter-wave radar—triggers a fundamental architectural shift: single-core execution gives way to <b>dual-core delayed lockstep (ASIL D)</b>, the on-chip LDO is replaced by an <b>external independent safety PMIC (such as OPTIREG™ TLF35584)</b>, and low-frequency \(\Delta\Sigma\) decimators are replaced by high-throughput <b>2D-FFT and CFAR radar hardware accelerators</b>.</p>
-    <p class="src">Device sources: Infineon PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K, Infineon AURIX™ TC39x / TC4x &amp; RASIC™ CTRX8191F datasheets, Infineon OPTIREG™ PMIC TLF35584 datasheet, TI AWR2944 datasheet, NXP SAF8544 (SAF85xx) &amp; S32R45 product documentation; standards: ISO 26262-5:2018, ISO 26262-9:2018, AUTOSAR E2E, IEEE 802.1Qbv. Figures 7.1–7.3 are architectural concept diagrams.</p>
+    <p class="src">Device sources: Infineon PSoC™ 4 HVPA-144K datasheet 002-28660 Rev. *K, Infineon AURIX™ TC39x / TC4x &amp; RASIC™ CTRX8191F datasheets, Infineon OPTIREG™ PMIC TLF35584 datasheet, TI AWR2944 datasheet, NXP SAF8544 (SAF85xx) &amp; S32R45 product documentation; standards: ISO 26262-5:2018, ISO 26262-9:2018, AUTOSAR E2E, IEEE 802.1Qbv. Figures 7.1–7.4 are architectural concept diagrams.</p>
 
     <h2 id="adas-spectrum">1. Automotive MCU Spectrum: BMS Edge Sensor vs. ADAS Safety Island &amp; Radar MCUs</h2>
     <p>Modern zonal electrical/electronic (E/E) architectures divide vehicle compute into edge sensing nodes, dedicated sensor-processing SoCs and central safety islands. Even when an automated driving domain controller carries a multi-hundred-TOPS AI SoC (such as NVIDIA Orin or Qualcomm Ride), the board still pairs it with an <b>ISO 26262 ASIL D</b> safety microcontroller (such as <b>Infineon AURIX™ TC39x / TC4x</b>) to perform sensor-fusion voting, watchdog supervision and chassis actuator arbitration.</p>
@@ -88,6 +88,170 @@
       <li><b>Trend 4 — From L2 Fail-Safe to L3+ Fail-Operational:</b> L2 systems are <b>Fail-Safe</b> (asserting `SS1/SS2` or `FS0b` to cut actuator power and handing control back to the human driver). In L3/L4 automated driving and steer-by-wire, the human cannot take over instantly; architectures shift to <b>Fail-Operational dual-channel redundancy (2× ASIL D or ASIL D + ASIL B degraded backup channel + dual safety PMICs)</b> to execute a Minimum Risk Maneuver (MRM) if the primary channel fails.</li>
       <li><b>Trend 5 — AI / NPU “Doer” + ASIL D Lockstep “Checker” (ISO/PAS 8800):</b> Deep neural networks (CNNs / Transformers) are probabilistic black boxes that cannot directly prove deterministic ISO 26262 ASIL D (SPFM ≥ 99%) hardware metrics. Production ADAS platforms therefore pair a high-TOPS <b>AI SoC (QM / ASIL B “Doer”)</b> with a deterministic <b>ASIL D lockstep MCU (“Checker”)</b> that validates trajectory safety envelopes before commanding chassis actuators.</li>
     </ul>
+
+    <h3 id="vehicle-mcu-pmic-radar-map">Vehicle Top-Down Architecture: MCU, Safety PMIC &amp; 77 GHz Radar Interconnect Map</h3>
+    <p>Mapping the “ASIL B edge satellite sensors + ASIL D central safety island + external safety PMIC hardware shutdown” onto a modern electric vehicle’s top-down chassis illustrates where each MCU, PMIC and 77 GHz radar sits physically and how they interconnect across vehicle buses:</p>
+
+    <div class="fig">
+      <svg class="viz" viewBox="0 0 880 545" role="img" aria-label="Vehicle Top-Down Architecture: Full-Vehicle MCU, External Safety PMIC, 12V Battery Sensor and 77 GHz Radar Interconnect Topology">
+        <!-- Direction Headers -->
+        <text class="ts" x="120" y="24" font-weight="700" font-size="11.5" fill="var(--adas)">&#9664; VEHICLE FRONT (77 GHz Radar Beams + Forward Vision Fusion)</text>
+        <text class="ts" x="800" y="24" text-anchor="end" font-weight="700" font-size="11.5" fill="var(--core)">VEHICLE REAR (BSD Corner Radars + 800V Drive) &#9654;</text>
+
+        <!-- 4 Vehicle Wheels -->
+        <rect x="220" y="38" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+        <rect x="625" y="38" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+        <rect x="220" y="444" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+        <rect x="625" y="444" width="78" height="18" rx="6" fill="var(--line)" stroke="var(--ink)" stroke-width="1.2"/>
+
+        <!-- Vehicle Chassis Silhouette & Cabin Roof -->
+        <rect x="120" y="56" width="685" height="388" rx="64" fill="var(--sunk)" stroke="var(--line)" stroke-width="2.5" stroke-dasharray="8 4"/>
+        <rect x="265" y="142" width="355" height="216" rx="24" fill="none" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+        <!-- 77 GHz Radar Beams (Arcs) -->
+        <path d="M 10 184 A 32 32 0 0 0 10 230" fill="none" stroke="var(--adas)" stroke-width="2.2" opacity="0.8"/>
+        <path d="M 3 172 A 46 46 0 0 0 3 242" fill="none" stroke="var(--adas)" stroke-width="1.6" opacity="0.5"/>
+        <path d="M 134 95 A 28 28 0 0 1 164 62" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+        <path d="M 134 405 A 28 28 0 0 0 164 438" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+        <path d="M 786 62 A 28 28 0 0 1 814 95" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+        <path d="M 786 438 A 28 28 0 0 0 814 405" fill="none" stroke="var(--adas)" stroke-width="2" opacity="0.75"/>
+
+        <!-- Interconnect Wiring -->
+        <!-- Front 4D Radar & Camera to Central ECU -->
+        <line x1="214" y1="200" x2="275" y2="200" stroke="var(--adas)" stroke-width="2.8"/>
+        <text class="ts t-mono" x="244" y="191" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--adas)">Eth/CSI2</text>
+        <line x1="214" y1="300" x2="275" y2="300" stroke="var(--fab)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="244" y="291" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--fab)">GMSL2</text>
+
+        <!-- 4 Corner Radars to Central ECU -->
+        <line x1="235" y1="132" x2="310" y2="156" stroke="var(--adas)" stroke-width="2.2"/>
+        <line x1="235" y1="368" x2="310" y2="344" stroke="var(--adas)" stroke-width="2.2"/>
+        <line x1="660" y1="132" x2="580" y2="156" stroke="var(--adas)" stroke-width="2.2"/>
+        <line x1="660" y1="368" x2="580" y2="344" stroke="var(--adas)" stroke-width="2.2"/>
+
+        <!-- 12V Battery IBS to Central ECU -->
+        <line x1="452" y1="136" x2="452" y2="156" stroke="var(--analog)" stroke-width="2.2" stroke-dasharray="4 2"/>
+        <text class="ts t-mono" x="505" y="150" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--analog)">LIN 2.2A + 12V</text>
+
+        <!-- Central ECU to Chassis EPS/ESP (Safety Cutoff SS1/SS2 + CAN FD) -->
+        <line x1="360" y1="344" x2="395" y2="364" stroke="var(--bad)" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <text class="ts t-mono" x="330" y="358" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--bad)">SS1/SS2 (FS0b)</text>
+        <line x1="525" y1="344" x2="525" y2="364" stroke="var(--core)" stroke-width="2.5"/>
+        <text class="ts t-mono" x="568" y="358" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--core)">CAN FD (E2E)</text>
+
+        <!-- Central ECU to Rear 800V Inverter / Zonal -->
+        <line x1="610" y1="250" x2="632" y2="250" stroke="var(--core)" stroke-width="2.8"/>
+
+        <!-- 1. Front-Left Corner Radar -->
+        <rect x="142" y="68" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="231" y="87" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">FL Corner Radar (ASIL B)</text>
+        <text class="ts t-mono" x="231" y="104" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="231" y="120" text-anchor="middle" font-size="9.5">+ Local PMIC (FS85 / PF502x)</text>
+
+        <!-- 2. Front-Right Corner Radar -->
+        <rect x="142" y="368" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="231" y="387" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">FR Corner Radar (ASIL B)</text>
+        <text class="ts t-mono" x="231" y="404" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="231" y="420" text-anchor="middle" font-size="9.5">+ Local PMIC (FS85 / PF502x)</text>
+
+        <!-- 3. Front Long-Range 4D Imaging Radar -->
+        <rect x="12" y="156" width="202" height="88" rx="8" fill="var(--surface)" stroke="var(--adas)" stroke-width="2.2"/>
+        <text class="ts" x="113" y="176" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">Front 4D Imaging Radar (ASIL B(D)/D)</text>
+        <text class="ts t-mono" x="113" y="194" text-anchor="middle" font-size="9.5" font-weight="600">IFX: CTRX8191F ×2 + AURIX TC4x</text>
+        <text class="ts t-mono" x="113" y="210" text-anchor="middle" font-size="9.5" font-weight="600">NXP: TEF82xx ×3 + S32R45</text>
+        <text class="ts t-mut" x="113" y="228" text-anchor="middle" font-size="9.5">Paired w/ Safety PMIC (TLF35584/FS86)</text>
+
+        <!-- 4. Forward ADAS Vision Camera -->
+        <rect x="12" y="262" width="202" height="78" rx="8" fill="var(--surface)" stroke="var(--fab)" stroke-width="2"/>
+        <text class="ts" x="113" y="282" text-anchor="middle" font-weight="700" font-size="11" fill="var(--fab)">Forward ADAS Camera (ASIL B(D))</text>
+        <text class="ts t-mono" x="113" y="300" text-anchor="middle" font-size="9.5">8MP CMOS + ISP (GMSL / FPD-Link)</text>
+        <text class="ts t-mut" x="113" y="318" text-anchor="middle" font-size="9.5">Decomposed w/ Radar &rarr; System ASIL D</text>
+
+        <!-- 5. 12V Battery + IBS Sensor -->
+        <rect x="345" y="68" width="215" height="68" rx="7" fill="var(--surface)" stroke="var(--analog)" stroke-width="2"/>
+        <text class="ts" x="452" y="87" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">12 V Battery Sensor IBS (ASIL B)</text>
+        <text class="ts t-mono" x="452" y="105" text-anchor="middle" font-size="10" font-weight="700">Infineon PSoC™ 4 HVPA-144K</text>
+        <text class="ts t-mut" x="452" y="122" text-anchor="middle" font-size="9.5">On-chip 42 V LDO (no ext PMIC) + ΔΣ ADC</text>
+
+        <!-- 6. Central ADAS & Safety Domain Controller ECU -->
+        <rect x="275" y="156" width="335" height="188" rx="10" fill="var(--surface)" stroke="var(--safety)" stroke-width="2.4"/>
+        <text class="ts" x="442" y="177" text-anchor="middle" font-weight="700" font-size="12" fill="var(--safety)">Central ADAS Domain Controller &amp; Safety Island (ASIL D)</text>
+
+        <!-- Left Chip: Safety PMIC -->
+        <rect x="287" y="188" width="143" height="142" rx="6" fill="var(--sunk)" stroke="var(--analog)" stroke-width="1.8"/>
+        <text class="ts" x="358" y="207" text-anchor="middle" font-weight="700" font-size="11" fill="var(--analog)">Safety PMIC (ASIL D)</text>
+        <text class="ts t-mono" x="358" y="224" text-anchor="middle" font-size="10" font-weight="600">IFX TLF35584</text>
+        <text class="ts t-mono" x="358" y="239" text-anchor="middle" font-size="10" font-weight="600">NXP FS86 / VR5510</text>
+        <text class="ts t-mut" x="358" y="257" text-anchor="middle" font-size="9.5">Redundant Ref + ABIST/LBIST</text>
+        <text class="ts t-mut" x="358" y="273" text-anchor="middle" font-size="9.5">WWD + FWD Dual Watchdogs</text>
+        <text class="ts t-mono" x="358" y="291" text-anchor="middle" font-size="9" font-weight="700" fill="var(--bad)">SS1/SS2 (FS0b) Safe Cutoff</text>
+        <text class="ts t-mut" x="358" y="309" text-anchor="middle" font-size="9">Separate die eliminates CCF</text>
+
+        <!-- Board-level traces between PMIC and Safety MCU -->
+        <line x1="430" y1="220" x2="462" y2="220" stroke="var(--ok)" stroke-width="2.2"/>
+        <text class="ts t-mono" x="446" y="213" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--ok)">Vcore</text>
+        <line x1="430" y1="258" x2="462" y2="258" stroke="var(--warn)" stroke-width="2"/>
+        <text class="ts t-mono" x="446" y="251" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--warn)">SPI</text>
+        <line x1="462" y1="295" x2="430" y2="295" stroke="var(--bad)" stroke-width="2.2"/>
+        <text class="ts t-mono" x="446" y="288" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--bad)">FSP</text>
+
+        <!-- Right Chip: Lockstep Safety MCU + AI SoC -->
+        <rect x="462" y="188" width="136" height="142" rx="6" fill="var(--sunk)" stroke="var(--core)" stroke-width="1.8"/>
+        <text class="ts" x="530" y="207" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">Lockstep Safety MCU</text>
+        <text class="ts t-mono" x="530" y="224" text-anchor="middle" font-size="10" font-weight="600">AURIX TC39x / TC4x</text>
+        <text class="ts t-mono" x="530" y="239" text-anchor="middle" font-size="10" font-weight="600">NXP S32G3 / S32Z2</text>
+        <text class="ts t-mut" x="530" y="257" text-anchor="middle" font-size="9.5">Delayed Lockstep (Checker)</text>
+        <text class="ts t-mut" x="530" y="273" text-anchor="middle" font-size="9.5">Radar+Cam Fusion Voting</text>
+        <text class="ts t-mono" x="530" y="291" text-anchor="middle" font-size="9" font-weight="700" fill="var(--adas)">+ AI SoC (Doer Planner)</text>
+        <text class="ts t-mut" x="530" y="309" text-anchor="middle" font-size="9">AUTOSAR E2E CRC Guard</text>
+
+        <!-- 7. Chassis EPS Steering & ESP Braking -->
+        <rect x="345" y="364" width="215" height="68" rx="7" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+        <text class="ts" x="452" y="383" text-anchor="middle" font-weight="700" font-size="11" fill="var(--bad)">Chassis EPS Steering &amp; ESP (ASIL D)</text>
+        <text class="ts t-mono" x="452" y="401" text-anchor="middle" font-size="10" font-weight="600">AURIX TC37x / NXP S32K3 + PMIC</text>
+        <text class="ts t-mut" x="452" y="418" text-anchor="middle" font-size="9.5">Protected by SS1/SS2 (FS0b) Safe Cutoff</text>
+
+        <!-- 8. Rear-Left Corner Radar -->
+        <rect x="612" y="68" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="701" y="87" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">RL Corner Radar (ASIL B)</text>
+        <text class="ts t-mono" x="701" y="104" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="701" y="120" text-anchor="middle" font-size="9.5">+ Local PMIC · Blind-Spot BSD</text>
+
+        <!-- 9. Rear-Right Corner Radar -->
+        <rect x="612" y="368" width="178" height="64" rx="7" fill="var(--surface)" stroke="var(--adas)" stroke-width="2"/>
+        <text class="ts" x="701" y="387" text-anchor="middle" font-weight="700" font-size="11" fill="var(--adas)">RR Corner Radar (ASIL B)</text>
+        <text class="ts t-mono" x="701" y="404" text-anchor="middle" font-size="10" font-weight="600">NXP SAF8544 / TI AWR2944</text>
+        <text class="ts t-mut" x="701" y="420" text-anchor="middle" font-size="9.5">+ Local PMIC · Rear Cross-Traffic</text>
+
+        <!-- 10. Rear 800V Inverter / Zonal Gateway -->
+        <rect x="632" y="186" width="158" height="128" rx="8" fill="var(--surface)" stroke="var(--core)" stroke-width="2"/>
+        <text class="ts" x="711" y="207" text-anchor="middle" font-weight="700" font-size="11" fill="var(--core)">Rear 800V Drive / Zonal</text>
+        <text class="ts t-mono" x="711" y="224" text-anchor="middle" font-size="10" font-weight="700" fill="var(--safety)">ISO 26262 ASIL D</text>
+        <text class="ts t-mono" x="711" y="242" text-anchor="middle" font-size="9.5" font-weight="600">AURIX TC4x / NXP S32K396</text>
+        <text class="ts t-mono" x="711" y="258" text-anchor="middle" font-size="9.5">+ TLF35584 / FS85 PMIC</text>
+        <text class="ts t-mut" x="711" y="276" text-anchor="middle" font-size="9">SiC Gate Driver + Resolver</text>
+        <text class="ts t-mono" x="711" y="294" text-anchor="middle" font-size="9" fill="var(--core)">1000BASE-T1 TSN / CAN XL</text>
+
+        <!-- Bottom Legend Bar -->
+        <rect x="12" y="472" width="856" height="58" rx="6" fill="var(--sunk)" stroke="var(--line)"/>
+        <line x1="26" y1="493" x2="56" y2="493" stroke="var(--adas)" stroke-width="3"/>
+        <text class="ts" x="64" y="497" font-weight="700" font-size="10" fill="var(--adas)">77 GHz Radar / Vision:</text>
+        <text class="ts t-mut" x="196" y="497" font-size="9.5">100/1000BASE-T1 TSN · MIPI CSI-2 · GMSL2</text>
+
+        <line x1="455" y1="493" x2="485" y2="493" stroke="var(--core)" stroke-width="3"/>
+        <text class="ts" x="493" y="497" font-weight="700" font-size="10" fill="var(--core)">Safety Control Bus:</text>
+        <text class="ts t-mut" x="605" y="497" font-size="9.5">CAN FD / CAN XL (AUTOSAR E2E CRC)</text>
+
+        <line x1="26" y1="515" x2="56" y2="515" stroke="var(--analog)" stroke-width="2.5" stroke-dasharray="4 2"/>
+        <text class="ts" x="64" y="519" font-weight="700" font-size="10" fill="var(--analog)">12 V Sense &amp; Power:</text>
+        <text class="ts t-mut" x="184" y="519" font-size="9.5">12 V Rail + LIN 2.2A (HVPA on-chip 42V LDO)</text>
+
+        <line x1="455" y1="515" x2="485" y2="515" stroke="var(--bad)" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <text class="ts" x="493" y="519" font-weight="700" font-size="10" fill="var(--bad)">PMIC Safe Cutoff:</text>
+        <text class="ts t-mut" x="598" y="519" font-size="9.5">SPI WWD/FWD + FSP/ERR + SS1/SS2 (FS0b)</text>
+      </svg>
+      <figcaption>Figure 7.1: Top-Down Vehicle E/E Concept Map — Illustrating 4 Corner Radars (ASIL B), Front 4D Imaging Radar &amp; Forward Camera (decomposed ASIL D), 12 V Battery Sensor (PSoC™ 4 HVPA-144K), Central ADAS Safety Island MCU (AURIX™ / S32G3) paired with External Safety PMIC (TLF35584 / FS86), and Chassis Actuators</figcaption>
+    </div>
 
     <h2 id="delayed-lockstep">2. Dual-Core Delayed Lockstep Microarchitecture &amp; Common-Cause Fault Mitigation</h2>
     <p>In Chapter 6 we saw that ISO 26262-5 sets the Single-Point Fault Metric target for <b>ASIL B at \(\text{SPFM} \ge 90\%\)</b>, which memory ECC, an MPU and a challenge-response watchdog can satisfy. However, <b>ASIL D demands \(\text{SPFM} \ge 99\%\), \(\text{LFM} \ge 90\%\) and \(\text{PMHF} < 10\,\text{FIT}\)</b>. A CPU’s ALU, register file, instruction decoder and pipeline control contain hundreds of thousands of flip-flops; periodic software self-test (SBST) alone cannot catch a corrupted braking calculation in the exact cycle it happens, nor easily reach 99% diagnostic coverage.</p>
@@ -150,7 +314,7 @@
         <text class="ts" x="270" y="306" text-anchor="middle" font-weight="700" font-size="11.5" fill="var(--warn)">Why delay by 2 clock cycles (Time Diversity)?</text>
         <text class="ts t-mut" x="270" y="324" text-anchor="middle" font-size="10">A supply glitch or EMI burst at cycle k hits Master and Checker at different instructions, preventing identical errors!</text>
       </svg>
-      <figcaption>Figure 7.1: 2-Cycle Delayed Lockstep Microarchitecture and Safety Management Unit (SMU) Principle</figcaption>
+      <figcaption>Figure 7.2: 2-Cycle Delayed Lockstep Microarchitecture and Safety Management Unit (SMU) Principle</figcaption>
     </div>
 
     <ul>
@@ -222,7 +386,7 @@
         <text class="ts t-mut" x="642" y="306" text-anchor="middle" font-size="10.5">Bypasses MCU software! Directly cuts steering/braking gate power</text>
         <text class="ts t-mono" x="642" y="321" text-anchor="middle" font-size="10" fill="var(--ink)">or forces CAN FD transceivers into Listen-Only safe mode</text>
       </svg>
-      <figcaption>Figure 7.2: Three-Layer Supervision Between AURIX™ TC39x and OPTIREG™ TLF35584 with SS1/SS2 Hardware Safe-State Outputs</figcaption>
+      <figcaption>Figure 7.3: Three-Layer Supervision Between AURIX™ TC39x and OPTIREG™ TLF35584 with SS1/SS2 Hardware Safe-State Outputs</figcaption>
     </div>
 
     <ul>
@@ -305,7 +469,7 @@
         <text class="ts" x="420" y="276" text-anchor="middle" font-weight="700" font-size="11.5">Why can’t a general-purpose CPU run the radar cube directly? — Memory bandwidth &amp; deterministic latency</text>
         <text class="ts t-mut" x="420" y="294" text-anchor="middle" font-size="10.5">A single radar frame occupies megabytes and requires tens of thousands of 2D-FFTs and matrix transposes every 20–50 ms, demanding HWA 2.1 / SPT 3.1 offload.</text>
       </svg>
-      <figcaption>Figure 7.3: 77 GHz FMCW Radar (Infineon AURIX™ SPU / TI AWR2944 / NXP SAF8544 &amp; S32R45) Hardware Pipeline from IF Sampling and Radar Cube 2D-FFT to CFAR and Lockstep Object Tracking</figcaption>
+      <figcaption>Figure 7.4: 77 GHz FMCW Radar (Infineon AURIX™ SPU / TI AWR2944 / NXP SAF8544 &amp; S32R45) Hardware Pipeline from IF Sampling and Radar Cube 2D-FFT to CFAR and Lockstep Object Tracking</figcaption>
     </div>
 
     <ul>
