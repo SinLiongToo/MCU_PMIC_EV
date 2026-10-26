@@ -70,6 +70,25 @@
 
     <div class="callout" style="--c:var(--safety)"><b>關鍵系統觀念：既然自動緊急煞車（AEB）是 ASIL D，為什麼單顆雷達晶片（如 NXP SAF8544）只需做到 ASIL B？</b><br>這正是 <b>ISO 26262-9 的 ASIL 分解（ASIL Decomposition）</b>原則：一個 <b>ASIL D</b> 的安全目標，可以拆解為兩個<b>物理原理完全獨立、無共因失效（No Common Cause Failure）</b>的子通道——例如「<b>77 GHz 毫米波雷達（ASIL B(D)）</b>」加上「<b>前向視覺攝影機（ASIL B(D)）</b>」：\[\text{ASIL D} \;\longrightarrow\; \text{ASIL B(D)}_{\text{Radar}} \;+\; \text{ASIL B(D)}_{\text{Camera}}\]如此一來，車廠不需在保險桿四角塞入昂貴且高功耗的全鎖步 ASIL D 雷達晶片，只要讓多顆 <b>ASIL B</b> 的雷達與攝影機將點雲送回中央 <b>ASIL D 安全島（如 AURIX™ TC39x/TC4x）</b>進行異質交叉表決，整車就能以最佳成本達成 ASIL D！</div>
 
+    <h3 id="asil-market-trends">ISO 26262 各安全等級市場趨勢：M 型化、Split-Lock 與 L3+ Fail-Operational</h3>
+    <p>隨著整車電子電氣架構（E/E Architecture）由「傳統分散式 ECU」演進至「區域控制（Zonal Architecture）+ 中央計算（Central Compute）」以及 L2+/L3 自動駕駛與 800 V 高壓電動車普及，車用半導體的 ISO 26262 等級需求呈現明顯的<b>「M 型化（向 ASIL B 與 ASIL D 兩端集中）」</b>趨勢：</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>安全等級</th><th>過去（傳統分散式 ECU 架構）</th><th>現在與未來（Zonal + L2+/L3 ADAS + 800V EV）</th><th>市場成長動能</th></tr>
+      <tr><td><b>QM / ASIL A</b></td><td>佔全車 ECU 數量 <b>&gt; 60%</b>（車窗、雨刷、座椅、車燈各自一顆 QM MCU）</td><td><b>獨立顆數快速萎縮</b>（簡單邏輯被整併進 Zonal 區域控制器，末端僅留無 MCU 的智慧配電開關 Smart FET / eFuse）</td><td><b>衰退 / 被整併</b></td></tr>
+      <tr><td><b>ASIL B</b></td><td>佔比約 <b>20–25%</b>（儀表顯示、中低階車身、早期輔助雷達）</td><td><b>出貨顆數（Volume）最大宗！</b>所有智慧邊緣感測節點（12 V IBS 電瓶感測、角雷達、超音波、車外智慧照明、DMS 疲勞監控）全面升級為 <b>ASIL B</b></td><td><b>出貨量成長最快</b></td></tr>
+      <tr><td><b>ASIL C</b></td><td>佔比約 <b>5–10%</b>（部分動力總成與早期高壓 BMS）</td><td><b>晶片端被 ASIL D 吸收</b>：因 SPFM ≥ 97% 與 ≥ 99% 研發成本相近，晶片廠直接設計 <b>ASIL D 認證 MCU</b>（如 AURIX TC3xx / NXP S32K3），供客戶在系統層跑 ASIL C 或 D</td><td><b>過渡 / 併入 ASIL D 晶片</b></td></tr>
+      <tr><td><b>ASIL D</b></td><td>佔比 <b>&lt; 10%</b>（僅限安全氣囊、ABS/ESP、EPS 轉向）</td><td><b>營收產值（Revenue / ASP）成長最快！</b>隨 Zonal 區域控制器、ADAS 中央安全島、800 V SiC 逆變器與線控底盤（Steer/Brake-by-Wire）爆發而成為高階標配</td><td><b>產值與算力成長最快</b></td></tr>
+    </table></div>
+
+    <ul>
+      <li><b>趨勢 1：邊緣感測 ASIL B 化 + 中央計算 ASIL D 化（Satellite Sensor 架構）：</b>一輛 L2+/L3 車輛搭載 5 顆雷達與 8–12 顆相機，若每顆感測器都用雙核鎖步 ASIL D，功耗與 BOM 成本將失控。市場主流是邊緣採用低功耗 <b>ASIL B 單晶片（如 NXP SAF8544、PSoC™ 4 HVPA）</b>，再透過高速乙太網匯聚至中央 <b>ASIL D 安全島（AURIX™ TC4x / NXP S32G3）</b>進行異質融合表決。</li>
+      <li><b>趨勢 2：晶片廠不再單獨開案 ASIL C MCU（硬體直上 ASIL D）：</b>由於車規先進製程開光罩（Tape-out）與功能安全認證成本極高，主流 MCU 廠商（Infineon、NXP、TI、Renesas）在中高階產品線<b>一律直接做成硬體級 ASIL D（內建鎖步核）</b>，向下相容系統層 ASIL C 應用。</li>
+      <li><b>趨勢 3：可拆分鎖步核（Split-Lock）取代固定鎖步核：</b>為解決傳統鎖步核浪費 50% 算力的痛點，新一代處理器（如搭載 <b>Arm Cortex-R52+ 的 NXP S32Z2/E2</b> 與 <b>Cortex-A78AE</b>）支援 <b>Split-Lock 模式</b>——一般任務拆開成雙獨立核（200% 算力，ASIL B），安全關鍵任務合體為鎖步核（ASIL D）。</li>
+      <li><b>趨勢 4：從 L2「Fail-Safe（故障即斷電）」邁向 L3+「Fail-Operational（故障後繼續安全運作）」：</b>L2 輔助駕駛遇到故障可直接透過 PMIC 的 `SS1/SS2` 或 `FS0b` 切斷致動器並交還人類駕駛；但在 L3/L4 自動駕駛與線控轉向（Steer-by-Wire）中，人類無法瞬間接手，架構必須升級為<b>雙通道異質冗餘（2× ASIL D 或 ASIL D + ASIL B 降級備援通道 + 雙安全 PMIC）</b>，在主通道故障時無縫執行最小風險操作（MRM）安全靠邊停車。</li>
+      <li><b>趨勢 5：AI / NPU 與 ASIL D 安全島的「Doer / Checker」分工（ISO/PAS 8800）：</b>深度神經網路（CNN/Transformer）屬於機率型黑盒子，難以直接滿足決定論的 ASIL D（SPFM ≥ 99%）。因此產業標準做法是由高算力 <b>AI SoC（QM / ASIL B）擔任 Doer（規劃軌跡）</b>，再由板載 <b>ASIL D 鎖步安全 MCU 擔任 Checker（以物理安全包絡線驗證軌跡並掌管底盤致動器）</b>。</li>
+    </ul>
+
     <h2 id="delayed-lockstep">2. 雙核延遲鎖步（Delayed Lockstep）微架構與共模故障防護</h2>
     <p>在第 6 章我們算過 ISO 26262-5 的單點故障指標（SPFM）：<b>ASIL B 要求 \(\text{SPFM} \ge 90\%\)</b>，依靠記憶體 ECC、MPU 與問答看門狗即可達標；但 <b>ASIL D 要求 \(\text{SPFM} \ge 99\%\)、\(\text{LFM} \ge 90\%\)、\(\text{PMHF} < 10\,\text{FIT}\)</b>。CPU 內部的 ALU、暫存器檔、指令解碼器與管線控制邏輯包含數十萬個正反器（Flip-Flops），若單靠軟體周期性自檢（SBST），既無法攔截當下算錯的剎車指令，診斷涵蓋率也難以突破 99%。</p>
     <p>因此，AURIX™ TC39x（TriCore Lockstep）、TI AWR2944（Cortex-R5F Lockstep）與 NXP S32R45（Cortex-M7 Lockstep）皆採用<b>硬體雙核延遲鎖步（Dual-Core Delayed Lockstep）</b>架構：</p>
